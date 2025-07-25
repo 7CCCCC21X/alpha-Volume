@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alpha Token Volume Board</title>
+<style>
+:root{--bg:#f9fafb;--text:#1f2937;--sub:#6b7280;--border:#e5e7eb;--green:#16a34a;--red:#dc2626;--primary:#2563eb}
+@media(prefers-color-scheme:dark){:root{--bg:#1e293b;--text:#f3f4f6;--sub:#9ca3af;--border:#334155}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Segoe UI","PingFang SC",sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+h1{padding:18px 12px;text-align:center;font-size:1.4rem;color:var(--primary)}
+#bar{max-width:1200px;margin:0 auto 12px;display:flex;gap:8px;align-items:center;justify-content:space-between;padding:0 6px}
+#bar-left{flex:1;display:flex;gap:8px;align-items:center}
+#bar input{flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.85rem}
+#bar button{padding:6px 12px;font-size:.85rem;border:1px solid var(--border);border-radius:4px;background:var(--primary);color:#fff;cursor:pointer}
+#bar button:disabled{background:#9ca3af;cursor:not-allowed}
+#bar span{font-size:.8rem;color:var(--sub)}
+#author{font-size:.8rem}
+#author a{color:var(--primary);text-decoration:none}
+table{width:100%;max-width:1200px;margin:0 auto;border-collapse:collapse}
+th,td{padding:10px 6px;border-bottom:1px solid var(--border);font-size:.85rem;text-align:left}
+th{cursor:pointer;user-select:none}
+tbody tr:hover{background:rgba(0,0,0,.04);cursor:pointer}
+.logo{width:18px;height:18px;margin-right:4px;vertical-align:middle;border-radius:50%}
+.up{color:var(--green)}.down{color:var(--red)}
+.loading{font-style:italic;color:var(--sub)}
+.star{cursor:pointer;font-size:1rem;color:var(--sub);user-select:none}
+.star.fav{color:#f7b500}
+footer{height:16px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<h1>Binance Alpha — 24H 交易量排行榜</h1>
+
+<div id="bar">
+  <div id="bar-left">
+    <input id="search" placeholder="🔍 按代币名称 / 符号过滤…" />
+    <button id="refreshBtn">⟳ 刷新数据</button>
+    <span id="progress"></span>
+  </div>
+  <div id="author">作者 <a href="https://twitter.com/0xXIAOc" target="_blank">@0xXIAOc</a></div>
+</div>
+
+<table id="tokenTable">
+  <thead>
+    <tr>
+      <th style="width:26px"></th><th>#</th><th>代币名字</th>
+      <th id="thPrice">价格</th>
+      <th id="thVol24h">24H 交易量</th>
+      <th>24H 变化</th>
+      <th id="thToday">当天限价单成交额</th>
+      <th id="thPrev">前一天限价单成交额</th>
+    </tr>
+  </thead>
+  <tbody><tr><td colspan="8">加载中…</td></tr></tbody>
+</table>
+
+<footer></footer>
+
+<script>
+// ---------- 常量 ----------
+const LIST_API='https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list';
+const K_API  ='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines';
+const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
+const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const FAV_KEY='alphaFavs', CONCURRENCY=5;
+
+// ---------- 北京时间 08:00 边界 ----------
+const bj08=d=>{const t=new Date();t.setHours(8,0,0,0);t.setDate(t.getDate()+d);return t.getTime()-288E5;};
+let today8=bj08(0), yest8=bj08(-1);
+
+// ---------- 状态 ----------
+let rows=[], filter='';
+let sortKey='vol24h', sortDir='desc';
+const tbody=document.querySelector('#tokenTable tbody');
+const btnRefresh=document.getElementById('refreshBtn');
+const progressEl=document.getElementById('progress');
+
+// ---------- 并发限制 ----------
+function pLimit(n){
+  const q=[];let run=0;
+  const next=()=>{if(run>=n||!q.length)return;run++;q.shift()().finally(()=>{run--;next();});};
+  return fn=>new Promise(res=>{q.push(()=>fn().then(res));next();});
+}
+const limit=pLimit(CONCURRENCY);
+
+// ---------- QuoteVolume ----------
+async function qv(sym,start,end){
+  const url=`${K_API}?symbol=${sym}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
+  const arr=(await fetch(url).then(r=>r.json()).catch(()=>({data:[]}))).data||[];
+  return arr.reduce((s,k)=>s+parseFloat(k[7]),0);
+}
+async function fillQVAll(list){
+  let done=0,total=list.length;
+  progressEl.textContent='0%';
+  await Promise.all(list.map(r=>limit(async()=>{
+    [r.todayQV,r.prevQV]=await Promise.all([
+      qv(r.sym,today8,Date.now()),
+      qv(r.sym,yest8,today8-1)
+    ]);
+    progressEl.textContent=`${Math.floor(++done/total*100)}%`;
+  })));
+  progressEl.textContent='';
+}
+
+// ---------- 收藏 ----------
+const favs=()=>JSON.parse(localStorage.getItem(FAV_KEY)||'[]');
+function toggleFav(sym){const f=favs();const i=f.indexOf(sym);i>-1?f.splice(i,1):f.push(sym);localStorage.setItem(FAV_KEY,JSON.stringify(f));render();}
+
+// ---------- 数据 ----------
+async function fetchList(){
+  const {data}=await fetch(LIST_API).then(r=>r.json());
+  return data.filter(t=>+t.volume24h>0).map(t=>({
+    price:+t.price,vol24h:+t.volume24h,chg:+t.percentChange24h,
+    symbol:t.symbol,icon:t.iconUrl,sym:`${t.alphaId}USDT`,
+    todayQV:0,prevQV:0
+  }));
+}
+
+// ---------- 排序 ----------
+function sortRows(arr){
+  return [...arr].sort((a,b)=>{
+    const v1=a[sortKey],v2=b[sortKey];
+    return sortDir==='desc'?v2-v1:v1-v2;
+  });
+}
+
+// ---------- 渲染 ----------
+function render(){
+  const favSet=new Set(favs());
+  const filtered=rows.filter(r=>r.symbol.toLowerCase().includes(filter)||r.sym.toLowerCase().includes(filter));
+  const sorted=sortRows(filtered);
+  const display=[...sorted.filter(x=>favSet.has(x.sym)),...sorted.filter(x=>!favSet.has(x.sym))];
+  tbody.innerHTML=display.map((t,i)=>`
+    <tr data-sym="${t.sym}">
+      <td class="star ${favSet.has(t.sym)?'fav':''}">${favSet.has(t.sym)?'★':'☆'}</td>
+      <td>${i+1}</td>
+      <td><img class="logo" src="${t.icon}" onerror="this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">${t.symbol}</td>
+      <td>${nf2.format(t.price)}</td>
+      <td>${nf0.format(t.vol24h)}</td>
+      <td class="${t.chg>=0?'up':'down'}">${t.chg.toFixed(2)}%</td>
+      <td>${t.todayQV?nf0.format(t.todayQV):'…'}</td>
+      <td>${t.prevQV?nf0.format(t.prevQV):'…'}</td>
+    </tr>`).join('');
+}
+
+// ---------- 手动刷新 ----------
+async function reloadAll(){
+  btnRefresh.disabled=true;
+  progressEl.textContent='0%';
+
+  // 不清空原表，先加载新数据
+  const newRows=await fetchList();
+  await fillQVAll(newRows);          // 百分比在这里更新
+
+  rows=newRows;                      // 替换数据后一次性渲染
+  render();
+  btnRefresh.disabled=false;
+}
+btnRefresh.addEventListener('click',reloadAll);
+
+// 页面加载后自动执行一次
+reloadAll();
+
+// ---------- 交互 ----------
+tbody.addEventListener('click',e=>{
+  const star=e.target.closest('.star');
+  if(star){toggleFav(star.closest('tr').dataset.sym);}
+});
+document.getElementById('search').addEventListener('input',e=>{filter=e.target.value.trim().toLowerCase();render();});
+['thVol24h','thToday','thPrev'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',()=>{
+    const key={thVol24h:'vol24h',thToday:'todayQV',thPrev:'prevQV'}[id];
+    sortDir=(sortKey===key&&sortDir==='desc')?'asc':'desc';sortKey=key;render();
+  });
+});
+</script>
+</body>
+</html>
