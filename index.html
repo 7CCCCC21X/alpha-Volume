@@ -136,7 +136,13 @@ function render(){
     <tr data-sym="${t.sym}">
       <td class="star ${favSet.has(t.sym)?'fav':''}">${favSet.has(t.sym)?'★':'☆'}</td>
       <td>${i+1}</td>
-      <td><img class="logo" src="${t.icon}" onerror="this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">${t.symbol}</td>
+      <td>
+        <img class="logo" loading="lazy"
+             src="${t.icon}"
+             referrerpolicy="no-referrer"
+             onerror="this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">
+        ${t.symbol}
+      </td>
       <td>${nf2.format(t.price)}</td>
       <td>${nf0.format(t.vol24h)}</td>
       <td class="${t.chg>=0?'up':'down'}">${t.chg.toFixed(2)}%</td>
