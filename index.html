@@ -35,8 +35,9 @@ h1{padding:18px 12px;text-align:center;font-size:1.4rem;color:var(--primary)}
 #author{font-size:.8rem}
 #author a{color:var(--primary);text-decoration:none}
 #lastUp{font-size:.8rem;color:var(--sub)}
-.table-wrapper{max-width:1200px;margin:0 auto;overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:620px}
+table{
+  width:100%;max-width:1200px;margin:0 auto;border-collapse:collapse;min-width:620px
+}
 th,td{
   padding:10px 6px;border-bottom:1px solid var(--border);
   font-size:.85rem;text-align:left;white-space:nowrap
@@ -67,10 +68,6 @@ th.sortable.asc::after{content:'▲';opacity:1}
   background:rgba(0,0,0,.8);color:#fff;padding:8px 16px;border-radius:6px;
   font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .3s
 }
-/* ---------- 移动端隐藏次要列 ---------- */
-@media(max-width:500px){
-  .hide-mobile{display:none}
-}
 footer{height:16px;margin-bottom:12px}
 </style>
 </head>
@@ -89,7 +86,6 @@ footer{height:16px;margin-bottom:12px}
   </div>
 </div>
 
-<div class="table-wrapper">
 <table id="tokenTable">
   <thead>
     <tr>
@@ -98,12 +94,11 @@ footer{height:16px;margin-bottom:12px}
       <th id="thVol24h" class="sortable" data-key="vol24h">24H 交易量</th>
       <th>24H 变化</th>
       <th id="thToday" class="sortable" data-key="todayQV">当天限价单成交额</th>
-      <th id="thPrev" class="sortable hide-mobile" data-key="prevQV">前一天限价单成交额</th>
+      <th id="thPrev" class="sortable" data-key="prevQV">前一天限价单成交额</th>
     </tr>
   </thead>
   <tbody><tr><td colspan="8">加载中…</td></tr></tbody>
 </table>
-</div>
 
 <div id="toast"></div>
 <footer></footer>
@@ -125,10 +120,10 @@ const fmtFull=ts=>new Intl.DateTimeFormat('zh-CN',
   hour:'2-digit',minute:'2-digit',second:'2-digit'})
   .format(new Date(ts)).replace(/\//g,'-');
 const nearest8UTC=()=>{
-  const now=new Date(), bound=new Date();
-  bound.setHours(8,0,0,0);
-  if(now<bound) bound.setDate(bound.getDate()-1);
-  return bound.getTime();
+  const now=new Date(), b=new Date();
+  b.setHours(8,0,0,0);
+  if(now<b) b.setDate(b.getDate()-1);
+  return b.getTime();
 };
 
 /* ---------- Toast ---------- */
@@ -140,8 +135,7 @@ function showToast(msg){
 }
 
 /* ---------- 状态 ---------- */
-let rows=[],filter='';
-let sortKey='vol24h',sortDir='desc';
+let rows=[],filter='',sortKey='vol24h',sortDir='desc';
 const tbody=document.querySelector('#tokenTable tbody');
 const btnRefresh=document.getElementById('refreshBtn');
 const progressEl=document.getElementById('progress');
@@ -153,10 +147,7 @@ window._boundary=nearest8UTC();
 /* ---------- 并发限制 ---------- */
 function pLimit(n){
   const q=[];let run=0;
-  const next=()=>{
-    if(run>=n||!q.length)return;
-    run++;q.shift()().finally(()=>{run--;next();});
-  };
+  const next=()=>{if(run>=n||!q.length)return;run++;q.shift()().finally(()=>{run--;next();});};
   return fn=>new Promise(res=>{q.push(()=>fn().then(res));next();});
 }
 const limit=pLimit(CONCURRENCY);
@@ -168,7 +159,7 @@ async function qv(sym,start,end){
   try{
     const {data=[]}=await fetch(url).then(r=>r.json());
     return data.reduce((s,k)=>s+parseFloat(k[7]),0);
-  }catch{ return 0; }
+  }catch{return 0;}
 }
 async function fillQVAll(list,today8,yest8,endTs){
   let done=0,total=list.length;
@@ -233,7 +224,7 @@ function render(){
       <td>${nf0.format(t.vol24h)}</td>
       <td class="${t.chg>=0?'up':'down'}">${t.chg.toFixed(2)}%</td>
       <td>${t.todayQV?nf0.format(t.todayQV):'…'}</td>
-      <td class="hide-mobile">${t.prevQV?nf0.format(t.prevQV):'…'}</td>
+      <td>${t.prevQV?nf0.format(t.prevQV):'…'}</td>
     </tr>`).join('');
   updateSortIcons();
 }
@@ -242,7 +233,7 @@ function render(){
 async function reloadAll(){
   btnRefresh.disabled=true;progressEl.textContent='0%';
   const today8=nearest8UTC(), yest8=today8-864e5;
-  const endTs=Date.now();                 // 直接使用当前时间
+  const endTs=Date.now();
   thToday.innerHTML=`当天限价单成交额<span class="subl">(${fmtShort(today8)} ~ ${fmtShort(endTs)})</span>`;
   thPrev.innerHTML=`前一天限价单成交额<span class="subl">(${fmtShort(yest8)} ~ ${fmtShort(today8-1)})</span>`;
   try{
@@ -289,9 +280,7 @@ document.addEventListener('visibilitychange',()=>{
     reloadAll();
   }
 });
-setInterval(()=>{    // 5分钟自动刷新
-  if(document.visibilityState==='visible') reloadAll();
-},300000);
+setInterval(()=>{if(document.visibilityState==='visible') reloadAll();},300000);
 
 /* ---------- 初次加载 ---------- */
 reloadAll();
