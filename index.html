@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Alpha Token Volume Board</title>
 
-<!-- ↓↓↓ Vercel Web Analytics（放在头部即可） ↓↓↓ -->
+<!-- ↓↓↓ Vercel Web Analytics ↓↓↓ -->
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
-<!-- ↑↑↑ Vercel Web Analytics ↑↑↑ -->
+<!-- ↑↑↑ Vercel Web Analytics ↑↑↑ -->
 
 <style>
 :root{
@@ -25,24 +25,37 @@ body{
   font-family:-apple-system,"Segoe UI","PingFang SC",sans-serif;
   background:var(--bg);color:var(--text);line-height:1.5
 }
-h1{padding:18px 12px;text-align:center;font-size:1.4rem;color:var(--primary)}
+h1{padding:18px 12px;text-align:center;font-size:1.35rem;color:var(--primary)}
+/* 新增：最后更新时间样式 */
+.last-up{
+  text-align:center;font-size:.8rem;color:var(--sub);margin-top:-6px;margin-bottom:12px
+}
+/* ---------- 顶栏 ---------- */
 #bar{
-  max-width:1200px;margin:0 auto 12px;display:flex;gap:8px;align-items:center;
-  justify-content:space-between;padding:0 6px
+  max-width:1200px;margin:0 auto 12px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  padding:0 6px
 }
-#bar-left{flex:1;display:flex;gap:8px;align-items:center}
-#bar input{
-  flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.85rem
+#bar-left{flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#bar-left input[type="search"]{flex:1;min-width:160px}
+#bar-left input[type="text"]{width:120px}
+#bar-left input[type="datetime-local"]{width:190px}
+#bar-left input{
+  padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.85rem
 }
-#bar button{
-  padding:6px 12px;font-size:.85rem;border:1px solid var(--border);border-radius:4px;
-  background:var(--primary);color:#fff;cursor:pointer
+.btn{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:6px 12px;font-size:.85rem;border:1px solid var(--primary);
+  color:#fff;background:var(--primary);border-radius:4px;cursor:pointer
 }
-#bar button:disabled{background:#9ca3af;cursor:not-allowed}
-#bar span{font-size:.8rem;color:var(--sub)}
-#author{font-size:.8rem}
+.btn[disabled]{background:#9ca3af;border-color:#9ca3af;cursor:not-allowed}
+.badge{
+  display:none;padding:0 6px;border-radius:10px;font-size:.7rem;font-weight:700;
+  background:#fff;color:var(--primary)
+}
+#author{font-size:.8rem;white-space:nowrap}
 #author a{color:var(--primary);text-decoration:none}
-#lastUp{font-size:.8rem;color:var(--sub)}
+/* ---------- 表格 ---------- */
 table{
   width:100%;max-width:1200px;margin:0 auto;border-collapse:collapse;min-width:620px
 }
@@ -51,48 +64,58 @@ th,td{
   font-size:.85rem;text-align:left;white-space:nowrap
 }
 tbody tr:hover{background:rgba(0,0,0,.04);cursor:pointer}
-/* ---------- 排序 ---------- */
 th.sortable{cursor:pointer;user-select:none;position:relative}
 th.sortable::after{
-  content:'▲';position:absolute;right:4px;font-size:.6rem;color:var(--sub);transform:scale(.8);
-  opacity:.0;transition:opacity .2s
+  content:'▲';position:absolute;right:4px;font-size:.6rem;color:var(--sub);
+  transform:scale(.8);opacity:0;transition:opacity .2s
 }
 th.sortable.desc::after{content:'▼';opacity:1}
 th.sortable.asc::after{content:'▲';opacity:1}
-/* ---------- Star ---------- */
-.star{
-  cursor:pointer;font-size:1rem;color:var(--sub);user-select:none;
-  transition:transform .15s,color .15s
-}
-.star.fav{color:#f7b500}
-.star.bounce{transform:scale(1.4)}
-/* ---------- Icons & 数字色 ---------- */
+/* Star */
+.star{cursor:pointer;font-size:1rem;color:var(--sub);user-select:none;transition:transform .15s,color .15s}
+.star.fav{color:#f7b500}.star.bounce{transform:scale(1.4)}
+/* 颜色 & 小字 */
 .logo{width:18px;height:18px;margin-right:4px;vertical-align:middle;border-radius:50%}
 .up{color:var(--green)}.down{color:var(--red)}
 .subl{display:block;font-size:.72rem;color:var(--sub)}
-/* ---------- Toast ---------- */
+/* Toast */
 #toast{
   position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
   background:rgba(0,0,0,.8);color:#fff;padding:8px 16px;border-radius:6px;
   font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .3s
 }
+/* 自定义区间结果 */
+#customVol{max-width:1200px;margin:4px auto 0;font-size:.9rem;color:var(--primary)}
 footer{height:16px;margin-bottom:12px}
+@media(max-width:760px){
+  #bar-left input[type="datetime-local"]{flex:1;min-width:140px}
+}
 </style>
 </head>
 <body>
 <h1>Binance Alpha — 24H 交易量排行榜</h1>
+<!-- 新增：居中显示更新时间 -->
+<p id="lastUp" class="last-up"></p>
 
 <div id="bar">
   <div id="bar-left">
     <input id="search" type="search" placeholder="🔍 按代币名称 / 符号过滤…">
-    <button id="refreshBtn">⟳ 刷新数据</button>
-    <span id="progress"></span>
+    <button id="refreshBtn" class="btn">
+      ⟳ 刷新数据 <span id="progress" class="badge">0%</span>
+    </button>
+
+    <input id="tokenInput" type="text" placeholder="输入代币名称">
+    <input id="startTime" type="datetime-local">
+    <input id="endTime"  type="datetime-local">
+    <button id="rangeBtn" class="btn">区间查询</button>
   </div>
+
   <div id="author">
-    <span id="lastUp"></span>　
     作者 <a href="https://twitter.com/0xXIAOc" target="_blank">@0xXIAOc</a>
   </div>
 </div>
+
+<div id="customVol"></div>
 
 <table id="tokenTable">
   <thead>
@@ -102,7 +125,7 @@ footer{height:16px;margin-bottom:12px}
       <th id="thVol24h" class="sortable" data-key="vol24h">24H 交易量</th>
       <th>24H 变化</th>
       <th id="thToday" class="sortable" data-key="todayQV">当天限价单成交额</th>
-      <th id="thPrev" class="sortable" data-key="prevQV">前一天限价单成交额</th>
+      <th id="thPrev"  class="sortable" data-key="prevQV">前一天限价单成交额</th>
     </tr>
   </thead>
   <tbody><tr><td colspan="8">加载中…</td></tr></tbody>
@@ -112,14 +135,12 @@ footer{height:16px;margin-bottom:12px}
 <footer></footer>
 
 <script>
-/* ---------- 常量 ---------- */
+/* ---------- 常量 & 工具 ---------- */
 const LIST_API='https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list';
 const K_API  ='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines';
 const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
 const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const FAV_KEY='alphaFavs',CONCURRENCY=5;
-
-/* ---------- 工具 ---------- */
 const fmtShort=ts=>new Intl.DateTimeFormat('zh-CN',
   {timeZone:'Asia/Shanghai',hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})
   .format(new Date(ts)).replace(/\//g,'-');
@@ -127,29 +148,30 @@ const fmtFull=ts=>new Intl.DateTimeFormat('zh-CN',
   {timeZone:'Asia/Shanghai',hour12:false,year:'numeric',month:'2-digit',day:'2-digit',
   hour:'2-digit',minute:'2-digit',second:'2-digit'})
   .format(new Date(ts)).replace(/\//g,'-');
-const nearest8UTC=()=>{
-  const now=new Date(), b=new Date();
-  b.setHours(8,0,0,0);
-  if(now<b) b.setDate(b.getDate()-1);
-  return b.getTime();
-};
+const nearest8UTC=()=>{const n=new Date(),b=new Date();b.setHours(8,0,0,0);if(n<b)b.setDate(b.getDate()-1);return b.getTime();};
+
+/* ---------- DOM ---------- */
+const tbody=document.querySelector('#tokenTable tbody');
+const refreshBtn=document.getElementById('refreshBtn');
+const progressEl=document.getElementById('progress');
+const lastUpEl=document.getElementById('lastUp');
+const thToday=document.getElementById('thToday');
+const thPrev =document.getElementById('thPrev');
+const toast  =document.getElementById('toast');
+const tokenEl=document.getElementById('tokenInput');
+const startEl=document.getElementById('startTime');
+const endEl  =document.getElementById('endTime');
+const rangeBtn=document.getElementById('rangeBtn');
+const customVolEl=document.getElementById('customVol');
 
 /* ---------- Toast ---------- */
-const toast=document.getElementById('toast');
 function showToast(msg){
-  toast.textContent=msg;
-  toast.style.opacity='1';
+  toast.textContent=msg;toast.style.opacity='1';
   setTimeout(()=>toast.style.opacity='0',3000);
 }
 
 /* ---------- 状态 ---------- */
 let rows=[],filter='',sortKey='vol24h',sortDir='desc';
-const tbody=document.querySelector('#tokenTable tbody');
-const btnRefresh=document.getElementById('refreshBtn');
-const progressEl=document.getElementById('progress');
-const lastUpEl=document.getElementById('lastUp');
-const thToday=document.getElementById('thToday');
-const thPrev=document.getElementById('thPrev');
 window._boundary=nearest8UTC();
 
 /* ---------- 并发限制 ---------- */
@@ -160,9 +182,9 @@ function pLimit(n){
 }
 const limit=pLimit(CONCURRENCY);
 
-/* ---------- QuoteVolume ---------- */
+/* ---------- Quote Volume ---------- */
 async function qv(sym,start,end){
-  if(start>=end) return 0;
+  if(start>=end)return 0;
   const url=`${K_API}?symbol=${sym}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
   try{
     const {data=[]}=await fetch(url).then(r=>r.json());
@@ -171,7 +193,7 @@ async function qv(sym,start,end){
 }
 async function fillQVAll(list,today8,yest8,endTs){
   let done=0,total=list.length;
-  progressEl.textContent='0%';
+  progressEl.style.display='inline-block';
   await Promise.all(list.map(r=>limit(async()=>{
     [r.todayQV,r.prevQV]=await Promise.all([
       qv(r.sym,today8,endTs),
@@ -179,7 +201,7 @@ async function fillQVAll(list,today8,yest8,endTs){
     ]);
     progressEl.textContent=`${Math.floor(++done/total*100)}%`;
   })));
-  progressEl.textContent='';
+  progressEl.style.display='none';
 }
 
 /* ---------- 收藏 ---------- */
@@ -192,10 +214,10 @@ function toggleFav(sym){
   render();
 }
 
-/* ---------- 数据 ---------- */
+/* ---------- 拉取列表 ---------- */
 async function fetchList(){
   const resp=await fetch(LIST_API);
-  if(!resp.ok) throw new Error('LIST_API Error');
+  if(!resp.ok)throw new Error('LIST_API Error');
   const {data=[]}=await resp.json();
   return data.filter(t=>+t.volume24h>0).map(t=>({
     price:+t.price,vol24h:+t.volume24h,chg:+t.percentChange24h,
@@ -205,16 +227,11 @@ async function fetchList(){
 }
 
 /* ---------- 排序 & 渲染 ---------- */
-function sortRows(arr){
-  return [...arr].sort((a,b)=>{
-    const v1=a[sortKey],v2=b[sortKey];
-    return sortDir==='desc'?v2-v1:v1-v2;
-  });
-}
+function sortRows(arr){return [...arr].sort((a,b)=>sortDir==='desc'?b[sortKey]-a[sortKey]:a[sortKey]-b[sortKey]);}
 function updateSortIcons(){
   document.querySelectorAll('th.sortable').forEach(th=>{
     th.classList.remove('asc','desc');
-    if(th.dataset.key===sortKey) th.classList.add(sortDir);
+    if(th.dataset.key===sortKey)th.classList.add(sortDir);
   });
 }
 function render(){
@@ -237,60 +254,73 @@ function render(){
   updateSortIcons();
 }
 
-/* ---------- 刷新 ---------- */
+/* ---------- 刷新数据 ---------- */
 async function reloadAll(){
-  btnRefresh.disabled=true;progressEl.textContent='0%';
-  const today8=nearest8UTC(), yest8=today8-864e5;
-  const endTs=Date.now();
+  refreshBtn.disabled=true;progressEl.textContent='0%';
+  const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
   thToday.innerHTML=`当天限价单成交额<span class="subl">(${fmtShort(today8)} ~ ${fmtShort(endTs)})</span>`;
   thPrev.innerHTML=`前一天限价单成交额<span class="subl">(${fmtShort(yest8)} ~ ${fmtShort(today8-1)})</span>`;
   try{
     rows=await fetchList();
     await fillQVAll(rows,today8,yest8,endTs);
     render();
-    lastUpEl.textContent=`最后更新时间：${fmtFull(Date.now())}`;
+    lastUpEl.textContent=`最后更新时间： ${fmtFull(Date.now())}`;
     window._boundary=today8;
-  }catch(err){
-    console.error(err);
+  }catch(e){
+    console.error(e);
     tbody.innerHTML='<tr><td colspan="8">加载失败…</td></tr>';
     showToast('加载失败，请稍后重试');
   }finally{
-    btnRefresh.disabled=false;
+    refreshBtn.disabled=false;
   }
 }
 
-/* ---------- 事件 ---------- */
-btnRefresh.addEventListener('click',reloadAll);
-tbody.addEventListener('click',e=>{
-  const star=e.target.closest('.star');
-  if(star){
-    star.classList.add('bounce');
-    setTimeout(()=>star.classList.remove('bounce'),150);
-    toggleFav(star.closest('tr').dataset.sym);
+/* ---------- 自定义区间查询 ---------- */
+(function initDateInputs(){
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const toLocal=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  startEl.value=toLocal(new Date(nearest8UTC()));
+  endEl.value  =toLocal(now);
+})();
+rangeBtn.addEventListener('click',async()=>{
+  const sym=tokenEl.value.trim();
+  if(!sym){showToast('请输入代币符号');return;}
+  let row=rows.find(r=>r.symbol.toLowerCase()===sym.toLowerCase()||r.sym.toLowerCase()===sym.toLowerCase());
+  if(!row){
+    const m=sym.match(/_(\d+)/);if(m)row={sym:`${m[1]}USDT`,symbol:sym};
   }
+  if(!row){showToast('未找到该代币');return;}
+  const st=new Date(startEl.value).getTime(),et=new Date(endEl.value).getTime();
+  if(!st||!et||st>=et){showToast('时间范围不合法');return;}
+  rangeBtn.disabled=true;progressEl.textContent='查询…';progressEl.style.display='inline-block';
+  const vol=await qv(row.sym,st,et);
+  rangeBtn.disabled=false;progressEl.style.display='none';
+  customVolEl.innerHTML=`<strong>${row.symbol||sym}</strong> 在&nbsp;<span>${fmtFull(st)}</span> ~ <span>${fmtFull(et)}</span> 的限价单成交额：<strong>${nf0.format(vol)}</strong>`;
 });
+
+/* ---------- 其它事件 ---------- */
 document.getElementById('search').addEventListener('input',e=>{
-  filter=e.target.value.trim().toLowerCase();
-  render();
+  filter=e.target.value.trim().toLowerCase();render();
+});
+tbody.addEventListener('click',e=>{
+  const s=e.target.closest('.star');
+  if(s){s.classList.add('bounce');setTimeout(()=>s.classList.remove('bounce'),150);toggleFav(s.closest('tr').dataset.sym);}
 });
 document.querySelectorAll('th.sortable').forEach(th=>{
   th.addEventListener('click',()=>{
     const key=th.dataset.key;
-    sortDir=(sortKey===key&&sortDir==='desc')?'asc':'desc';
-    sortKey=key;
-    render();
+    sortDir=(sortKey===key&&sortDir==='desc')?'asc':'desc';sortKey=key;render();
   });
 });
 
-/* ---------- 自动与可见性刷新 ---------- */
+/* ---------- 自刷新 ---------- */
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&nearest8UTC()!==window._boundary){
-    reloadAll();
-  }
+  if(document.visibilityState==='visible'&&nearest8UTC()!==window._boundary)reloadAll();
 });
-setInterval(()=>{if(document.visibilityState==='visible') reloadAll();},300000);
+setInterval(()=>{if(document.visibilityState==='visible')reloadAll();},300000);
 
-/* ---------- 初次加载 ---------- */
+/* ---------- 首次加载 ---------- */
 reloadAll();
 </script>
 </body>
