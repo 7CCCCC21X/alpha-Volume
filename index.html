@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Alpha Token Volume Board</title>
+<title>Alpha Token Volume Board</title>
 
 <!-- ↓↓↓ Vercel Web Analytics ↓↓↓ -->
 <script>
@@ -22,7 +22,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{
-  font-family:-apple-system,"Segoe UI","PingFang SC",sans-serif;
+  font-family:-apple-system,"Segoe UI","PingFang SC",sans-serif;
   background:var(--bg);color:var(--text);line-height:1.5
 }
 h1{padding:18px 12px;text-align:center;font-size:1.35rem;color:var(--primary)}
@@ -313,6 +313,9 @@ document.querySelectorAll('th.sortable').forEach(th=>{
     sortDir=(sortKey===key&&sortDir==='desc')?'asc':'desc';sortKey=key;render();
   });
 });
+
+/* ★ 绑定刷新按钮 */
+refreshBtn.addEventListener('click', reloadAll);
 
 /* ---------- 自刷新 ---------- */
 document.addEventListener('visibilitychange',()=>{
