@@ -72,6 +72,15 @@
     .ad-links{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
     .ad .btn{padding:6px 10px}
 
+    /* ✅ 新增：Telegram 徽章 */
+    .tg-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:.75rem;padding:2px 8px;border-radius:10px;
+      color:#fff;background:#229ED9;text-decoration:none;line-height:1.6
+    }
+    .tg-badge:hover{opacity:.9}
+    .tg-badge .icon{font-size:.9rem;line-height:1}
+
     /* ---------- 表格 ---------- */
     table{ width:100%;max-width:1200px;margin:0 auto;border-collapse:collapse;min-width:620px }
     th,td{
@@ -140,10 +149,16 @@
     <div id="author"> 作者&nbsp;<a href="https://twitter.com/0xXIAOc" target="_blank">@0xXIAOc</a> </div>
   </div>
 
-  <!-- 新增：广告位（表格上方，弱化样式） -->
+  <!-- 广告位（已在旁边加入 Telegram 徽章） -->
   <div class="ad">
     <span class="ad-badge">广告</span>
     <span class="ad-note">佣金全返</span>
+
+    <!-- ✅ 新增：Telegram 徽章链接 -->
+    <a class="tg-badge" href="https://t.me/+lKbtX0zMcAVjYjMx" target="_blank" rel="noopener noreferrer" aria-label="加入 Telegram 频道" title="加入 Telegram 频道">
+      <span class="icon">✈️</span> Telegram
+    </a>
+
     <div class="ad-links">
       <a class="btn" href="https://web3.binance.com/referral?ref=IIWHBK2V" target="_blank" rel="noopener noreferrer">币安钱包注册</a>
       <a class="btn" href="https://web3.okx.com/ul/joindex?ref=XIAOCC" target="_blank" rel="noopener noreferrer">OKX 钱包注册</a>
