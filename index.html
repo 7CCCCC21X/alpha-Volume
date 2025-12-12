@@ -72,7 +72,7 @@
     .ad-links{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
     .ad .btn{padding:6px 10px}
 
-    /* ✅ 新增：Telegram 徽章 */
+    /* ✅ Telegram 徽章 */
     .tg-badge{
       display:inline-flex;align-items:center;gap:6px;
       font-size:.75rem;padding:2px 8px;border-radius:10px;
@@ -105,7 +105,7 @@
     .up{color:var(--green)}.down{color:var(--red)}
     .subl{display:block;font-size:.72rem;color:var(--sub)}
 
-    /* ✅ 已有：30天内上新标记，继续复用但显示剩余天数 */
+    /* ✅ 30天内上新标记 */
     .tag-new{
       display:inline-block;margin-left:6px;padding:0 6px;border-radius:10px;
       font-size:.68rem;line-height:1.4;border:1px solid var(--primary);
@@ -127,6 +127,102 @@
       #bar-left input[type="datetime-local"]{flex:1;min-width:140px}
       .ad-links{width:100%;justify-content:flex-start;margin-left:0}
     }
+
+    /* =========================================================
+       ✅ 仅优化广告位 ad-links 里的注册链接按钮 + 引导提示（不影响顶部按钮）
+       ========================================================= */
+    .ad-links{gap:10px;align-items:center; position:relative; padding-bottom:18px;}
+
+    /* 覆盖广告区按钮尺寸与圆角 */
+    .ad-links .btn{
+      padding:9px 14px;
+      border-radius:12px;
+      font-weight:800;
+      line-height:1.2;
+      text-decoration:none;
+      transition:transform .15s, box-shadow .15s, background .2s, color .2s, border-color .2s;
+      white-space:nowrap;
+    }
+    .ad-links .btn:hover{
+      transform:translateY(-1px);
+      box-shadow:0 10px 22px rgba(0,0,0,.12);
+    }
+
+    /* ✅ 币安按钮：背景改成跟 OKX 一样（透明描边） + 推荐角标 */
+    .ad-links .btn-main{
+      background:transparent !important;
+      border-color:var(--primary) !important;
+      color:var(--primary) !important;
+      position:relative;
+    }
+    .ad-links .btn-main:hover{
+      background:rgba(37,99,235,.10) !important;
+    }
+    .ad-links .btn-main::after{
+      content:"推荐";
+      position:absolute;
+      top:-8px; right:-8px;
+      font-size:.68rem;
+      padding:2px 6px;
+      border-radius:999px;
+      background:#f59e0b;
+      color:#fff;
+      box-shadow:0 8px 18px rgba(0,0,0,.16);
+    }
+
+    /* ✅ OKX 按钮：透明描边 + 推荐角标 */
+    .ad-links .btn-ghost{
+      background:transparent !important;
+      border-color:var(--primary) !important;
+      color:var(--primary) !important;
+      position:relative;
+    }
+    .ad-links .btn-ghost:hover{
+      background:rgba(37,99,235,.10) !important;
+    }
+    .ad-links .btn-ghost::after{
+      content:"推荐";
+      position:absolute;
+      top:-8px; right:-8px;
+      font-size:.68rem;
+      padding:2px 6px;
+      border-radius:999px;
+      background:#f59e0b;
+      color:#fff;
+      box-shadow:0 8px 18px rgba(0,0,0,.16);
+    }
+
+    /* ✅ 引导标志：点击注册提醒（桌面端显示在按钮下方） */
+    @keyframes hintNudge{
+      0%,100%{ transform:translateX(-50%) translateY(0); }
+      50%{ transform:translateX(-50%) translateY(-2px); }
+    }
+    .ad-links::after{
+      content:"👆 点击上方按钮注册";
+      position:absolute;
+      left:50%;
+      bottom:0;
+      transform:translateX(-50%);
+      font-size:.72rem;
+      color:var(--sub);
+      white-space:nowrap;
+      pointer-events:none;
+      opacity:.9;
+      animation:hintNudge 1.4s ease-in-out 6;
+    }
+
+    /* 手机端：提示改为正常占位，避免绝对定位挤压布局 */
+    @media(max-width:760px){
+      .ad-links{ padding-bottom:0; }
+      .ad-links::after{
+        position:static;
+        display:block;
+        transform:none;
+        animation:none;
+        margin-top:6px;
+        text-align:left;
+      }
+    }
   </style>
 </head>
 <body>
@@ -138,7 +234,6 @@
       <input id="search" type="search" placeholder="🔍 按代币名称 / 符号过滤…">
       <button id="refreshBtn" class="btn"> ⟳ 刷新数据 <span id="progress" class="badge">0%</span> </button>
 
-      <!-- ✅ 已有：仅看30天内上新（逻辑已完善） -->
       <label class="chk"><input id="onlyNew" type="checkbox"> 仅看30天内上新</label>
 
       <input id="tokenInput" type="text" placeholder="输入代币名称">
@@ -149,19 +244,22 @@
     <div id="author"> 作者&nbsp;<a href="https://twitter.com/0xXIAOc" target="_blank">@0xXIAOc</a> </div>
   </div>
 
-  <!-- 广告位（已在旁边加入 Telegram 徽章） -->
+  <!-- 广告位 -->
   <div class="ad">
     <span class="ad-badge">广告</span>
-    <span class="ad-note">手续费全返</span>
+    <span class="ad-note"></span>
 
-    <!-- ✅ 新增：Telegram 徽章链接 -->
-    <a class="tg-badge" href="https://t.me/+lKbtX0zMcAVjYjMx" target="_blank" rel="noopener noreferrer" aria-label="加入 Telegram 频道" title="加入 Telegram 频道">
-      <span class="icon">✈️</span> Telegram
+    <a class="tg-badge" href="https://t.me/+lKbtX0zMcAVjYjMx" target="_blank" rel="noopener noreferrer" aria-label="加入Alpha交流群" title="加入 Telegram 频道">
+      <span class="icon">✈️</span> 加入Alpha交流群
     </a>
 
     <div class="ad-links">
-      <a class="btn" href="https://web3.binance.com/referral?ref=IIWHBK2V" target="_blank" rel="noopener noreferrer">币安钱包注册</a>
-      <a class="btn" href="https://web3.okx.com/ul/joindex?ref=XIAOCC" target="_blank" rel="noopener noreferrer">OKX 钱包注册</a>
+      <a class="btn btn-main" href="https://web3.binance.com/referral?ref=XIAOCC" target="_blank" rel="noopener noreferrer">
+        币安钱包注册｜手续费7折
+      </a>
+      <a class="btn btn-ghost" href="https://web3.okx.com/ul/joindex?ref=XIAOCC" target="_blank" rel="noopener noreferrer">
+        OKX 钱包注册｜手续费8折
+      </a>
     </div>
   </div>
 
@@ -211,7 +309,6 @@
       return b.getTime();
     };
 
-    /* ✅ 新增：计算 30 天窗口的剩余天数（向上取整；过期返回 0） */
     const daysLeft = (listingMs)=>{
       if(!listingMs) return 0;
       const delta = THIRTY_DAYS - (Date.now() - listingMs);
@@ -233,17 +330,14 @@
     const customVolEl=document.getElementById('customVol');
     const onlyNewEl=document.getElementById('onlyNew');
 
-    /* ---------- Toast ---------- */
     function showToast(msg){
       toast.textContent=msg;toast.style.opacity='1';
       setTimeout(()=>toast.style.opacity='0',3000);
     }
 
-    /* ---------- 状态 ---------- */
     let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false;
     window._boundary=nearest8UTC();
 
-    /* ---------- 并发限制 ---------- */
     function pLimit(n){
       const q=[];let run=0;
       const next=()=>{if(run>=n||!q.length)return;run++;q.shift()().finally(()=>{run--;next();});};
@@ -251,7 +345,6 @@
     }
     const limit=pLimit(CONCURRENCY);
 
-    /* ---------- Quote Volume ---------- */
     async function qv(sym,start,end){
       if(start>=end)return 0;
       const url=`${K_API}?symbol=${sym}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
@@ -274,7 +367,6 @@
       progressEl.style.display='none';
     }
 
-    /* ---------- 收藏 ---------- */
     const favs=()=>JSON.parse(localStorage.getItem(FAV_KEY)||'[]');
     function toggleFav(sym){
       const f=favs();const i=f.indexOf(sym);
@@ -284,7 +376,6 @@
       render();
     }
 
-    /* ---------- 拉取列表（解析 listingTime 并标记30天内上新 + 计算剩余天数） ---------- */
     async function fetchList(){
       const resp=await fetch(LIST_API);
       if(!resp.ok)throw new Error('LIST_API Error');
@@ -293,11 +384,8 @@
       return data
         .filter(t=>+t.volume24h>0)
         .map(t=>{
-          // 兼容秒/毫秒时间戳
           const raw = Number(t.listingTime || 0);
           const ltMs = raw ? (raw < 1e12 ? raw*1000 : raw) : 0;
-
-          /* ✅ 修正：用 “小于 30 天” 判定是否上新 */
           const isNew = ltMs ? (Date.now() - ltMs) < THIRTY_DAYS : false;
 
           return {
@@ -316,7 +404,6 @@
         });
     }
 
-    /* ---------- 排序 & 渲染 ---------- */
     function sortRows(arr){
       return [...arr].sort((a,b)=>sortDir==='desc'?b[sortKey]-a[sortKey]:a[sortKey]-b[sortKey]);
     }
@@ -338,7 +425,6 @@
       const display=[...sorted.filter(x=>favSet.has(x.sym)),...sorted.filter(x=>!favSet.has(x.sym))];
 
       tbody.innerHTML=display.map((t,i)=>{
-        /* ✅ 新增：计算剩余天数（仅新币显示） */
         const left = t.isNew && t.listingTime ? daysLeft(t.listingTime) : 0;
 
         return `
@@ -362,7 +448,6 @@
       updateSortIcons();
     }
 
-    /* ---------- 刷新数据 ---------- */
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
@@ -385,7 +470,6 @@
       }
     }
 
-    /* ---------- 自定义区间查询 ---------- */
     (function initDateInputs(){
       const now=new Date();
       const pad=n=>String(n).padStart(2,'0');
@@ -414,7 +498,6 @@
       customVolEl.innerHTML=`<strong>${row.symbol||sym}</strong> 在&nbsp;<span>${fmtFull(st)}</span> ~ <span>${fmtFull(et)}</span> 的限价单成交额：<strong>${nf0.format(vol)}</strong>`;
     });
 
-    /* ---------- 其它事件 ---------- */
     document.getElementById('search').addEventListener('input',e=>{
       filter=e.target.value.trim().toLowerCase();render();
     });
@@ -431,22 +514,18 @@
       });
     });
 
-    // ✅ 仅看30天内上新开关（与新逻辑一致）
     onlyNewEl.addEventListener('change', (e)=>{
       showNewOnly = e.target.checked;
       render();
     });
 
-    /* ★ 绑定刷新按钮 */
     refreshBtn.addEventListener('click', reloadAll);
 
-    /* ---------- 自刷新 ---------- */
     document.addEventListener('visibilitychange',()=>{
       if(document.visibilityState==='visible'&&nearest8UTC()!==window._boundary)reloadAll();
     });
     setInterval(()=>{if(document.visibilityState==='visible')reloadAll();},300000);
 
-    /* ---------- 首次加载 ---------- */
     reloadAll();
   </script>
 </body>
