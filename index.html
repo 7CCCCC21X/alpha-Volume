@@ -290,7 +290,7 @@
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     const FAV_KEY='alphaFavs',CONCURRENCY=5;
 
-    /* ✅ 修正：严格 30 天（毫秒） */
+    /* ✅ 严格 30 天（毫秒） */
     const THIRTY_DAYS = 29*24*60*60*1000;
 
     const fmtShort=ts=>new Intl.DateTimeFormat('zh-CN', {
@@ -345,13 +345,45 @@
     }
     const limit=pLimit(CONCURRENCY);
 
-    async function qv(sym,start,end){
-      if(start>=end)return 0;
-      const url=`${K_API}?symbol=${sym}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
+    // ------------------------------
+    // ✅ K线成交额：优先 USDT，失败自动 fallback 到 USDC
+    // ------------------------------
+    async function qvOk(sym, start, end){
+      if(start>=end) return { ok:true, vol:0 };
+      const url=`${K_API}?symbol=${encodeURIComponent(sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
       try{
-        const {data=[]}=await fetch(url).then(r=>r.json());
-        return data.reduce((s,k)=>s+parseFloat(k[7]),0);
-      }catch{return 0;}
+        const json=await fetch(url).then(r=>r.json());
+
+        const ok =
+          (json?.success !== false) &&
+          (json?.code == null || ['000000','0'].includes(String(json.code)));
+
+        if(!ok) return { ok:false, vol:0 };
+
+        const data=json?.data;
+        if(!Array.isArray(data)) return { ok:false, vol:0 };
+
+        const vol=data.reduce((s,k)=>s+parseFloat(k?.[7]||0),0);
+        return { ok:true, vol };
+      }catch{
+        return { ok:false, vol:0 };
+      }
+    }
+
+    async function qvAuto(row, start, end){
+      const primary = row.qSym || row.sym; // row.sym 默认是 `${alphaId}USDT`
+      let res = await qvOk(primary, start, end);
+      if(res.ok) return res.vol;
+
+      const alt = row.symUSDC || (row.sym && row.sym.endsWith('USDT') ? row.sym.replace(/USDT$/,'USDC') : '');
+      if(!alt || alt===primary) return 0;
+
+      res = await qvOk(alt, start, end);
+      if(res.ok){
+        row.qSym = alt; // 缓存实际可用交易对
+        return res.vol;
+      }
+      return 0;
     }
 
     async function fillQVAll(list,today8,yest8,endTs){
@@ -359,8 +391,8 @@
       progressEl.style.display='inline-block';
       await Promise.all(list.map(r=>limit(async()=>{
         [r.todayQV,r.prevQV]=await Promise.all([
-          qv(r.sym,today8,endTs),
-          qv(r.sym,yest8,today8-1)
+          qvAuto(r,today8,endTs),
+          qvAuto(r,yest8,today8-1)
         ]);
         progressEl.textContent=`${Math.floor(++done/total*100)}%`;
       })));
@@ -394,9 +426,18 @@
             chg:+t.percentChange24h,
             symbol:t.symbol,
             icon:t.iconUrl,
+
+            // ✅ 默认仍用 USDT 作为“身份 key”（收藏等不受影响）
             sym:`${t.alphaId}USDT`,
-            todayQV:0,
-            prevQV:0,
+            // ✅ USDC 备选交易对
+            symUSDC:`${t.alphaId}USDC`,
+            // ✅ 缓存：实际能用的交易对（USDT/USDC）
+            qSym:null,
+
+            // ✅ null 表示“还在加载”；0 才是真正的 0
+            todayQV:null,
+            prevQV:null,
+
             listingTime: ltMs,
             listingTimeFmt: ltMs ? fmtFull(ltMs) : '',
             isNew
@@ -405,7 +446,8 @@
     }
 
     function sortRows(arr){
-      return [...arr].sort((a,b)=>sortDir==='desc'?b[sortKey]-a[sortKey]:a[sortKey]-b[sortKey]);
+      const gv = o => (o[sortKey]==null ? 0 : o[sortKey]);
+      return [...arr].sort((a,b)=>sortDir==='desc'?gv(b)-gv(a):gv(a)-gv(b));
     }
     function updateSortIcons(){
       document.querySelectorAll('th.sortable').forEach(th=>{
@@ -417,10 +459,17 @@
     function render(){
       const favSet=new Set(favs());
       const filtered=rows.filter(r=>{
-        const matched = r.symbol.toLowerCase().includes(filter)||r.sym.toLowerCase().includes(filter);
+        const f = filter;
+        const matched =
+          r.symbol.toLowerCase().includes(f) ||
+          (r.sym||'').toLowerCase().includes(f) ||
+          (r.symUSDC||'').toLowerCase().includes(f) ||
+          (r.qSym||'').toLowerCase().includes(f);
+
         const newOk = !showNewOnly || r.isNew;
         return matched && newOk;
       });
+
       const sorted=sortRows(filtered);
       const display=[...sorted.filter(x=>favSet.has(x.sym)),...sorted.filter(x=>!favSet.has(x.sym))];
 
@@ -440,8 +489,8 @@
           <td>${nf2.format(t.price)}</td>
           <td>${nf0.format(t.vol24h)}</td>
           <td class="${t.chg>=0?'up':'down'}">${t.chg.toFixed(2)}%</td>
-          <td>${t.todayQV?nf0.format(t.todayQV):'…'}</td>
-          <td>${t.prevQV?nf0.format(t.prevQV):'…'}</td>
+          <td>${t.todayQV==null ? '…' : nf0.format(t.todayQV)}</td>
+          <td>${t.prevQV==null  ? '…' : nf0.format(t.prevQV)}</td>
         </tr>
       `;
       }).join('');
@@ -482,10 +531,21 @@
       const sym=tokenEl.value.trim();
       if(!sym){showToast('请输入代币符号');return;}
 
-      let row=rows.find(r=>r.symbol.toLowerCase()===sym.toLowerCase()||r.sym.toLowerCase()===sym.toLowerCase());
+      let row=rows.find(r=>
+        r.symbol.toLowerCase()===sym.toLowerCase() ||
+        (r.sym && r.sym.toLowerCase()===sym.toLowerCase()) ||
+        (r.symUSDC && r.symUSDC.toLowerCase()===sym.toLowerCase()) ||
+        (r.qSym && r.qSym.toLowerCase()===sym.toLowerCase())
+      );
+
       if(!row){
         const m=sym.match(/_(\d+)/);
-        if(m)row={sym:`${m[1]}USDT`,symbol:sym};
+        if(m) row={
+          sym:`${m[1]}USDT`,
+          symUSDC:`${m[1]}USDC`,
+          qSym:null,
+          symbol:sym
+        };
       }
       if(!row){showToast('未找到该代币');return;}
 
@@ -493,7 +553,7 @@
       if(!st||!et||st>=et){showToast('时间范围不合法');return;}
 
       rangeBtn.disabled=true;progressEl.textContent='查询…';progressEl.style.display='inline-block';
-      const vol=await qv(row.sym,st,et);
+      const vol=await qvAuto(row,st,et);
       rangeBtn.disabled=false;progressEl.style.display='none';
       customVolEl.innerHTML=`<strong>${row.symbol||sym}</strong> 在&nbsp;<span>${fmtFull(st)}</span> ~ <span>${fmtFull(et)}</span> 的限价单成交额：<strong>${nf0.format(vol)}</strong>`;
     });
