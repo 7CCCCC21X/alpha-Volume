@@ -17,9 +17,6 @@
     @media(prefers-color-scheme:dark){
       :root{--bg:#1e293b;--text:#f3f4f6;--sub:#9ca3af;--border:#334155}
     }
-    :root.dark{--bg:#1e293b;--text:#f3f4f6;--sub:#9ca3af;--border:#334155}
-    :root.light{--bg:#f9fafb;--text:#1f2937;--sub:#6b7280;--border:#e5e7eb}
-    #themeBtn{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 8px;cursor:pointer;font-size:.85rem}
     *{box-sizing:border-box;margin:0;padding:0}
     body{
       font-family:-apple-system,"Segoe UI","PingFang SC",sans-serif;
@@ -219,14 +216,11 @@
       <button id="refreshBtn" class="btn"> ⟳ 刷新数据 <span id="progress" class="badge">0%</span> </button>
 
       <label class="chk"><input id="onlyNew" type="checkbox"> 仅看30天内上新</label>
-      <button id="exportBtn" class="btn" style="background:transparent;color:var(--primary)">⬇ 导出CSV</button>
-
       <input id="tokenInput" type="text" placeholder="输入代币名称">
       <input id="startTime" type="datetime-local">
       <input id="endTime" type="datetime-local">
       <button id="rangeBtn" class="btn">区间查询</button>
     </div>
-    <button id="themeBtn" title="切换深色/浅色模式">🌓</button>
     <div id="author"> 作者&nbsp;<a href="https://twitter.com/0xXIAOc" target="_blank">@0xXIAOc</a> </div>
   </div>
 
@@ -329,8 +323,7 @@
       setTimeout(()=>toast.style.opacity='0',3000);
     }
 
-    const savedSort=(()=>{try{return JSON.parse(localStorage.getItem('alphaSort'));}catch{return null;}})();
-    let rows=[],filter='',sortKey=savedSort?.k||'todayQV',sortDir=savedSort?.d||'desc',showNewOnly=false;
+    let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false;
     window._boundary=nearest8UTC();
 
     function pLimit(n){
@@ -492,21 +485,6 @@
       updateSortIcons();
     }
 
-    /* ---------- CSV 导出 ---------- */
-    document.getElementById('exportBtn').addEventListener('click',()=>{
-      if(!rows.length){showToast('暂无数据可导出');return;}
-      const hdr=['代币','价格','24H交易量','24H变化%','当天限价单成交额','前一天限价单成交额'];
-      const csvRows=[hdr.join(','),...rows.map(r=>[
-        r.symbol,r.price,r.vol24h,r.chg.toFixed(2),
-        r.todayQV==null?'':r.todayQV,r.prevQV==null?'':r.prevQV
-      ].join(','))];
-      const blob=new Blob(['\uFEFF'+csvRows.join('\n')],{type:'text/csv;charset=utf-8'});
-      const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-      a.download=`alpha_volume_${new Date().toISOString().slice(0,10)}.csv`;a.click();
-      URL.revokeObjectURL(a.href);
-      showToast('CSV 已导出');
-    });
-
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
@@ -575,19 +553,13 @@
 
     tbody.addEventListener('click',e=>{
       const s=e.target.closest('.star');
-      if(s){s.classList.add('bounce');setTimeout(()=>s.classList.remove('bounce'),150);toggleFav(s.closest('tr').dataset.sym);return;}
-      const tr=e.target.closest('tr');
-      if(tr&&tr.dataset.sym){
-        const symbol=tr.dataset.sym.replace(/(USDT|USDC)$/,'');
-        window.open(`https://www.binance.com/zh-CN/alpha/${symbol}`,'_blank','noopener');
-      }
+      if(s){s.classList.add('bounce');setTimeout(()=>s.classList.remove('bounce'),150);toggleFav(s.closest('tr').dataset.sym);}
     });
 
     document.querySelectorAll('th.sortable').forEach(th=>{
       th.addEventListener('click',()=>{
         const key=th.dataset.key;
-        sortDir=(sortKey===key&&sortDir==='desc')?'asc':'desc';sortKey=key;
-        localStorage.setItem('alphaSort',JSON.stringify({k:sortKey,d:sortDir}));render();
+        sortDir=(sortKey===key&&sortDir==='desc')?'asc':'desc';sortKey=key;render();
       });
     });
 
@@ -602,21 +574,6 @@
       if(document.visibilityState==='visible'&&nearest8UTC()!==window._boundary)reloadAll();
     });
     setInterval(()=>{if(document.visibilityState==='visible')reloadAll();},300000);
-
-    /* ---------- 深色模式切换 ---------- */
-    (function initTheme(){
-      const saved=localStorage.getItem('theme');
-      if(saved)document.documentElement.classList.add(saved);
-    })();
-    document.getElementById('themeBtn').addEventListener('click',()=>{
-      const root=document.documentElement;
-      const isDark=root.classList.contains('dark')||(
-        !root.classList.contains('light')&&matchMedia('(prefers-color-scheme:dark)').matches
-      );
-      root.classList.remove('dark','light');
-      root.classList.add(isDark?'light':'dark');
-      localStorage.setItem('theme',isDark?'light':'dark');
-    });
 
     reloadAll();
   </script>
