@@ -19,7 +19,7 @@
     }
     :root.dark{--bg:#1e293b;--text:#f3f4f6;--sub:#9ca3af;--border:#334155}
     :root.light{--bg:#f9fafb;--text:#1f2937;--sub:#6b7280;--border:#e5e7eb}
-    #themeBtn{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 8px;cursor:pointer;font-size:.85rem}
+    #themeBtn,#langBtn{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 8px;cursor:pointer;font-size:.85rem}
     *{box-sizing:border-box;margin:0;padding:0}
     body{
       font-family:-apple-system,"Segoe UI","PingFang SC",sans-serif;
@@ -85,12 +85,22 @@
     .tg-badge .icon{font-size:.9rem;line-height:1}
 
     /* ---------- 表格 ---------- */
-    table{ width:100%;max-width:1200px;margin:0 auto;border-collapse:collapse;min-width:620px }
+    .table-wrap{max-width:1200px;margin:0 auto;overflow-x:auto;-webkit-overflow-scrolling:touch}
+    table{ width:100%;border-collapse:collapse;min-width:620px }
     th,td{
       padding:10px 6px;border-bottom:1px solid var(--border);
       font-size:.85rem;text-align:left;white-space:nowrap
     }
     tbody tr:hover{background:rgba(0,0,0,.04);cursor:pointer}
+
+    /* 手机端固定前3列（星标 + 序号 + 代币名） */
+    @media(max-width:760px){
+      th:nth-child(-n+3),td:nth-child(-n+3){position:sticky;background:var(--bg);z-index:1}
+      th:nth-child(1),td:nth-child(1){left:0;min-width:26px}
+      th:nth-child(2),td:nth-child(2){left:26px;min-width:28px}
+      th:nth-child(3),td:nth-child(3){left:54px;box-shadow:2px 0 4px rgba(0,0,0,.06)}
+    }
+
     th.sortable{cursor:pointer;user-select:none;position:relative}
     th.sortable::after{
       content:'▲';position:absolute;right:4px;font-size:.6rem;color:var(--sub);
@@ -125,6 +135,15 @@
     /* 自定义区间结果 */
     #customVol{max-width:1200px;margin:4px auto 0;font-size:.9rem;color:var(--primary)}
     footer{height:16px;margin-bottom:12px}
+
+    /* ---------- 回到顶部按钮 ---------- */
+    #backTop{
+      position:fixed;bottom:32px;right:20px;width:40px;height:40px;
+      border-radius:50%;border:1px solid var(--border);background:var(--bg);color:var(--text);
+      font-size:1.1rem;cursor:pointer;display:none;align-items:center;justify-content:center;
+      box-shadow:0 2px 8px rgba(0,0,0,.12);z-index:99;transition:opacity .3s
+    }
+    #backTop:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
 
     @media(max-width:760px){
       #bar-left input[type="datetime-local"]{flex:1;min-width:140px}
@@ -165,7 +184,7 @@
     }
     .ad-links .btn-main::after,
     .ad-links .btn-ghost::after{
-      content:"推荐";
+      content:attr(data-badge);
       position:absolute;
       top:-8px; right:-8px;
       font-size:.68rem;
@@ -182,7 +201,7 @@
       50%{ transform:translateX(-50%) translateY(-2px); }
     }
     .ad-links::after{
-      content:"👆 点击上方按钮绑定邀请码";
+      content:attr(data-hint);
       position:absolute;
       left:50%;
       bottom:0;
@@ -210,38 +229,39 @@
   </style>
 </head>
 <body>
-  <h1>Binance&nbsp;Alpha&nbsp;—&nbsp;24H&nbsp;交易量排行榜</h1>
+  <h1 id="title">Binance&nbsp;Alpha&nbsp;&mdash;&nbsp;24H&nbsp;交易量排行榜</h1>
   <p id="lastUp" class="last-up"></p>
 
   <div id="bar">
     <div id="bar-left">
-      <input id="search" type="search" placeholder="🔍 按代币名称 / 符号过滤…">
-      <button id="refreshBtn" class="btn"> ⟳ 刷新数据 <span id="progress" class="badge">0%</span> </button>
+      <input id="search" type="search" placeholder="🔍 按代币名称 / 符号过滤…">
+      <button id="refreshBtn" class="btn"> ⟳ <span data-i18n="refresh">刷新数据</span> <span id="progress" class="badge">0%</span> </button>
 
-      <label class="chk"><input id="onlyNew" type="checkbox"> 仅看30天内上新</label>
+      <label class="chk"><input id="onlyNew" type="checkbox"> <span data-i18n="onlyNew">仅看30天内上新</span></label>
       <input id="tokenInput" type="text" placeholder="输入代币名称">
       <input id="startTime" type="datetime-local">
       <input id="endTime" type="datetime-local">
-      <button id="rangeBtn" class="btn">区间查询</button>
+      <button id="rangeBtn" class="btn" data-i18n="rangeQuery">区间查询</button>
     </div>
+    <button id="langBtn" title="Switch Language">EN</button>
     <button id="themeBtn" title="切换深色/浅色模式">🌓</button>
     <div id="author"> 作者&nbsp;<a href="https://twitter.com/0xXIAOc" target="_blank">@0xXIAOc</a> </div>
   </div>
 
   <!-- 广告位 -->
   <div class="ad">
-    <span class="ad-badge">广告</span>
+    <span class="ad-badge" data-i18n="adBadge">广告</span>
     <span class="ad-note"></span>
 
     <a class="tg-badge" href="https://t.me/+lKbtX0zMcAVjYjMx" target="_blank" rel="noopener noreferrer" aria-label="加入Alpha交流群" title="加入 Telegram 频道">
-      <span class="icon">✈️</span> 加入Alpha交流群
+      <span class="icon">✈️</span> <span data-i18n="joinTg">加入Alpha交流群</span>
     </a>
 
-    <div class="ad-links">
-      <a class="btn btn-main" href="https://web3.binance.com/referral?ref=XIAOCC" target="_blank" rel="noopener noreferrer">
+    <div class="ad-links" data-hint="👆 点击上方按钮绑定邀请码" data-badge-text="推荐">
+      <a class="btn btn-main" data-badge="推荐" href="https://web3.binance.com/referral?ref=XIAOCC" target="_blank" rel="noopener noreferrer" data-i18n="bnbReg">
         币安钱包注册｜手续费7折
       </a>
-      <a class="btn btn-ghost" href="https://web3.okx.com/ul/joindex?ref=XIAOCC" target="_blank" rel="noopener noreferrer">
+      <a class="btn btn-ghost" data-badge="推荐" href="https://web3.okx.com/ul/joindex?ref=XIAOCC" target="_blank" rel="noopener noreferrer" data-i18n="okxReg">
         OKX 钱包注册｜手续费8折
       </a>
     </div>
@@ -249,24 +269,130 @@
 
   <div id="customVol"></div>
 
+  <div class="table-wrap">
   <table id="tokenTable">
     <thead>
       <tr>
-        <th style="width:26px"></th><th>#</th><th>代币名字</th>
+        <th style="width:26px"></th><th>#</th><th id="thName">代币名字</th>
         <th id="thPrice">价格</th>
-        <th id="thVol24h" class="sortable" data-key="vol24h">24H 交易量</th>
-        <th>24H 变化</th>
+        <th id="thVol24h" class="sortable" data-key="vol24h">24H 交易量</th>
+        <th id="thChg">24H 变化</th>
         <th id="thToday" class="sortable" data-key="todayQV">当天限价单成交额</th>
         <th id="thPrev" class="sortable" data-key="prevQV">前一天限价单成交额</th>
       </tr>
     </thead>
     <tbody><tr><td colspan="8">加载中…</td></tr></tbody>
   </table>
+  </div>
 
+  <button id="backTop" title="回到顶部">↑</button>
   <div id="toast"></div>
   <footer></footer>
 
   <script>
+    /* ========== i18n 多语言 ========== */
+    const I18N = {
+      zh: {
+        title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0交易量排行榜',
+        searchPh: '🔍 按代币名称 / 符号过滤…',
+        refresh: '刷新数据',
+        onlyNew: '仅看30天内上新',
+        tokenPh: '输入代币名称',
+        rangeQuery: '区间查询',
+        adBadge: '广告',
+        joinTg: '加入Alpha交流群',
+        bnbReg: '币安钱包注册｜手续费7折',
+        okxReg: 'OKX 钱包注册｜手续费8折',
+        badge: '推荐',
+        adHint: '👆 点击上方按钮绑定邀请码',
+        thName: '代币名字',
+        thPrice: '价格',
+        thVol24h: '24H 交易量',
+        thChg: '24H 变化',
+        thTodayLabel: '当天限价单成交额',
+        thPrevLabel: '前一天限价单成交额',
+        loading: '加载中…',
+        lastUp: '最后更新时间：',
+        failLoad: '加载失败：',
+        unknownErr: '未知错误',
+        favAdd: '已加入收藏',
+        favDel: '已移除收藏',
+        enterSym: '请输入代币符号',
+        notFound: '未找到该代币',
+        badRange: '时间范围不合法',
+        querying: '查询…',
+        rangeTpl: (sym,s,e,vol) => `<strong>${sym}</strong> 在\u00a0<span>${s}</span> ~ <span>${e}</span> 的限价单成交额：<strong>${vol}</strong>`,
+        newTag: (d) => `🆕 剩${d}天`,
+        listingTip: '上新：',
+        langBtn: 'EN',
+        backTop: '回到顶部',
+        author: '作者'
+      },
+      en: {
+        title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
+        searchPh: '🔍 Filter by token name / symbol…',
+        refresh: 'Refresh',
+        onlyNew: 'New (30d) only',
+        tokenPh: 'Token name',
+        rangeQuery: 'Range Query',
+        adBadge: 'Ad',
+        joinTg: 'Join Alpha Group',
+        bnbReg: 'Binance Wallet | 30% Fee Off',
+        okxReg: 'OKX Wallet | 20% Fee Off',
+        badge: 'Rec',
+        adHint: '👆 Click above to bind referral',
+        thName: 'Token',
+        thPrice: 'Price',
+        thVol24h: '24H Volume',
+        thChg: '24H Change',
+        thTodayLabel: 'Today Limit Order Volume',
+        thPrevLabel: 'Prev Day Limit Order Volume',
+        loading: 'Loading…',
+        lastUp: 'Last updated: ',
+        failLoad: 'Load failed: ',
+        unknownErr: 'Unknown error',
+        favAdd: 'Added to favorites',
+        favDel: 'Removed from favorites',
+        enterSym: 'Enter token symbol',
+        notFound: 'Token not found',
+        badRange: 'Invalid time range',
+        querying: 'Querying…',
+        rangeTpl: (sym,s,e,vol) => `<strong>${sym}</strong> limit order volume from\u00a0<span>${s}</span> to <span>${e}</span>: <strong>${vol}</strong>`,
+        newTag: (d) => `🆕 ${d}d left`,
+        listingTip: 'Listed: ',
+        langBtn: '中',
+        backTop: 'Back to top',
+        author: 'Author'
+      }
+    };
+    let curLang = localStorage.getItem('lang') || 'zh';
+    function t(key){ return I18N[curLang][key] || I18N.zh[key] || key; }
+
+    function applyI18n(){
+      document.getElementById('title').innerHTML = t('title');
+      document.getElementById('search').placeholder = t('searchPh');
+      document.querySelector('[data-i18n="refresh"]').textContent = t('refresh');
+      document.querySelector('[data-i18n="onlyNew"]').textContent = t('onlyNew');
+      document.getElementById('tokenInput').placeholder = t('tokenPh');
+      document.getElementById('rangeBtn').textContent = t('rangeQuery');
+      document.querySelector('[data-i18n="adBadge"]').textContent = t('adBadge');
+      document.querySelector('[data-i18n="joinTg"]').textContent = t('joinTg');
+      document.querySelector('[data-i18n="bnbReg"]').textContent = t('bnbReg');
+      document.querySelector('[data-i18n="okxReg"]').textContent = t('okxReg');
+      document.querySelectorAll('.ad-links .btn-main, .ad-links .btn-ghost').forEach(el=>{
+        el.setAttribute('data-badge', t('badge'));
+      });
+      document.querySelector('.ad-links').setAttribute('data-hint', t('adHint'));
+      document.getElementById('thName').textContent = t('thName');
+      document.getElementById('thPrice').textContent = t('thPrice');
+      document.getElementById('thVol24h').childNodes[0].textContent = t('thVol24h');
+      document.getElementById('thChg').textContent = t('thChg');
+      document.getElementById('langBtn').textContent = t('langBtn');
+      document.getElementById('backTop').title = t('backTop');
+      const authorEl = document.getElementById('author');
+      authorEl.innerHTML = `${t('author')}&nbsp;<a href="https://twitter.com/0xXIAOc" target="_blank">@0xXIAOc</a>`;
+    }
+
     /* ---------- 常量 & 工具 ---------- */
     const LIST_API='https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list';
     const K_API ='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines';
@@ -396,7 +522,7 @@
       const f=favs();const i=f.indexOf(sym);
       i>-1?f.splice(i,1):f.push(sym);
       localStorage.setItem(FAV_KEY,JSON.stringify(f));
-      showToast(i>-1?'已移除收藏':'已加入收藏');
+      showToast(i>-1 ? t('favDel') : t('favAdd'));
       render();
     }
 
@@ -419,14 +545,14 @@
             symbol:t.symbol,
             icon:t.iconUrl,
 
-            // ✅ 默认仍用 USDT 作为“身份 key”（收藏等不受影响）
+            // ✅ 默认仍用 USDT 作为"身份 key"（收藏等不受影响）
             sym:`${t.alphaId}USDT`,
             // ✅ USDC 备选交易对
             symUSDC:`${t.alphaId}USDC`,
             // ✅ 缓存：实际能用的交易对（USDT/USDC）
             qSym:null,
 
-            // ✅ null 表示“还在加载”；0 才是真正的 0
+            // ✅ null 表示"还在加载"；0 才是真正的 0
             todayQV:null,
             prevQV:null,
 
@@ -465,24 +591,25 @@
       const sorted=sortRows(filtered);
       const display=[...sorted.filter(x=>favSet.has(x.sym)),...sorted.filter(x=>!favSet.has(x.sym))];
 
-      tbody.innerHTML=display.map((t,i)=>{
-        const left = t.isNew && t.listingTime ? daysLeft(t.listingTime) : 0;
+      tbody.innerHTML=display.map((r,i)=>{
+        const left = r.isNew && r.listingTime ? daysLeft(r.listingTime) : 0;
+        const tipPrefix = t('listingTip');
 
         return `
-        <tr data-sym="${t.sym}">
-          <td class="star ${favSet.has(t.sym)?'fav':''}">${favSet.has(t.sym)?'★':'☆'}</td>
+        <tr data-sym="${r.sym}">
+          <td class="star ${favSet.has(r.sym)?'fav':''}">${favSet.has(r.sym)?'★':'☆'}</td>
           <td>${i+1}</td>
-          <td title="${t.listingTimeFmt ? ('上新：'+t.listingTimeFmt) : ''}">
-            <img class="logo" loading="lazy" src="${t.icon}" referrerpolicy="no-referrer"
+          <td title="${r.listingTimeFmt ? (tipPrefix+r.listingTimeFmt) : ''}">
+            <img class="logo" loading="lazy" src="${r.icon}" referrerpolicy="no-referrer"
                  onerror="this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">
-            ${t.symbol}
-            ${t.isNew ? `<span class="tag-new" title="上新：${t.listingTimeFmt}">🆕 剩${left}天</span>` : ''}
+            ${r.symbol}
+            ${r.isNew ? `<span class="tag-new" title="${tipPrefix}${r.listingTimeFmt}">${t('newTag')(left)}</span>` : ''}
           </td>
-          <td>${fmtPrice(t.price)}</td>
-          <td>${nf0.format(t.vol24h)}</td>
-          <td class="${t.chg>=0?'up':'down'}">${t.chg.toFixed(2)}%</td>
-          <td>${t.todayQV==null ? '…' : nf0.format(t.todayQV)}</td>
-          <td>${t.prevQV==null  ? '…' : nf0.format(t.prevQV)}</td>
+          <td>${fmtPrice(r.price)}</td>
+          <td>${nf0.format(r.vol24h)}</td>
+          <td class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</td>
+          <td>${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
+          <td>${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
         </tr>
       `;
       }).join('');
@@ -493,20 +620,20 @@
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
 
-      thToday.innerHTML=`当天限价单成交额<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
-      thPrev.innerHTML =`前一天限价单成交额<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
+      thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
+      thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
 
       try{
         rows=await fetchList();
         await fillQVAll(rows,today8,yest8,endTs);
         render();
-        lastUpEl.textContent=`最后更新时间： ${fmtFull(Date.now())}`;
+        lastUpEl.textContent=`${t('lastUp')} ${fmtFull(Date.now())}`;
         window._boundary=today8;
       }catch(e){
         console.error(e);
-        const msg=e.message||'未知错误';
-        tbody.innerHTML=`<tr><td colspan="8">加载失败：${msg}</td></tr>`;
-        showToast(`加载失败：${msg}`);
+        const msg=e.message||t('unknownErr');
+        tbody.innerHTML=`<tr><td colspan="8">${t('failLoad')}${msg}</td></tr>`;
+        showToast(`${t('failLoad')}${msg}`);
       }finally{
         refreshBtn.disabled=false;
       }
@@ -522,7 +649,7 @@
 
     rangeBtn.addEventListener('click',async()=>{
       const sym=tokenEl.value.trim();
-      if(!sym){showToast('请输入代币符号');return;}
+      if(!sym){showToast(t('enterSym'));return;}
 
       let row=rows.find(r=>
         r.symbol.toLowerCase()===sym.toLowerCase() ||
@@ -540,15 +667,15 @@
           symbol:sym
         };
       }
-      if(!row){showToast('未找到该代币');return;}
+      if(!row){showToast(t('notFound'));return;}
 
       const st=new Date(startEl.value).getTime(),et=new Date(endEl.value).getTime();
-      if(!st||!et||st>=et){showToast('时间范围不合法');return;}
+      if(!st||!et||st>=et){showToast(t('badRange'));return;}
 
-      rangeBtn.disabled=true;progressEl.textContent='查询…';progressEl.style.display='inline-block';
+      rangeBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
       const vol=await qvAuto(row,st,et);
       rangeBtn.disabled=false;progressEl.style.display='none';
-      customVolEl.innerHTML=`<strong>${row.symbol||sym}</strong> 在&nbsp;<span>${fmtFull(st)}</span> ~ <span>${fmtFull(et)}</span> 的限价单成交额：<strong>${nf0.format(vol)}</strong>`;
+      customVolEl.innerHTML=t('rangeTpl')(row.symbol||sym, fmtFull(st), fmtFull(et), nf0.format(vol));
     });
 
     document.getElementById('search').addEventListener('input',e=>{
@@ -594,6 +721,29 @@
       localStorage.setItem('theme',isDark?'light':'dark');
     });
 
+    /* ---------- 语言切换 ---------- */
+    document.getElementById('langBtn').addEventListener('click',()=>{
+      curLang = curLang==='zh' ? 'en' : 'zh';
+      localStorage.setItem('lang', curLang);
+      applyI18n();
+      // 刷新表头时间 & 表格内容
+      const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
+      thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
+      thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
+      render();
+    });
+
+    /* ---------- 回到顶部 ---------- */
+    const backTopBtn=document.getElementById('backTop');
+    window.addEventListener('scroll',()=>{
+      backTopBtn.style.display=window.scrollY>300?'flex':'none';
+    },{passive:true});
+    backTopBtn.addEventListener('click',()=>{
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+
+    /* ---------- 初始化 ---------- */
+    applyI18n();
     reloadAll();
   </script>
 </body>
