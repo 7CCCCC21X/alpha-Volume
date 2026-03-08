@@ -33,14 +33,15 @@
     /* ---------- 顶栏 ---------- */
     #bar{
       max-width:1200px;margin:0 auto 12px;
-      display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+      display:flex;flex-direction:column;gap:8px;
       padding:0 6px
     }
-    #bar-left{flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-    #bar-left input[type="search"]{flex:1;min-width:160px}
-    #bar-left input[type="text"]{width:120px}
-    #bar-left input[type="datetime-local"]{width:190px}
-    #bar-left input{
+    #bar-row1{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+    #bar-row1 input[type="search"]{flex:1;min-width:160px}
+    #bar-row2{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+    #bar-row2 input[type="text"]{width:120px}
+    #bar-row2 input[type="datetime-local"]{width:190px}
+    #bar input{
       padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.85rem
     }
     .btn{
@@ -53,6 +54,7 @@
       display:none;padding:0 6px;border-radius:10px;font-size:.7rem;font-weight:700;
       background:#fff;color:var(--primary)
     }
+    #bar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto}
     #author{font-size:.8rem;white-space:nowrap}
     #author a{color:var(--primary);text-decoration:none}
 
@@ -153,7 +155,7 @@
     #backTop:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
 
     @media(max-width:760px){
-      #bar-left input[type="datetime-local"]{flex:1;min-width:140px}
+      #bar-row2 input[type="datetime-local"]{flex:1;min-width:140px}
       .ad-links{width:100%;justify-content:flex-start;margin-left:0}
     }
 
@@ -240,20 +242,23 @@
   <p id="lastUp" class="last-up"></p>
 
   <div id="bar">
-    <div id="bar-left">
+    <div id="bar-row1">
       <input id="search" type="search" placeholder="🔍 按代币名称 / 符号过滤…">
       <button id="refreshBtn" class="btn"> ⟳ <span data-i18n="refresh">刷新数据</span> <span id="progress" class="badge">0%</span> </button>
-
       <label class="chk"><input id="onlyNew" type="checkbox"> <span data-i18n="onlyNew">仅看30天内上新</span></label>
       <label class="chk"><input id="onlyFutures" type="checkbox"> <span data-i18n="onlyFutures">仅看有合约</span></label>
+      <div id="bar-right">
+        <button id="langBtn" title="Switch Language">EN</button>
+        <button id="themeBtn" title="切换深色/浅色模式">🌓</button>
+        <div id="author"> 作者&nbsp;<a href="https://twitter.com/0xXIAOc" target="_blank">@0xXIAOc</a> </div>
+      </div>
+    </div>
+    <div id="bar-row2">
       <input id="tokenInput" type="text" placeholder="输入代币名称">
       <input id="startTime" type="datetime-local">
       <input id="endTime" type="datetime-local">
       <button id="rangeBtn" class="btn" data-i18n="rangeQuery">区间查询</button>
     </div>
-    <button id="langBtn" title="Switch Language">EN</button>
-    <button id="themeBtn" title="切换深色/浅色模式">🌓</button>
-    <div id="author"> 作者&nbsp;<a href="https://twitter.com/0xXIAOc" target="_blank">@0xXIAOc</a> </div>
   </div>
 
   <!-- 广告位 -->
