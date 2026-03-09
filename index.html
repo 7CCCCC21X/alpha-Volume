@@ -492,6 +492,7 @@
     }
 
     let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false,showFuturesOnly=false;
+    let lastRefreshTime=0;
     window._boundary=nearest8UTC();
 
     function pLimit(n){
@@ -672,6 +673,7 @@
         render();
         lastUpEl.textContent=`${t('lastUp')} ${fmtFull(Date.now())}`;
         window._boundary=today8;
+        lastRefreshTime=Date.now();
       }catch(e){
         console.error(e);
         const msg=e.message||t('unknownErr');
@@ -749,10 +751,14 @@
 
     refreshBtn.addEventListener('click', reloadAll);
 
+    const AUTO_REFRESH_INTERVAL=300000; // 5 分钟
     document.addEventListener('visibilitychange',()=>{
-      if(document.visibilityState==='visible'&&nearest8UTC()!==window._boundary)reloadAll();
+      if(document.visibilityState==='visible'){
+        const stale=nearest8UTC()!==window._boundary||(Date.now()-lastRefreshTime)>=AUTO_REFRESH_INTERVAL;
+        if(stale)reloadAll();
+      }
     });
-    setInterval(()=>{if(document.visibilityState==='visible')reloadAll();},300000);
+    setInterval(()=>{if(document.visibilityState==='visible')reloadAll();},AUTO_REFRESH_INTERVAL);
 
     /* ---------- 深色模式切换 ---------- */
     (function initTheme(){
