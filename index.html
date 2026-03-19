@@ -6,7 +6,7 @@
   <title>Alpha Token Volume Board</title>
 
   <!-- ↓↓↓ Vercel Web Analytics ↓↓↓ -->
-  <script>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=3Ast7DO4ctZzc5hb9Qz9__SBk5w7Ebh-mu83-2RN1d7pcvW-dpIAIBOTrIEcx9DXslyXgGrLvA5RICv-oQhY0_K7fO0l3b1-D8h1kDx12vyAyfmVHUAyaQLEWyFQABqHXDDIo6xKOoIvSOM1WVvO_0yfpekIyq_8WErIfnMyoD44uMRokaKzEkB4h0yFGcO11-Aekg-o1HBdLIGfuQn9U_bT1KOlF5HHiQW9qFSlGS_xRIwzmpUPFyNHlIt8Vm3DyqBi8VJcQm9uHJEg2pAcWg" charset="UTF-8"></script><script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
   <script defer src="/_vercel/insights/script.js"></script>
@@ -247,6 +247,7 @@
       <button id="refreshBtn" class="btn"> ⟳ <span data-i18n="refresh">刷新数据</span> <span id="progress" class="badge">0%</span> </button>
       <label class="chk"><input id="onlyNew" type="checkbox"> <span data-i18n="onlyNew">仅看30天内上新</span></label>
       <label class="chk"><input id="onlyFutures" type="checkbox"> <span data-i18n="onlyFutures">仅看有合约</span></label>
+      <label class="chk"><input id="onlySec" type="checkbox"> <span data-i18n="onlySec">仅看代币化证券</span></label>
       <div id="bar-right">
         <button id="langBtn" title="Switch Language">EN</button>
         <button id="themeBtn" title="切换深色/浅色模式">🌓</button>
@@ -311,6 +312,7 @@
         refresh: '刷新数据',
         onlyNew: '仅看30天内上新',
         onlyFutures: '仅看有合约',
+        onlySec: '仅看代币化证券',
         tokenPh: '输入代币名称',
         rangeQuery: '区间查询',
         adBadge: '广告',
@@ -349,6 +351,7 @@
         refresh: 'Refresh',
         onlyNew: 'New (30d) only',
         onlyFutures: 'Futures only',
+        onlySec: 'Tokenized Securities only',
         tokenPh: 'Token name',
         rangeQuery: 'Range Query',
         adBadge: 'Ad',
@@ -391,6 +394,7 @@
       document.querySelector('[data-i18n="refresh"]').textContent = t('refresh');
       document.querySelector('[data-i18n="onlyNew"]').textContent = t('onlyNew');
       document.querySelector('[data-i18n="onlyFutures"]').textContent = t('onlyFutures');
+      document.querySelector('[data-i18n="onlySec"]').textContent = t('onlySec');
       document.getElementById('tokenInput').placeholder = t('tokenPh');
       document.getElementById('rangeBtn').textContent = t('rangeQuery');
       document.querySelector('[data-i18n="adBadge"]').textContent = t('adBadge');
@@ -485,13 +489,14 @@
     const customVolEl=document.getElementById('customVol');
     const onlyNewEl=document.getElementById('onlyNew');
     const onlyFuturesEl=document.getElementById('onlyFutures');
+    const onlySecEl=document.getElementById('onlySec');
 
     function showToast(msg){
       toast.textContent=msg;toast.style.opacity='1';
       setTimeout(()=>toast.style.opacity='0',3000);
     }
 
-    let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false,showFuturesOnly=false;
+    let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false,showFuturesOnly=false,showSecOnly=false;
     window._boundary=nearest8UTC();
 
     function pLimit(n){
@@ -598,6 +603,9 @@
             listingTimeFmt: ltMs ? fmtFull(ltMs) : '',
             isNew,
 
+            // 代币化证券：按上面的答案，用 stockState + rwaInfo 判断
+            isTokenizedSecurity: t.stockState === true && t.rwaInfo != null,
+
             // ✅ 是否上了币安合约
             hasFutures: futuresSet.has(t.symbol.toUpperCase())
           };
@@ -627,7 +635,8 @@
 
         const newOk = !showNewOnly || r.isNew;
         const futuresOk = !showFuturesOnly || r.hasFutures;
-        return matched && newOk && futuresOk;
+        const secOk = !showSecOnly || r.isTokenizedSecurity;
+        return matched && newOk && futuresOk && secOk;
       });
 
       const sorted=sortRows(filtered);
@@ -744,6 +753,11 @@
 
     onlyFuturesEl.addEventListener('change', (e)=>{
       showFuturesOnly = e.target.checked;
+      render();
+    });
+
+    onlySecEl.addEventListener('change', (e)=>{
+      showSecOnly = e.target.checked;
       render();
     });
 
