@@ -575,7 +575,7 @@
       const {data=[]}=await resp.json();
 
       return data
-        .filter(t=>+t.volume24h>0)
+        .filter(t => +t.volume24h > 0 || (t.stockState === true && t.rwaInfo != null))
         .map(t=>{
           const raw = Number(t.listingTime || 0);
           const ltMs = raw ? (raw < 1e12 ? raw*1000 : raw) : 0;
