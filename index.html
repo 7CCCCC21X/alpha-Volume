@@ -6,7 +6,7 @@
   <title>Alpha Token Volume Board</title>
 
   <!-- ↓↓↓ Vercel Web Analytics ↓↓↓ -->
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=3Ast7DO4ctZzc5hb9Qz9__SBk5w7Ebh-mu83-2RN1d7pcvW-dpIAIBOTrIEcx9DXslyXgGrLvA5RICv-oQhY0_K7fO0l3b1-D8h1kDx12vyAyfmVHUAyaQLEWyFQABqHXDDIo6xKOoIvSOM1WVvO_0yfpekIyq_8WErIfnMyoD44uMRokaKzEkB4h0yFGcO11-Aekg-o1HBdLIGfuQn9U_bT1KOlF5HHiQW9qFSlGS_xRIwzmpUPFyNHlIt8Vm3DyqBi8VJcQm9uHJEg2pAcWg" charset="UTF-8"></script><script>
+  <script>
     window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
   </script>
   <script defer src="/_vercel/insights/script.js"></script>
@@ -494,6 +494,12 @@
     const LIST_API='https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list';
     const K_API ='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines';
     const FUTURES_API='https://fapi.binance.com/fapi/v1/exchangeInfo';
+
+    function fetchT(url,ms=10000){
+      const ac=new AbortController();
+      const timer=setTimeout(()=>ac.abort(),ms);
+      return fetch(url,{signal:ac.signal}).finally(()=>clearTimeout(timer));
+    }
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     /* 智能价格格式化：小于 0.01 的价格自动显示更多有效位 */
@@ -535,7 +541,7 @@
     let futuresSet = new Set();
     async function fetchFutures(){
       try{
-        const resp = await fetch(FUTURES_API);
+        const resp = await fetchT(FUTURES_API);
         if(!resp.ok) return;
         const json = await resp.json();
         const syms = json.symbols || [];
@@ -595,7 +601,7 @@
       if(start>=end) return { ok:true, vol:0 };
       const url=`${K_API}?symbol=${encodeURIComponent(sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
       try{
-        const json=await fetch(url).then(r=>r.json());
+        const json=await fetchT(url).then(r=>r.json());
 
         const ok =
           (json?.success !== false) &&
@@ -667,7 +673,7 @@
     }
 
     async function fetchList(){
-      const resp=await fetch(LIST_API);
+      const resp=await fetchT(LIST_API);
       if(!resp.ok)throw new Error('LIST_API Error');
       const {data=[]}=await resp.json();
 
@@ -767,6 +773,7 @@
 
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
+      tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:2em;opacity:.6">${lang==='zh'?'加载中…':'Loading…'}</td></tr>`;
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
 
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
