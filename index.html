@@ -146,7 +146,8 @@
 
     /* ---------- 小时交易量 ---------- */
     #hourlyWrap{max-width:1200px;margin:6px auto 0;padding:0 6px}
-    #hourlyWrap .hourly-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px;margin-top:6px}
+    .hourly-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    #hourlyWrap .hourly-bar{display:flex;align-items:flex-end;gap:6px;margin-top:6px;min-width:max-content}
     #hourlyWrap .hourly-bar .h-col{
       display:flex;flex-direction:column;align-items:center;gap:2px;min-width:56px;flex:1
     }
@@ -159,8 +160,12 @@
 
     /* ---------- 查询缓存记录 ---------- */
     #cacheWrap{max-width:1200px;margin:6px auto 0;padding:0 6px}
+    .cache-hd{display:flex;align-items:center;gap:8px}
     #cacheToggle{font-size:.82rem;color:var(--primary);cursor:pointer;user-select:none;background:none;border:none}
     #cacheToggle:hover{text-decoration:underline}
+    #cacheClearAll{font-size:.76rem;color:var(--red);cursor:pointer;background:none;border:1px solid var(--red);border-radius:4px;padding:1px 8px;display:none}
+    #cacheClearAll:hover{background:rgba(220,38,38,.08)}
+    .hourly-total{font-size:.82rem;color:var(--sub);margin-left:8px;font-weight:400}
     #cacheList{margin-top:4px;display:none;border:1px solid var(--border);border-radius:6px;overflow:hidden;max-height:260px;overflow-y:auto}
     #cacheList .cache-item{
       display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:.82rem;
@@ -320,7 +325,10 @@
   <div id="customVol"></div>
   <div id="hourlyWrap"></div>
   <div id="cacheWrap">
-    <button id="cacheToggle" style="display:none"></button>
+    <div class="cache-hd">
+      <button id="cacheToggle" style="display:none"></button>
+      <button id="cacheClearAll"></button>
+    </div>
     <div id="cacheList"></div>
   </div>
 
@@ -392,7 +400,11 @@
         cacheHide: '📋 收起记录',
         cacheEmpty: '暂无查询记录',
         cacheDel: '删除',
-        cacheLoad: '加载'
+        cacheLoad: '加载',
+        cacheClearAll: '清空全部',
+        cacheTime: '查询于',
+        hourlyTotal: (vol) => `合计：${vol}`,
+        hourlyType: 'hourly'
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -439,7 +451,11 @@
         cacheHide: '📋 Hide History',
         cacheEmpty: 'No query history',
         cacheDel: 'Del',
-        cacheLoad: 'Load'
+        cacheLoad: 'Load',
+        cacheClearAll: 'Clear All',
+        cacheTime: 'Queried at',
+        hourlyTotal: (vol) => `Total: ${vol}`,
+        hourlyType: 'hourly'
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -550,6 +566,7 @@
     const hourlyHoursEl=document.getElementById('hourlyHours');
     const hourlyWrap=document.getElementById('hourlyWrap');
     const cacheToggleBtn=document.getElementById('cacheToggle');
+    const cacheClearAllBtn=document.getElementById('cacheClearAll');
     const cacheListEl=document.getElementById('cacheList');
     const CACHE_KEY='alphaRangeCache';
     const onlyNewEl=document.getElementById('onlyNew');
@@ -610,6 +627,21 @@
         return res.vol;
       }
       return 0;
+    }
+
+    /* 公共：按名称/交易对查找代币行 */
+    function findRow(sym){
+      let row=rows.find(r=>
+        r.symbol.toLowerCase()===sym.toLowerCase() ||
+        (r.sym && r.sym.toLowerCase()===sym.toLowerCase()) ||
+        (r.symUSDC && r.symUSDC.toLowerCase()===sym.toLowerCase()) ||
+        (r.qSym && r.qSym.toLowerCase()===sym.toLowerCase())
+      );
+      if(!row){
+        const m=sym.match(/_(\d+)/);
+        if(m) row={sym:`${m[1]}USDT`,symUSDC:`${m[1]}USDC`,qSym:null,symbol:sym};
+      }
+      return row||null;
     }
 
     async function fillQVAll(list,today8,yest8,endTs){
@@ -767,23 +799,7 @@
     rangeBtn.addEventListener('click',async()=>{
       const sym=tokenEl.value.trim();
       if(!sym){showToast(t('enterSym'));return;}
-
-      let row=rows.find(r=>
-        r.symbol.toLowerCase()===sym.toLowerCase() ||
-        (r.sym && r.sym.toLowerCase()===sym.toLowerCase()) ||
-        (r.symUSDC && r.symUSDC.toLowerCase()===sym.toLowerCase()) ||
-        (r.qSym && r.qSym.toLowerCase()===sym.toLowerCase())
-      );
-
-      if(!row){
-        const m=sym.match(/_(\d+)/);
-        if(m) row={
-          sym:`${m[1]}USDT`,
-          symUSDC:`${m[1]}USDC`,
-          qSym:null,
-          symbol:sym
-        };
-      }
+      const row=findRow(sym);
       if(!row){showToast(t('notFound'));return;}
 
       const st=new Date(startEl.value).getTime(),et=new Date(endEl.value).getTime();
@@ -802,30 +818,19 @@
     hourlyBtn.addEventListener('click',async()=>{
       const sym=tokenEl.value.trim();
       if(!sym){showToast(t('enterSym'));return;}
-
-      let row=rows.find(r=>
-        r.symbol.toLowerCase()===sym.toLowerCase() ||
-        (r.sym && r.sym.toLowerCase()===sym.toLowerCase()) ||
-        (r.symUSDC && r.symUSDC.toLowerCase()===sym.toLowerCase()) ||
-        (r.qSym && r.qSym.toLowerCase()===sym.toLowerCase())
-      );
-      if(!row){
-        const m=sym.match(/_(\d+)/);
-        if(m) row={sym:`${m[1]}USDT`,symUSDC:`${m[1]}USDC`,qSym:null,symbol:sym};
-      }
+      const row=findRow(sym);
       if(!row){showToast(t('notFound'));return;}
 
       const hours=Math.max(1,Math.min(72,parseInt(hourlyHoursEl.value)||6));
       const now=Date.now();
-      // 对齐到整点
       const endH=new Date(now);endH.setMinutes(0,0,0);
       const endTs=endH.getTime();
       const startTs=endTs-hours*3600000;
 
       hourlyBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
 
-      // 逐小时查询
       const hourlyData=[];
+      let done=0;
       const tasks=[];
       for(let i=0;i<hours;i++){
         const hStart=startTs+i*3600000;
@@ -833,7 +838,7 @@
         tasks.push(limit(async()=>{
           const vol=await qvAuto({...row},hStart,hEnd);
           hourlyData[i]={start:hStart,end:hEnd,vol};
-          progressEl.textContent=`${Math.floor((hourlyData.filter(Boolean).length)/hours*100)}%`;
+          progressEl.textContent=`${Math.floor(++done/hours*100)}%`;
         }));
       }
       await Promise.all(tasks);
@@ -842,20 +847,24 @@
 
       // 渲染柱状图
       const maxVol=Math.max(...hourlyData.map(d=>d.vol),1);
+      const totalVol=hourlyData.reduce((s,d)=>s+d.vol,0);
       const maxBarH=100;
       const fmtHour=ts=>{
         const d=new Date(ts);
         return `${String(d.getHours()).padStart(2,'0')}:00`;
       };
-      hourlyWrap.innerHTML=`<div style="font-size:.88rem;color:var(--primary);font-weight:600">${t('hourlyTpl')(row.symbol||sym,hours)}</div>
-        <div class="hourly-bar">${hourlyData.map(d=>{
+      hourlyWrap.innerHTML=`<div style="font-size:.88rem;color:var(--primary);font-weight:600">${t('hourlyTpl')(row.symbol||sym,hours)}<span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}</span></div>
+        <div class="hourly-scroll"><div class="hourly-bar">${hourlyData.map(d=>{
           const h=Math.max(4,Math.round(d.vol/maxVol*maxBarH));
           return `<div class="h-col">
             <div class="h-val">${nf0.format(d.vol)}</div>
             <div class="h-bar" style="height:${h}px"></div>
             <div class="h-lbl">${fmtHour(d.start)}</div>
           </div>`;
-        }).join('')}</div>`;
+        }).join('')}</div></div>`;
+
+      // 保存小时查询到缓存
+      saveCache({symbol:row.symbol||sym, start:startTs, end:endTs, vol:totalVol, time:Date.now(), type:'hourly', hours});
     });
 
     /* ---------- 区间查询缓存记录 ---------- */
@@ -864,36 +873,57 @@
     function saveCache(entry){
       const cache=getCache();
       cache.unshift(entry);
-      if(cache.length>50)cache.length=50; // 最多50条
+      if(cache.length>50)cache.length=50;
       setCache(cache);
     }
     function deleteCache(idx){
       const cache=getCache();cache.splice(idx,1);setCache(cache);
+    }
+    function clearAllCache(){
+      localStorage.removeItem(CACHE_KEY);renderCache();
     }
     function loadCache(idx){
       const cache=getCache();
       const item=cache[idx];
       if(!item)return;
       customVolEl.innerHTML=t('rangeTpl')(item.symbol, fmtFull(item.start), fmtFull(item.end), nf0.format(item.vol));
+      // 回填输入框，方便微调再查
+      tokenEl.value=item.symbol;
+      const pad=n=>String(n).padStart(2,'0');
+      const toLocal=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      startEl.value=toLocal(new Date(item.start));
+      endEl.value=toLocal(new Date(item.end));
     }
     function renderCache(){
       const cache=getCache();
-      cacheToggleBtn.style.display=cache.length?'inline-block':'none';
-      if(!cache.length){cacheListEl.style.display='none';return;}
+      const hasData=cache.length>0;
+      cacheToggleBtn.style.display=hasData?'inline-block':'none';
+      cacheClearAllBtn.style.display=(hasData&&cacheListEl.style.display==='block')?'inline-block':'none';
+      cacheClearAllBtn.textContent=t('cacheClearAll');
+      if(!hasData){cacheListEl.style.display='none';return;}
       const open=cacheListEl.style.display==='block';
       if(!open)return;
-      cacheListEl.innerHTML=cache.length?cache.map((c,i)=>
-        `<div class="cache-item">
-          <span class="ci-info" data-idx="${i}"><strong>${c.symbol}</strong>&nbsp; ${fmtFull(c.start)} ~ ${fmtFull(c.end)}&nbsp; → ${nf0.format(c.vol)}</span>
+      cacheListEl.innerHTML=cache.map((c,i)=>{
+        const typeBadge=c.type==='hourly'?`<span style="font-size:.68rem;padding:0 4px;border-radius:4px;background:rgba(37,99,235,.1);color:var(--primary);margin-right:4px">${c.hours||6}h</span>`:'';
+        const timeStr=c.time?`<span style="color:var(--sub);font-size:.72rem;margin-left:6px">${t('cacheTime')} ${fmtFull(c.time)}</span>`:'';
+        return `<div class="cache-item">
+          <span class="ci-info" data-idx="${i}">${typeBadge}<strong>${c.symbol}</strong>&nbsp; ${fmtFull(c.start)} ~ ${fmtFull(c.end)}&nbsp; → ${nf0.format(c.vol)}${timeStr}</span>
           <span class="ci-del" data-delidx="${i}">${t('cacheDel')}</span>
-        </div>`
-      ).join(''):`<div class="cache-empty">${t('cacheEmpty')}</div>`;
+        </div>`;
+      }).join('');
     }
     cacheToggleBtn.addEventListener('click',()=>{
       const open=cacheListEl.style.display==='block';
       cacheListEl.style.display=open?'none':'block';
       cacheToggleBtn.textContent=open?t('cacheTitle'):t('cacheHide');
+      cacheClearAllBtn.style.display=(!open&&getCache().length)?'inline-block':'none';
       if(!open)renderCache();
+    });
+    cacheClearAllBtn.addEventListener('click',()=>{
+      clearAllCache();
+      cacheListEl.style.display='none';
+      cacheToggleBtn.textContent=t('cacheTitle');
+      cacheClearAllBtn.style.display='none';
     });
     cacheListEl.addEventListener('click',e=>{
       const delBtn=e.target.closest('[data-delidx]');
@@ -901,7 +931,6 @@
       const item=e.target.closest('[data-idx]');
       if(item)loadCache(+item.dataset.idx);
     });
-    // 初始化缓存按钮
     (function initCache(){
       const cache=getCache();
       if(cache.length){
@@ -916,7 +945,13 @@
 
     tbody.addEventListener('click',e=>{
       const s=e.target.closest('.star');
-      if(s){s.classList.add('bounce');setTimeout(()=>s.classList.remove('bounce'),150);toggleFav(s.closest('tr').dataset.sym);}
+      if(s){s.classList.add('bounce');setTimeout(()=>s.classList.remove('bounce'),150);toggleFav(s.closest('tr').dataset.sym);return;}
+      // 点击表格行自动填充代币名到输入框
+      const tr=e.target.closest('tr');
+      if(tr&&tr.dataset.sym){
+        const row=rows.find(r=>r.sym===tr.dataset.sym);
+        if(row){tokenEl.value=row.symbol;showToast(row.symbol);}
+      }
     });
 
     document.querySelectorAll('th.sortable').forEach(th=>{
