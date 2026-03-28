@@ -769,22 +769,24 @@
 
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
-      tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px">加载中…</td></tr>`;
+      const isFirstLoad=!rows||rows.length===0;
+      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px">加载中…</td></tr>`;
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
 
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
       thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
 
       try{
-        rows=await fetchList();
-        await fillQVAll(rows,today8,yest8,endTs);
+        const newRows=await fetchList();
+        await fillQVAll(newRows,today8,yest8,endTs);
+        rows=newRows;
         render();
         lastUpEl.textContent=`${t('lastUp')} ${fmtFull(Date.now())}`;
         window._boundary=today8;
       }catch(e){
         console.error(e);
         const msg=e.message||t('unknownErr');
-        tbody.innerHTML=`<tr><td colspan="8">${t('failLoad')}${msg}</td></tr>`;
+        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8">${t('failLoad')}${msg}</td></tr>`;
         showToast(`${t('failLoad')}${msg}`);
       }finally{
         refreshBtn.disabled=false;
