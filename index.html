@@ -117,9 +117,15 @@
 
     /* ✅ 30天内上新标记 */
     .tag-new{
-      display:inline-block;margin-left:6px;padding:0 6px;border-radius:10px;
+      display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:0 6px;border-radius:10px;
       font-size:.68rem;line-height:1.4;border:1px solid var(--primary);
       color:var(--primary);background:rgba(37,99,235,.08)
+    }
+    .tag-new-icon{
+      display:inline-flex;align-items:center;justify-content:center;
+      padding:0 3px;border-radius:4px;
+      font-size:.6rem;font-weight:700;line-height:1.3;
+      color:#0b0e11;background:#f0b90b
     }
 
     /* ✅ 合约标记 */
@@ -382,7 +388,7 @@
         badRange: '时间范围不合法',
         querying: '查询…',
         rangeTpl: (sym,s,e,vol) => `<strong>${sym}</strong> 在\u00a0<span>${s}</span> ~ <span>${e}</span> 的限价单成交额：<strong>${vol}</strong>`,
-        newTag: (d) => `✖️ 剩${d}天`,
+        newTag: (d) => `<span class="tag-new-icon">✖️${d}</span> 剩${d}天`,
         futuresTag: '合约',
         listingTip: '上新：',
         langBtn: 'EN',
@@ -433,7 +439,7 @@
         badRange: 'Invalid time range',
         querying: 'Querying…',
         rangeTpl: (sym,s,e,vol) => `<strong>${sym}</strong> limit order volume from\u00a0<span>${s}</span> to <span>${e}</span>: <strong>${vol}</strong>`,
-        newTag: (d) => `✖️ ${d}d left`,
+        newTag: (d) => `<span class="tag-new-icon">✖️${d}</span> ${d}d left`,
         futuresTag: 'Futures',
         listingTip: 'Listed: ',
         langBtn: '中',
