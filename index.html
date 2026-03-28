@@ -143,6 +143,39 @@
 
     /* 自定义区间结果 */
     #customVol{max-width:1200px;margin:4px auto 0;font-size:.9rem;color:var(--primary)}
+
+    /* ---------- 小时交易量 ---------- */
+    #hourlyWrap{max-width:1200px;margin:6px auto 0;padding:0 6px}
+    #hourlyWrap .hourly-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px;margin-top:6px}
+    #hourlyWrap .hourly-bar .h-col{
+      display:flex;flex-direction:column;align-items:center;gap:2px;min-width:56px;flex:1
+    }
+    #hourlyWrap .hourly-bar .h-col .h-bar{
+      width:100%;min-height:4px;background:var(--primary);border-radius:3px 3px 0 0;
+      transition:height .3s
+    }
+    #hourlyWrap .hourly-bar .h-col .h-val{font-size:.7rem;color:var(--text);font-weight:600}
+    #hourlyWrap .hourly-bar .h-col .h-lbl{font-size:.66rem;color:var(--sub)}
+
+    /* ---------- 查询缓存记录 ---------- */
+    #cacheWrap{max-width:1200px;margin:6px auto 0;padding:0 6px}
+    #cacheToggle{font-size:.82rem;color:var(--primary);cursor:pointer;user-select:none;background:none;border:none}
+    #cacheToggle:hover{text-decoration:underline}
+    #cacheList{margin-top:4px;display:none;border:1px solid var(--border);border-radius:6px;overflow:hidden;max-height:260px;overflow-y:auto}
+    #cacheList .cache-item{
+      display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:.82rem;
+      border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s
+    }
+    #cacheList .cache-item:last-child{border-bottom:none}
+    #cacheList .cache-item:hover{background:rgba(37,99,235,.06)}
+    #cacheList .cache-item .ci-info{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #cacheList .cache-item .ci-del{
+      color:var(--red);cursor:pointer;font-size:.78rem;padding:2px 6px;border-radius:4px;
+      border:1px solid transparent;flex-shrink:0
+    }
+    #cacheList .cache-item .ci-del:hover{border-color:var(--red);background:rgba(220,38,38,.06)}
+    #cacheList .cache-empty{padding:10px;text-align:center;font-size:.8rem;color:var(--sub)}
+
     footer{height:16px;margin-bottom:12px}
 
     /* ---------- 回到顶部按钮 ---------- */
@@ -259,6 +292,9 @@
       <input id="startTime" type="datetime-local">
       <input id="endTime" type="datetime-local">
       <button id="rangeBtn" class="btn" data-i18n="rangeQuery">区间查询</button>
+      <span style="margin-left:8px;color:var(--sub);font-size:.82rem">|</span>
+      <input id="hourlyHours" type="number" min="1" max="72" value="6" style="width:52px" title="小时数">
+      <button id="hourlyBtn" class="btn" data-i18n="hourlyQuery">小时交易量</button>
     </div>
   </div>
 
@@ -282,6 +318,11 @@
   </div>
 
   <div id="customVol"></div>
+  <div id="hourlyWrap"></div>
+  <div id="cacheWrap">
+    <button id="cacheToggle" style="display:none"></button>
+    <div id="cacheList"></div>
+  </div>
 
   <div class="table-wrap">
   <table id="tokenTable">
@@ -343,7 +384,15 @@
         listingTip: '上新：',
         langBtn: 'EN',
         backTop: '回到顶部',
-        author: '作者'
+        author: '作者',
+        hourlyQuery: '小时交易量',
+        hourlyHoursPh: '小时数',
+        hourlyTpl: (sym,h) => `<strong>${sym}</strong> 近 ${h} 小时每小时交易量：`,
+        cacheTitle: '📋 查询记录',
+        cacheHide: '📋 收起记录',
+        cacheEmpty: '暂无查询记录',
+        cacheDel: '删除',
+        cacheLoad: '加载'
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -382,7 +431,15 @@
         listingTip: 'Listed: ',
         langBtn: '中',
         backTop: 'Back to top',
-        author: 'Author'
+        author: 'Author',
+        hourlyQuery: 'Hourly Volume',
+        hourlyHoursPh: 'Hours',
+        hourlyTpl: (sym,h) => `<strong>${sym}</strong> hourly volume (last ${h}h):`,
+        cacheTitle: '📋 Query History',
+        cacheHide: '📋 Hide History',
+        cacheEmpty: 'No query history',
+        cacheDel: 'Del',
+        cacheLoad: 'Load'
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -397,6 +454,8 @@
       document.querySelector('[data-i18n="onlySec"]').textContent = t('onlySec');
       document.getElementById('tokenInput').placeholder = t('tokenPh');
       document.getElementById('rangeBtn').textContent = t('rangeQuery');
+      document.getElementById('hourlyBtn').textContent = t('hourlyQuery');
+      document.getElementById('hourlyHours').title = t('hourlyHoursPh');
       document.querySelector('[data-i18n="adBadge"]').textContent = t('adBadge');
       document.querySelector('[data-i18n="joinTg"]').textContent = t('joinTg');
       document.querySelector('[data-i18n="bnbReg"]').textContent = t('bnbReg');
@@ -487,6 +546,12 @@
     const endEl =document.getElementById('endTime');
     const rangeBtn=document.getElementById('rangeBtn');
     const customVolEl=document.getElementById('customVol');
+    const hourlyBtn=document.getElementById('hourlyBtn');
+    const hourlyHoursEl=document.getElementById('hourlyHours');
+    const hourlyWrap=document.getElementById('hourlyWrap');
+    const cacheToggleBtn=document.getElementById('cacheToggle');
+    const cacheListEl=document.getElementById('cacheList');
+    const CACHE_KEY='alphaRangeCache';
     const onlyNewEl=document.getElementById('onlyNew');
     const onlyFuturesEl=document.getElementById('onlyFutures');
     const onlySecEl=document.getElementById('onlySec');
@@ -728,7 +793,122 @@
       const vol=await qvAuto(row,st,et);
       rangeBtn.disabled=false;progressEl.style.display='none';
       customVolEl.innerHTML=t('rangeTpl')(row.symbol||sym, fmtFull(st), fmtFull(et), nf0.format(vol));
+
+      // 保存到缓存
+      saveCache({symbol:row.symbol||sym, start:st, end:et, vol, time:Date.now()});
     });
+
+    /* ---------- 近N小时每小时交易量 ---------- */
+    hourlyBtn.addEventListener('click',async()=>{
+      const sym=tokenEl.value.trim();
+      if(!sym){showToast(t('enterSym'));return;}
+
+      let row=rows.find(r=>
+        r.symbol.toLowerCase()===sym.toLowerCase() ||
+        (r.sym && r.sym.toLowerCase()===sym.toLowerCase()) ||
+        (r.symUSDC && r.symUSDC.toLowerCase()===sym.toLowerCase()) ||
+        (r.qSym && r.qSym.toLowerCase()===sym.toLowerCase())
+      );
+      if(!row){
+        const m=sym.match(/_(\d+)/);
+        if(m) row={sym:`${m[1]}USDT`,symUSDC:`${m[1]}USDC`,qSym:null,symbol:sym};
+      }
+      if(!row){showToast(t('notFound'));return;}
+
+      const hours=Math.max(1,Math.min(72,parseInt(hourlyHoursEl.value)||6));
+      const now=Date.now();
+      // 对齐到整点
+      const endH=new Date(now);endH.setMinutes(0,0,0);
+      const endTs=endH.getTime();
+      const startTs=endTs-hours*3600000;
+
+      hourlyBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
+
+      // 逐小时查询
+      const hourlyData=[];
+      const tasks=[];
+      for(let i=0;i<hours;i++){
+        const hStart=startTs+i*3600000;
+        const hEnd=hStart+3600000;
+        tasks.push(limit(async()=>{
+          const vol=await qvAuto({...row},hStart,hEnd);
+          hourlyData[i]={start:hStart,end:hEnd,vol};
+          progressEl.textContent=`${Math.floor((hourlyData.filter(Boolean).length)/hours*100)}%`;
+        }));
+      }
+      await Promise.all(tasks);
+
+      hourlyBtn.disabled=false;progressEl.style.display='none';
+
+      // 渲染柱状图
+      const maxVol=Math.max(...hourlyData.map(d=>d.vol),1);
+      const maxBarH=100;
+      const fmtHour=ts=>{
+        const d=new Date(ts);
+        return `${String(d.getHours()).padStart(2,'0')}:00`;
+      };
+      hourlyWrap.innerHTML=`<div style="font-size:.88rem;color:var(--primary);font-weight:600">${t('hourlyTpl')(row.symbol||sym,hours)}</div>
+        <div class="hourly-bar">${hourlyData.map(d=>{
+          const h=Math.max(4,Math.round(d.vol/maxVol*maxBarH));
+          return `<div class="h-col">
+            <div class="h-val">${nf0.format(d.vol)}</div>
+            <div class="h-bar" style="height:${h}px"></div>
+            <div class="h-lbl">${fmtHour(d.start)}</div>
+          </div>`;
+        }).join('')}</div>`;
+    });
+
+    /* ---------- 区间查询缓存记录 ---------- */
+    function getCache(){try{return JSON.parse(localStorage.getItem(CACHE_KEY)||'[]');}catch{return [];}}
+    function setCache(arr){localStorage.setItem(CACHE_KEY,JSON.stringify(arr));renderCache();}
+    function saveCache(entry){
+      const cache=getCache();
+      cache.unshift(entry);
+      if(cache.length>50)cache.length=50; // 最多50条
+      setCache(cache);
+    }
+    function deleteCache(idx){
+      const cache=getCache();cache.splice(idx,1);setCache(cache);
+    }
+    function loadCache(idx){
+      const cache=getCache();
+      const item=cache[idx];
+      if(!item)return;
+      customVolEl.innerHTML=t('rangeTpl')(item.symbol, fmtFull(item.start), fmtFull(item.end), nf0.format(item.vol));
+    }
+    function renderCache(){
+      const cache=getCache();
+      cacheToggleBtn.style.display=cache.length?'inline-block':'none';
+      if(!cache.length){cacheListEl.style.display='none';return;}
+      const open=cacheListEl.style.display==='block';
+      if(!open)return;
+      cacheListEl.innerHTML=cache.length?cache.map((c,i)=>
+        `<div class="cache-item">
+          <span class="ci-info" data-idx="${i}"><strong>${c.symbol}</strong>&nbsp; ${fmtFull(c.start)} ~ ${fmtFull(c.end)}&nbsp; → ${nf0.format(c.vol)}</span>
+          <span class="ci-del" data-delidx="${i}">${t('cacheDel')}</span>
+        </div>`
+      ).join(''):`<div class="cache-empty">${t('cacheEmpty')}</div>`;
+    }
+    cacheToggleBtn.addEventListener('click',()=>{
+      const open=cacheListEl.style.display==='block';
+      cacheListEl.style.display=open?'none':'block';
+      cacheToggleBtn.textContent=open?t('cacheTitle'):t('cacheHide');
+      if(!open)renderCache();
+    });
+    cacheListEl.addEventListener('click',e=>{
+      const delBtn=e.target.closest('[data-delidx]');
+      if(delBtn){e.stopPropagation();deleteCache(+delBtn.dataset.delidx);return;}
+      const item=e.target.closest('[data-idx]');
+      if(item)loadCache(+item.dataset.idx);
+    });
+    // 初始化缓存按钮
+    (function initCache(){
+      const cache=getCache();
+      if(cache.length){
+        cacheToggleBtn.style.display='inline-block';
+        cacheToggleBtn.textContent=t('cacheTitle');
+      }
+    })();
 
     document.getElementById('search').addEventListener('input',e=>{
       filter=e.target.value.trim().toLowerCase();render();
