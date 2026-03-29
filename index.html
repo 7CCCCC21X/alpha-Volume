@@ -520,26 +520,29 @@
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     /* 智能价格格式化：小于 0.01 的价格自动显示更多有效位 */
+    const _nfCache={};
+    function _nfDigits(d){return _nfCache[d]||(_nfCache[d]=new Intl.NumberFormat('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}));}
     function fmtPrice(p){
       if(p>=1) return nf2.format(p);
-      if(p>=0.01) return new Intl.NumberFormat('en-US',{minimumFractionDigits:4,maximumFractionDigits:4}).format(p);
+      if(p>=0.01) return _nfDigits(4).format(p);
       const s=p.toFixed(20);const m=s.match(/^0\.(0+)/);
       const zeros=m?m[1].length:0;
-      return new Intl.NumberFormat('en-US',{minimumFractionDigits:zeros+3,maximumFractionDigits:zeros+3}).format(p);
+      return _nfDigits(zeros+3).format(p);
     }
     const FAV_KEY='alphaFavs',CONCURRENCY=15;
 
     /* ✅ 严格 30 天（毫秒） */
     const THIRTY_DAYS = 29*24*60*60*1000;
 
-    const fmtShort=ts=>new Intl.DateTimeFormat('zh-CN', {
+    const _dtfShort=new Intl.DateTimeFormat('zh-CN', {
       timeZone:'Asia/Shanghai',hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'
-    }).format(new Date(ts)).replace(/\//g,'-');
-
-    const fmtFull=ts=>new Intl.DateTimeFormat('zh-CN', {
+    });
+    const _dtfFull=new Intl.DateTimeFormat('zh-CN', {
       timeZone:'Asia/Shanghai',hour12:false,year:'numeric',month:'2-digit',day:'2-digit',
       hour:'2-digit',minute:'2-digit',second:'2-digit'
-    }).format(new Date(ts)).replace(/\//g,'-');
+    });
+    const fmtShort=ts=>_dtfShort.format(new Date(ts)).replace(/\//g,'-');
+    const fmtFull=ts=>_dtfFull.format(new Date(ts)).replace(/\//g,'-');
 
     const nearest8UTC=()=>{
       const n=new Date(),b=new Date();
@@ -687,11 +690,13 @@
       progressEl.style.display='none';
     }
 
-    const favs=()=>{try{return JSON.parse(localStorage.getItem(FAV_KEY)||'[]');}catch{return [];}};
+    let _favsCache=null;
+    const favs=()=>{if(_favsCache)return _favsCache;try{return _favsCache=JSON.parse(localStorage.getItem(FAV_KEY)||'[]');}catch{return _favsCache=[];}};
     function toggleFav(sym){
       const f=favs();const i=f.indexOf(sym);
       i>-1?f.splice(i,1):f.push(sym);
       localStorage.setItem(FAV_KEY,JSON.stringify(f));
+      _favsCache=f; // update cache
       showToast(i>-1 ? t('favDel') : t('favAdd'));
       render();
     }
@@ -767,7 +772,9 @@
       });
 
       const sorted=sortRows(filtered);
-      const display=[...sorted.filter(x=>favSet.has(x.sym)),...sorted.filter(x=>!favSet.has(x.sym))];
+      const favArr=[],restArr=[];
+      for(let i=0;i<sorted.length;i++)(favSet.has(sorted[i].sym)?favArr:restArr).push(sorted[i]);
+      const display=favArr.concat(restArr);
 
       tbody.innerHTML=display.map((r,i)=>{
         const left = r.isNew && r.listingTime ? daysLeft(r.listingTime) : 0;
@@ -974,8 +981,11 @@
       }
     })();
 
+    let _searchTimer=0;
     document.getElementById('search').addEventListener('input',e=>{
-      filter=e.target.value.trim().toLowerCase();render();
+      filter=e.target.value.trim().toLowerCase();
+      clearTimeout(_searchTimer);
+      _searchTimer=setTimeout(render,200);
     });
 
     tbody.addEventListener('click',e=>{
@@ -1047,8 +1057,9 @@
 
     /* ---------- 回到顶部 ---------- */
     const backTopBtn=document.getElementById('backTop');
+    let _scrollTick=false;
     window.addEventListener('scroll',()=>{
-      backTopBtn.style.display=window.scrollY>300?'flex':'none';
+      if(!_scrollTick){_scrollTick=true;requestAnimationFrame(()=>{backTopBtn.style.display=window.scrollY>300?'flex':'none';_scrollTick=false;});}
     },{passive:true});
     backTopBtn.addEventListener('click',()=>{
       window.scrollTo({top:0,behavior:'smooth'});
