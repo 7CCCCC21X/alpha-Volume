@@ -427,8 +427,8 @@
         cacheClearAll: '清空全部',
         cacheTime: '查询于',
         hourlyTotal: (vol) => `合计：${vol}`,
-        tradeStats: (trades, avg) => `成交 ${trades} 笔，平均单笔 ${avg} USD`,
-        avgLabel: '均',
+        tradeStats: (trades, avg) => `共 ${trades} 笔 | 约 ${avg} USD/笔`,
+        avgPerTrade: (avg) => `约$${avg}/笔`,
         hourlyType: 'hourly'
       },
       en: {
@@ -480,8 +480,8 @@
         cacheClearAll: 'Clear All',
         cacheTime: 'Queried at',
         hourlyTotal: (vol) => `Total: ${vol}`,
-        tradeStats: (trades, avg) => `${trades} trades, avg ${avg} USD/trade`,
-        avgLabel: 'Avg',
+        tradeStats: (trades, avg) => `${trades} trades | ~${avg} USD/trade`,
+        avgPerTrade: (avg) => `~$${avg}/trade`,
         hourlyType: 'hourly'
       }
     };
@@ -915,7 +915,7 @@
           const cls=hours>1&&d.vol===maxVol?'h-col h-max':hours>1&&d.vol===minVol?'h-col h-min':'h-col';
           const avg=d.trades>0?Math.round(d.vol/d.trades):0;
           return `<div class="${cls}">
-            <div class="h-val">${nf0.format(d.vol)}<br><small style="color:#888">${t('avgLabel')} ${nf0.format(avg)}</small></div>
+            <div class="h-val">${nf0.format(d.vol)}<br><small style="color:#888;font-size:11px">${t('avgPerTrade')(nf0.format(avg))}</small></div>
             <div class="h-bar" style="height:${h}px;animation-delay:${i*30}ms"></div>
             <div class="h-lbl">${fmtHour(d.start,false)}${d.partial?'*':''}</div>
           </div>`;
