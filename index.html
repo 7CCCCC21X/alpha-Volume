@@ -427,6 +427,8 @@
         cacheClearAll: '清空全部',
         cacheTime: '查询于',
         hourlyTotal: (vol) => `合计：${vol}`,
+        tradeStats: (trades, avg) => `共 ${trades} 笔 | 约 ${avg} USD/笔`,
+        avgPerTrade: (avg) => `约$${avg}/笔`,
         hourlyType: 'hourly'
       },
       en: {
@@ -478,6 +480,8 @@
         cacheClearAll: 'Clear All',
         cacheTime: 'Queried at',
         hourlyTotal: (vol) => `Total: ${vol}`,
+        tradeStats: (trades, avg) => `${trades} trades | ~${avg} USD/trade`,
+        avgPerTrade: (avg) => `~$${avg}/trade`,
         hourlyType: 'hourly'
       }
     };
@@ -622,7 +626,7 @@
     // ✅ K线成交额：优先 USDT，失败自动 fallback 到 USDC
     // ------------------------------
     async function qvOk(sym, start, end){
-      if(start>=end) return { ok:true, vol:0 };
+      if(start>=end) return { ok:true, vol:0, trades:0 };
       const url=`${K_API}?symbol=${encodeURIComponent(sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
       try{
         const json=await fetchWithTimeout(url).then(r=>r.json());
@@ -631,32 +635,33 @@
           (json?.success !== false) &&
           (json?.code == null || ['000000','0'].includes(String(json.code)));
 
-        if(!ok) return { ok:false, vol:0 };
+        if(!ok) return { ok:false, vol:0, trades:0 };
 
         const data=json?.data;
-        if(!Array.isArray(data)) return { ok:false, vol:0 };
+        if(!Array.isArray(data)) return { ok:false, vol:0, trades:0 };
 
         const vol=data.reduce((s,k)=>s+parseFloat(k?.[7]||0),0);
-        return { ok:true, vol };
+        const trades=data.reduce((s,k)=>s+parseInt(k?.[8]||0),0);
+        return { ok:true, vol, trades };
       }catch{
-        return { ok:false, vol:0 };
+        return { ok:false, vol:0, trades:0 };
       }
     }
 
     async function qvAuto(row, start, end){
       const primary = row.qSym || row.sym; // row.sym 默认是 `${alphaId}USDT`
       let res = await qvOk(primary, start, end);
-      if(res.ok) return res.vol;
+      if(res.ok) return { vol:res.vol, trades:res.trades };
 
       const alt = row.symUSDC || (row.sym && row.sym.endsWith('USDT') ? row.sym.replace(/USDT$/,'USDC') : '');
-      if(!alt || alt===primary) return 0;
+      if(!alt || alt===primary) return { vol:0, trades:0 };
 
       res = await qvOk(alt, start, end);
       if(res.ok){
         row.qSym = alt; // 缓存实际可用交易对
-        return res.vol;
+        return { vol:res.vol, trades:res.trades };
       }
-      return 0;
+      return { vol:0, trades:0 };
     }
 
     /* 公共：按名称/交易对查找代币行 */
@@ -678,10 +683,11 @@
       let done=0,total=list.length;
       progressEl.style.display='inline-block';
       await Promise.all(list.map(r=>limit(async()=>{
-        [r.todayQV,r.prevQV]=await Promise.all([
+        const [todayRes,prevRes]=await Promise.all([
           qvAuto(r,today8,endTs),
           qvAuto(r,yest8,today8-1)
         ]);
+        r.todayQV=todayRes.vol; r.prevQV=prevRes.vol;
         progressEl.textContent=`${Math.floor(++done/total*100)}%`;
       })));
       progressEl.style.display='none';
@@ -839,12 +845,14 @@
       if(!st||!et||st>=et){showToast(t('badRange'));return;}
 
       rangeBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
-      const vol=await qvAuto(row,st,et);
+      const res=await qvAuto(row,st,et);
       rangeBtn.disabled=false;progressEl.style.display='none';
-      customVolEl.innerHTML=t('rangeTpl')(row.symbol||sym, fmtFull(st), fmtFull(et), nf0.format(vol));
+      const avgPerTrade=res.trades>0?(res.vol/res.trades):0;
+      customVolEl.innerHTML=t('rangeTpl')(row.symbol||sym, fmtFull(st), fmtFull(et), nf0.format(res.vol))
+        + `<br>${t('tradeStats')(nf0.format(res.trades), nf0.format(Math.round(avgPerTrade)))}`;
 
       // 保存到缓存
-      saveCache({symbol:row.symbol||sym, start:st, end:et, vol, time:Date.now()});
+      saveCache({symbol:row.symbol||sym, start:st, end:et, vol:res.vol, trades:res.trades, time:Date.now()});
     });
 
     /* ---------- 近N小时每小时交易量 ---------- */
@@ -859,19 +867,29 @@
       const endH=new Date(now);endH.setMinutes(0,0,0);
       const endTs=endH.getTime();
       const startTs=endTs-hours*3600000;
+      const hasPartial=now-endTs>60000; // 超过1分钟才显示当前不完整小时
 
       hourlyBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
 
       const hourlyData=[];
+      const totalSlots=hours+(hasPartial?1:0);
       let done=0;
       const tasks=[];
       for(let i=0;i<hours;i++){
         const hStart=startTs+i*3600000;
         const hEnd=hStart+3600000-1;
         tasks.push(limit(async()=>{
-          const vol=await qvAuto({...row},hStart,hEnd);
-          hourlyData[i]={start:hStart,end:hEnd,vol};
-          progressEl.textContent=`${Math.floor(++done/hours*100)}%`;
+          const res=await qvAuto({...row},hStart,hEnd);
+          hourlyData[i]={start:hStart,end:hEnd,vol:res.vol,trades:res.trades};
+          progressEl.textContent=`${Math.floor(++done/totalSlots*100)}%`;
+        }));
+      }
+      // 当前不完整小时
+      if(hasPartial){
+        tasks.push(limit(async()=>{
+          const res=await qvAuto({...row},endTs,now);
+          hourlyData[hours]={start:endTs,end:now,vol:res.vol,trades:res.trades,partial:true};
+          progressEl.textContent=`${Math.floor(++done/totalSlots*100)}%`;
         }));
       }
       await Promise.all(tasks);
@@ -882,24 +900,29 @@
       const maxVol=Math.max(...hourlyData.map(d=>d.vol),1);
       const minVol=Math.min(...hourlyData.map(d=>d.vol));
       const totalVol=hourlyData.reduce((s,d)=>s+d.vol,0);
+      const totalTrades=hourlyData.reduce((s,d)=>s+d.trades,0);
+      const totalAvg=totalTrades>0?Math.round(totalVol/totalTrades):0;
       const maxBarH=120;
-      const fmtHour=ts=>{
+      const fmtHour=(ts,partial)=>{
         const d=new Date(ts);
-        return `${String(d.getHours()).padStart(2,'0')}:00`;
+        const hh=String(d.getHours()).padStart(2,'0');
+        if(partial){const mm=String(d.getMinutes()).padStart(2,'0');return `${hh}:${mm}`;}
+        return `${hh}:00`;
       };
-      hourlyWrap.innerHTML=`<div class="hourly-header"><span class="hourly-title">${t('hourlyTpl')(row.symbol||sym,hours)}</span><span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}</span></div>
+      hourlyWrap.innerHTML=`<div class="hourly-header"><span class="hourly-title">${t('hourlyTpl')(row.symbol||sym,hours)}</span><span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}<br><small style="font-weight:normal;color:#888">${t('tradeStats')(nf0.format(totalTrades), nf0.format(totalAvg))}</small></span></div>
         <div class="hourly-scroll"><div class="hourly-bar">${hourlyData.map((d,i)=>{
           const h=Math.max(4,Math.round(d.vol/maxVol*maxBarH));
           const cls=hours>1&&d.vol===maxVol?'h-col h-max':hours>1&&d.vol===minVol?'h-col h-min':'h-col';
+          const avg=d.trades>0?Math.round(d.vol/d.trades):0;
           return `<div class="${cls}">
-            <div class="h-val">${nf0.format(d.vol)}</div>
+            <div class="h-val">${nf0.format(d.vol)}<br><small style="color:#888;font-size:11px">${t('avgPerTrade')(nf0.format(avg))}</small></div>
             <div class="h-bar" style="height:${h}px;animation-delay:${i*30}ms"></div>
-            <div class="h-lbl">${fmtHour(d.start)}</div>
+            <div class="h-lbl">${fmtHour(d.start,false)}${d.partial?'*':''}</div>
           </div>`;
         }).join('')}</div></div>`;
 
       // 保存小时查询到缓存
-      saveCache({symbol:row.symbol||sym, start:startTs, end:endTs, vol:totalVol, time:Date.now(), type:'hourly', hours});
+      saveCache({symbol:row.symbol||sym, start:startTs, end:endTs, vol:totalVol, trades:totalTrades, time:Date.now(), type:'hourly', hours});
     });
 
     /* ---------- 区间查询缓存记录 ---------- */
@@ -921,7 +944,8 @@
       const cache=getCache();
       const item=cache[idx];
       if(!item)return;
-      customVolEl.innerHTML=t('rangeTpl')(item.symbol, fmtFull(item.start), fmtFull(item.end), nf0.format(item.vol));
+      customVolEl.innerHTML=t('rangeTpl')(item.symbol, fmtFull(item.start), fmtFull(item.end), nf0.format(item.vol))
+        + (item.trades ? `<br>${t('tradeStats')(nf0.format(item.trades), nf0.format(Math.round(item.vol/item.trades)))}` : '');
       // 回填输入框，方便微调再查
       tokenEl.value=item.symbol;
       const pad=n=>String(n).padStart(2,'0');
