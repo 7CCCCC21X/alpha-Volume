@@ -867,10 +867,12 @@
       const endH=new Date(now);endH.setMinutes(0,0,0);
       const endTs=endH.getTime();
       const startTs=endTs-hours*3600000;
+      const hasPartial=now-endTs>60000; // 超过1分钟才显示当前不完整小时
 
       hourlyBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
 
       const hourlyData=[];
+      const totalSlots=hours+(hasPartial?1:0);
       let done=0;
       const tasks=[];
       for(let i=0;i<hours;i++){
@@ -879,7 +881,15 @@
         tasks.push(limit(async()=>{
           const res=await qvAuto({...row},hStart,hEnd);
           hourlyData[i]={start:hStart,end:hEnd,vol:res.vol,trades:res.trades};
-          progressEl.textContent=`${Math.floor(++done/hours*100)}%`;
+          progressEl.textContent=`${Math.floor(++done/totalSlots*100)}%`;
+        }));
+      }
+      // 当前不完整小时
+      if(hasPartial){
+        tasks.push(limit(async()=>{
+          const res=await qvAuto({...row},endTs,now);
+          hourlyData[hours]={start:endTs,end:now,vol:res.vol,trades:res.trades,partial:true};
+          progressEl.textContent=`${Math.floor(++done/totalSlots*100)}%`;
         }));
       }
       await Promise.all(tasks);
@@ -893,9 +903,11 @@
       const totalTrades=hourlyData.reduce((s,d)=>s+d.trades,0);
       const totalAvg=totalTrades>0?Math.round(totalVol/totalTrades):0;
       const maxBarH=120;
-      const fmtHour=ts=>{
+      const fmtHour=(ts,partial)=>{
         const d=new Date(ts);
-        return `${String(d.getHours()).padStart(2,'0')}:00`;
+        const hh=String(d.getHours()).padStart(2,'0');
+        if(partial){const mm=String(d.getMinutes()).padStart(2,'0');return `${hh}:${mm}`;}
+        return `${hh}:00`;
       };
       hourlyWrap.innerHTML=`<div class="hourly-header"><span class="hourly-title">${t('hourlyTpl')(row.symbol||sym,hours)}</span><span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}<br><small style="font-weight:normal;color:#888">${t('tradeStats')(nf0.format(totalTrades), nf0.format(totalAvg))}</small></span></div>
         <div class="hourly-scroll"><div class="hourly-bar">${hourlyData.map((d,i)=>{
@@ -905,7 +917,7 @@
           return `<div class="${cls}">
             <div class="h-val">${nf0.format(d.vol)}<br><small style="color:#888">${t('avgLabel')} ${nf0.format(avg)}</small></div>
             <div class="h-bar" style="height:${h}px;animation-delay:${i*30}ms"></div>
-            <div class="h-lbl">${fmtHour(d.start)}</div>
+            <div class="h-lbl">${fmtHour(d.start,false)}${d.partial?'*':''}</div>
           </div>`;
         }).join('')}</div></div>`;
 
