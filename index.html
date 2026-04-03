@@ -867,7 +867,7 @@
       const tasks=[];
       for(let i=0;i<hours;i++){
         const hStart=startTs+i*3600000;
-        const hEnd=hStart+3600000;
+        const hEnd=hStart+3600000-1;
         tasks.push(limit(async()=>{
           const vol=await qvAuto({...row},hStart,hEnd);
           hourlyData[i]={start:hStart,end:hEnd,vol};
