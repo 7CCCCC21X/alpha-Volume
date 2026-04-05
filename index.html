@@ -225,7 +225,7 @@
       border:1px solid var(--primary);border-radius:12px;
       padding:16px 20px 14px;
       box-shadow:0 12px 40px rgba(0,0,0,.2);
-      max-width:340px;min-width:220px;
+      max-width:400px;min-width:260px;
       animation:guideIn .3s ease-out;
     }
     @keyframes guideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -237,7 +237,8 @@
       font-size:.95rem;font-weight:700;margin-bottom:6px;line-height:1.4
     }
     .guide-tooltip .guide-desc{
-      font-size:.82rem;color:var(--sub);line-height:1.6;margin-bottom:14px
+      font-size:.82rem;color:var(--sub);line-height:1.6;margin-bottom:14px;
+      max-height:45vh;overflow-y:auto
     }
     .guide-tooltip .guide-btns{
       display:flex;align-items:center;justify-content:space-between;gap:8px
@@ -501,12 +502,22 @@
         guideDone: '完成',
         guideSkip: '跳过',
         guideSteps: [
-          { title:'搜索 & 过滤', desc:'输入代币名称或符号快速筛选；勾选右侧复选框可只看新币、合约币或代币化证券。' },
-          { title:'区间查询 & 小时交易量', desc:'输入代币名称，选择起止时间可查询任意区间的限价单成交额；也可按小时查看近N小时的交易量柱状图。' },
-          { title:'收藏代币', desc:'点击表格最左侧的 ☆ 星标收藏代币，收藏的代币会始终置顶显示。' },
-          { title:'排序功能', desc:'点击「24H 交易量」「流通市值」「完全稀释估值」「持币人数」等列头可按升序/降序排列。' },
-          { title:'点击行填充', desc:'点击任意代币行，代币名称会自动填入上方输入框，方便直接进行区间查询或小时交易量查询。' },
-          { title:'深色模式 & 多语言', desc:'右上角 🌓 切换深色/浅色模式；点击 EN/中 按钮切换中英文界面。' }
+          { title:'搜索 & 过滤',
+            desc:'在搜索框输入代币名称或符号（如 BTC、SIGMA）即可实时筛选。<br><br>右侧提供三个过滤开关：<br>· <b>仅看30天内上新</b> — 只显示最近上架的新币，带有 🆕 标记<br>· <b>仅看有合约</b> — 只显示已上线币安合约的代币，带有「合约」标签<br>· <b>仅看代币化证券</b> — 只显示 RWA 代币化证券<br><br>💡 过滤器可以组合使用，搜索框和过滤器同时生效。' },
+          { title:'区间查询',
+            desc:'查询任意代币在指定时间范围内的限价单成交额。<br><br><b>使用步骤：</b><br>1. 在「输入代币名称」框填入代币符号（如 SIGMA��<br>2. 设置开始时间和结束时间<br>3. 点击「区间查询」按钮<br><br>查询结果会显示总成交额、交易笔数和每笔均额。<br><br>💡 查询记录会自动保存，点击下方「📋 查询记录」可快速回看历史查询。' },
+          { title:'小时交易量图表',
+            desc:'以柱状图查看代币近 N 小时的逐小时交易量分布。<br><br><b>���用步骤：</b><br>1. 填入代币名称<br>2. 在右侧数字框设置小时数（1~72，默认6小时）<br>3. 点击「小时交易量」按钮<br><br>图表中 <b style="color:var(--green)">绿��</b> 柱为最高成交额小时，<b style="color:var(--red)">红��</b> 柱为最低。<br><br>💡 图表支持横向滚动，悬停柱子可查看精确数值。' },
+          { title:'收藏��币',
+            desc:'点击表格最左侧的 ☆ 图标即可收藏代币，收藏后变为 ★ 黄色星标。<br><br>收藏的代币始终 <b>置顶显示</b>，不受排序影响，方便持续关注重点标的。<br><br>💡 收藏数据保存在浏览器本地，刷新页面不会丢失。再次点击 ★ 可取消收藏。' },
+          { title:'市场数据列',
+            desc:'表格包含丰富的市场数据：<br><br>· <b>价格</b> — 当前实时价格（美元��<br>· <b>24H 交易量</b> — 过去 24 小时总交易额<br>· <b>24H 变化</b> — 价格涨跌幅（绿涨红跌）<br>· <b>流通���值</b> — 当前流通供应量 × 价格<br>· <b>完全稀释估值 (FDV)</b> — 总供应量 × 价格<br>· <b>持币人数</b> — 链上持币地址数<br><br>💡 大数值使用缩写显示：K=千、M=百万、B=十亿。' },
+          { title:'排序功能',
+            desc:'点击带有 ▲ 标记的列头可切换排序：<br><br>· 第一次点击 → <b>降序</b>（从大到小）▼<br>· 再次点击 → <b>升序</b>（从小到大）▲<br><br>可排序的列：24H 交易量、流通市值、完全稀释估值、持币人数、当天/前一天限价单成交额。<br><br>💡 默认按「当天限价单成交额」降序排列。' },
+          { title:'点击行快速查询',
+            desc:'点击表格中任意代币行，该代币名称会 <b>自动填入</b> 上方的代币输入框。<br><br>填入后可以直接点击「区间查询」或「小时交易量」按钮，省去手动输入的步骤。<br><br>�� 填入时会弹出 Toast 提示已选择的代币名称。' },
+          { title:'深色模式 & 多语言',
+            desc:'右上角提供两个快捷切换：<br><br>· 🌓 <b>主题切换</b> — 在深色/浅色模式之间切换，适应不同环境和个人偏好。设置会被记住。<br>· <b>EN / 中</b> — 切换中文和英文界面，所有文字标签和引导内容都会切换语言。<br><br>💡 主题和语言偏好均保存在浏览器本地，下次打开自动恢复。' }
         ]
       },
       en: {
@@ -570,12 +581,22 @@
         guideDone: 'Done',
         guideSkip: 'Skip',
         guideSteps: [
-          { title:'Search & Filter', desc:'Type a token name or symbol to filter instantly. Use the checkboxes to show only new tokens, futures, or tokenized securities.' },
-          { title:'Range Query & Hourly Volume', desc:'Enter a token name, pick a time range to query limit order volume; or view an hourly volume bar chart for the last N hours.' },
-          { title:'Favorite Tokens', desc:'Click the ☆ star on the left side of any row to pin it to the top of the table.' },
-          { title:'Sortable Columns', desc:'Click column headers like "24H Volume", "Market Cap", "FDV", "Holders" to sort ascending or descending.' },
-          { title:'Click Row to Fill', desc:'Click any token row to auto-fill its name into the input box, making it easy to run a range or hourly query.' },
-          { title:'Dark Mode & Language', desc:'Toggle 🌓 for dark/light mode. Click EN/中 to switch between English and Chinese.' }
+          { title:'Search & Filter',
+            desc:'Type a token name or symbol (e.g. BTC, SIGMA) in the search box to filter in real-time.<br><br>Three filter toggles on the right:<br>· <b>New (30d) only</b> — show recently listed tokens marked with 🆕<br>· <b>Futures only</b> — show tokens with Binance perpetual contracts<br>· <b>Tokenized Securities only</b> — show RWA tokenized assets<br><br>💡 Filters can be combined. Search and filters work together.' },
+          { title:'Range Query',
+            desc:'Query any token\'s limit order volume within a custom time range.<br><br><b>Steps:</b><br>1. Enter a token symbol (e.g. SIGMA)<br>2. Set the start and end time<br>3. Click "Range Query"<br><br>Results show total volume, trade count, and average per trade.<br><br>💡 Queries are auto-saved — click "📋 Query History" below to reload past results.' },
+          { title:'Hourly Volume Chart',
+            desc:'View a bar chart of hourly trading volume for the last N hours.<br><br><b>Steps:</b><br>1. Enter the token name<br>2. Set the hours (1–72, default 6)<br>3. Click "Hourly Volume"<br><br>The <b style="color:var(--green)">green</b> bar marks the peak hour, <b style="color:var(--red)">red</b> marks the lowest.<br><br>💡 The chart scrolls horizontally. Hover on bars for exact values.' },
+          { title:'Favorite Tokens',
+            desc:'Click the ☆ icon on the far left of any row to favorite a token — it turns into a yellow ★.<br><br>Favorited tokens are always <b>pinned to the top</b>, unaffected by sorting, so you can track key tokens easily.<br><br>💡 Favorites are stored locally and persist across refreshes. Click ★ again to unfavorite.' },
+          { title:'Market Data Columns',
+            desc:'The table provides rich market data:<br><br>· <b>Price</b> — current price in USD<br>�� <b>24H Volume</b> — total trading volume in 24 hours<br>· <b>24H Change</b> — price change % (green = up, red = down)<br>· <b>Market Cap</b> — circulating supply × price<br>· <b>FDV</b> — fully diluted valuation (total supply × price)<br>· <b>Holders</b> — number of on-chain holder addresses<br><br>💡 Large values use abbreviations: K = thousand, M = million, B = billion.' },
+          { title:'Sortable Columns',
+            desc:'Click any column header with a ▲ marker to toggle sorting:<br><br>· First click → <b>Descending</b> (high to low) ▼<br>· Click again → <b>Ascending</b> (low to high) ▲<br><br>Sortable columns: 24H Volume, Market Cap, FDV, Holders, Today/Prev Day Limit Order Volume.<br><br>💡 Default sort is "Today Limit Order Volume" descending.' },
+          { title:'Click Row to Quick Query',
+            desc:'Click any token row in the table and its name is <b>auto-filled</b> into the input box above.<br><br>From there you can directly click "Range Query" or "Hourly Volume" without typing manually.<br><br>💡 A toast notification confirms which token was selected.' },
+          { title:'Dark Mode & Language',
+            desc:'Two quick toggles in the top-right corner:<br><br>· 🌓 <b>Theme</b> — switch between dark and light mode for comfortable viewing in any environment<br>· <b>EN / 中</b> — switch between English and Chinese; all labels and guide content update accordingly<br><br>💡 Both preferences are saved locally and restored on next visit.' }
         ]
       }
     };
@@ -1192,14 +1213,15 @@
 
     /* ---------- 功能引导 ---------- */
     (function initGuide(){
-      const GUIDE_KEY='alphaGuideShown';
       let curStep=0, overlayEl=null, spotEl=null, tipEl=null, running=false;
 
       // 每一步对应的 DOM 选择器
       const stepTargets=[
-        '#bar-row1',     // 搜索 & 过滤
-        '#bar-row2',     // 区间查询
+        '#bar-row1',       // 搜索 & 过滤
+        '#bar-row2',       // 区间查询
+        '#bar-row2',       // 小时交易量（同一行，不同按钮）
         '#tokenTable thead th:first-child', // 收藏星标
+        '#tokenTable thead',                // 市场数据列
         '#tokenTable thead',                // 排序
         '#tokenTable tbody',                // 点击行
         '#bar-right'                        // 深色模式 & 语言
@@ -1298,16 +1320,9 @@
         running=false;
         removeEls();
         document.body.style.overflow='';
-        localStorage.setItem(GUIDE_KEY,'1');
       }
 
       document.getElementById('guideBtn').addEventListener('click', start);
-
-      // 首次访问自动弹出引导
-      if(!localStorage.getItem(GUIDE_KEY)){
-        // 等数据加载完再弹（给 1.5s）
-        setTimeout(start, 1500);
-      }
     })();
 
     /* ---------- 初始化 ---------- */
