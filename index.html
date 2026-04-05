@@ -206,6 +206,64 @@
 
     footer{height:16px;margin-bottom:12px}
 
+    /* ---------- 功能引导 ---------- */
+    .guide-overlay{
+      position:fixed;inset:0;z-index:9998;
+      background:rgba(0,0,0,.55);
+      transition:opacity .3s;
+    }
+    .guide-spotlight{
+      position:fixed;z-index:9999;
+      border-radius:8px;
+      box-shadow:0 0 0 9999px rgba(0,0,0,.55), 0 0 0 3px var(--primary), 0 0 24px rgba(37,99,235,.35);
+      transition:all .35s cubic-bezier(.4,0,.2,1);
+      pointer-events:none;
+    }
+    .guide-tooltip{
+      position:fixed;z-index:10000;
+      background:var(--bg);color:var(--text);
+      border:1px solid var(--primary);border-radius:12px;
+      padding:16px 20px 14px;
+      box-shadow:0 12px 40px rgba(0,0,0,.2);
+      max-width:340px;min-width:220px;
+      animation:guideIn .3s ease-out;
+    }
+    @keyframes guideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .guide-tooltip .guide-step{
+      font-size:.7rem;color:var(--primary);font-weight:700;
+      margin-bottom:4px;letter-spacing:.5px
+    }
+    .guide-tooltip .guide-title{
+      font-size:.95rem;font-weight:700;margin-bottom:6px;line-height:1.4
+    }
+    .guide-tooltip .guide-desc{
+      font-size:.82rem;color:var(--sub);line-height:1.6;margin-bottom:14px
+    }
+    .guide-tooltip .guide-btns{
+      display:flex;align-items:center;justify-content:space-between;gap:8px
+    }
+    .guide-tooltip .guide-btns button{
+      padding:6px 16px;border-radius:6px;font-size:.82rem;cursor:pointer;
+      border:1px solid var(--border);background:var(--bg);color:var(--text);
+      transition:all .15s
+    }
+    .guide-tooltip .guide-btns button:hover{background:rgba(37,99,235,.06)}
+    .guide-tooltip .guide-btns .guide-next{
+      background:var(--primary);color:#fff;border-color:var(--primary);font-weight:700
+    }
+    .guide-tooltip .guide-btns .guide-next:hover{opacity:.9}
+    .guide-dots{display:flex;gap:5px;align-items:center}
+    .guide-dots span{
+      width:7px;height:7px;border-radius:50%;
+      background:var(--border);transition:all .2s
+    }
+    .guide-dots span.active{background:var(--primary);transform:scale(1.3)}
+    #guideBtn{
+      background:transparent;border:1px solid var(--border);color:var(--text);
+      border-radius:4px;padding:4px 8px;cursor:pointer;font-size:.85rem
+    }
+    #guideBtn:hover{border-color:var(--primary);color:var(--primary)}
+
     /* ---------- 回到顶部按钮 ---------- */
     #backTop{
       position:fixed;bottom:32px;right:20px;width:40px;height:40px;
@@ -310,6 +368,7 @@
       <label class="chk"><input id="onlyFutures" type="checkbox"> <span data-i18n="onlyFutures">仅看有合约</span></label>
       <label class="chk"><input id="onlySec" type="checkbox"> <span data-i18n="onlySec">仅看代币化证券</span></label>
       <div id="bar-right">
+        <button id="guideBtn" title="功能引导">?</button>
         <button id="langBtn" title="Switch Language">EN</button>
         <button id="themeBtn" title="切换深色/浅色模式">🌓</button>
         <div id="author"> 作者&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank">@0xXIAOc</a> </div>
@@ -435,7 +494,20 @@
         hourlyTotal: (vol) => `合计：${vol}`,
         tradeStats: (trades, avg) => `共 ${trades} 笔 | 约 ${avg} USD/笔`,
         avgPerTrade: (avg) => `约$${avg}/笔`,
-        hourlyType: 'hourly'
+        hourlyType: 'hourly',
+        guideBtn: '?',
+        guideNext: '下一步',
+        guidePrev: '上一步',
+        guideDone: '完成',
+        guideSkip: '跳过',
+        guideSteps: [
+          { title:'搜索 & 过滤', desc:'输入代币名称或符号快速筛选；勾选右侧复选框可只看新币、合约币或代币化证券。' },
+          { title:'区间查询 & 小时交易量', desc:'输入代币名称，选择起止时间可查询任意区间的限价单成交额；也可按小时查看近N小时的交易量柱状图。' },
+          { title:'收藏代币', desc:'点击表格最左侧的 ☆ 星标收藏代币，收藏的代币会始终置顶显示。' },
+          { title:'排序功能', desc:'点击「24H 交易量」「流通市值」「完全稀释估值」「持币人数」等列头可按升序/降序排列。' },
+          { title:'点击行填充', desc:'点击任意代币行，代币名称会自动填入上方输入框，方便直接进行区间查询或小时交易量查询。' },
+          { title:'深色模式 & 多语言', desc:'右上角 🌓 切换深色/浅色模式；点击 EN/中 按钮切换中英文界面。' }
+        ]
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -491,7 +563,20 @@
         hourlyTotal: (vol) => `Total: ${vol}`,
         tradeStats: (trades, avg) => `${trades} trades | ~${avg} USD/trade`,
         avgPerTrade: (avg) => `~$${avg}/trade`,
-        hourlyType: 'hourly'
+        hourlyType: 'hourly',
+        guideBtn: '?',
+        guideNext: 'Next',
+        guidePrev: 'Prev',
+        guideDone: 'Done',
+        guideSkip: 'Skip',
+        guideSteps: [
+          { title:'Search & Filter', desc:'Type a token name or symbol to filter instantly. Use the checkboxes to show only new tokens, futures, or tokenized securities.' },
+          { title:'Range Query & Hourly Volume', desc:'Enter a token name, pick a time range to query limit order volume; or view an hourly volume bar chart for the last N hours.' },
+          { title:'Favorite Tokens', desc:'Click the ☆ star on the left side of any row to pin it to the top of the table.' },
+          { title:'Sortable Columns', desc:'Click column headers like "24H Volume", "Market Cap", "FDV", "Holders" to sort ascending or descending.' },
+          { title:'Click Row to Fill', desc:'Click any token row to auto-fill its name into the input box, making it easy to run a range or hourly query.' },
+          { title:'Dark Mode & Language', desc:'Toggle 🌓 for dark/light mode. Click EN/中 to switch between English and Chinese.' }
+        ]
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -524,6 +609,7 @@
       document.getElementById('thFdv').childNodes[0].textContent = t('thFdv');
       document.getElementById('thHolders').childNodes[0].textContent = t('thHolders');
       document.getElementById('langBtn').textContent = t('langBtn');
+      document.getElementById('guideBtn').title = curLang==='zh' ? '功能引导' : 'Feature Guide';
       document.getElementById('backTop').title = t('backTop');
       const authorEl = document.getElementById('author');
       authorEl.innerHTML = `${t('author')}&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank">@0xXIAOc</a>`;
@@ -1103,6 +1189,126 @@
     backTopBtn.addEventListener('click',()=>{
       window.scrollTo({top:0,behavior:'smooth'});
     });
+
+    /* ---------- 功能引导 ---------- */
+    (function initGuide(){
+      const GUIDE_KEY='alphaGuideShown';
+      let curStep=0, overlayEl=null, spotEl=null, tipEl=null, running=false;
+
+      // 每一步对应的 DOM 选择器
+      const stepTargets=[
+        '#bar-row1',     // 搜索 & 过滤
+        '#bar-row2',     // 区间查询
+        '#tokenTable thead th:first-child', // 收藏星标
+        '#tokenTable thead',                // 排序
+        '#tokenTable tbody',                // 点击行
+        '#bar-right'                        // 深色模式 & 语言
+      ];
+
+      function getSteps(){ return t('guideSteps'); }
+
+      function createEls(){
+        overlayEl=document.createElement('div');
+        overlayEl.className='guide-overlay';
+        overlayEl.addEventListener('click', stop);
+
+        spotEl=document.createElement('div');
+        spotEl.className='guide-spotlight';
+
+        tipEl=document.createElement('div');
+        tipEl.className='guide-tooltip';
+
+        document.body.append(overlayEl, spotEl, tipEl);
+      }
+
+      function removeEls(){
+        [overlayEl, spotEl, tipEl].forEach(el=>el&&el.remove());
+        overlayEl=spotEl=tipEl=null;
+      }
+
+      function positionTip(rect){
+        const pad=12, tw=tipEl.offsetWidth, th=tipEl.offsetHeight;
+        const vw=window.innerWidth, vh=window.innerHeight;
+        let top, left;
+
+        // 优先放下方
+        if(rect.bottom+pad+th < vh){
+          top=rect.bottom+pad;
+        } else if(rect.top-pad-th > 0){
+          top=rect.top-pad-th;
+        } else {
+          top=Math.max(8, vh/2-th/2);
+        }
+        left=Math.max(8, Math.min(rect.left, vw-tw-8));
+        tipEl.style.top=top+'px';
+        tipEl.style.left=left+'px';
+      }
+
+      function showStep(){
+        const steps=getSteps();
+        const s=steps[curStep];
+        const target=document.querySelector(stepTargets[curStep]);
+        const rect=target?target.getBoundingClientRect():{top:100,left:100,width:200,height:40,bottom:140,right:300};
+
+        // spotlight
+        const sp=6;
+        spotEl.style.top=(rect.top-sp)+'px';
+        spotEl.style.left=(rect.left-sp)+'px';
+        spotEl.style.width=(rect.width+sp*2)+'px';
+        spotEl.style.height=(rect.height+sp*2)+'px';
+
+        // dots
+        const dots=steps.map((_,i)=>`<span class="${i===curStep?'active':''}"></span>`).join('');
+
+        tipEl.innerHTML=`
+          <div class="guide-step">STEP ${curStep+1} / ${steps.length}</div>
+          <div class="guide-title">${s.title}</div>
+          <div class="guide-desc">${s.desc}</div>
+          <div class="guide-btns">
+            <div class="guide-dots">${dots}</div>
+            <div style="display:flex;gap:6px">
+              ${curStep>0?`<button class="guide-prev">${t('guidePrev')}</button>`:`<button class="guide-skip">${t('guideSkip')}</button>`}
+              <button class="guide-next">${curStep<steps.length-1?t('guideNext'):t('guideDone')}</button>
+            </div>
+          </div>
+        `;
+
+        tipEl.querySelector('.guide-next').addEventListener('click',()=>{
+          if(curStep<steps.length-1){curStep++;showStep();}else stop();
+        });
+        const prevBtn=tipEl.querySelector('.guide-prev');
+        if(prevBtn) prevBtn.addEventListener('click',()=>{curStep--;showStep();});
+        const skipBtn=tipEl.querySelector('.guide-skip');
+        if(skipBtn) skipBtn.addEventListener('click', stop);
+
+        // 需要先渲染才能算位置
+        requestAnimationFrame(()=>positionTip(rect));
+      }
+
+      function start(){
+        if(running) return;
+        running=true; curStep=0;
+        createEls();
+        showStep();
+        document.body.style.overflow='hidden';
+      }
+
+      function stop(){
+        if(!running) return;
+        running=false;
+        removeEls();
+        document.body.style.overflow='';
+        localStorage.setItem(GUIDE_KEY,'1');
+      }
+
+      document.getElementById('guideBtn').addEventListener('click', start);
+
+      // 首次访问自动弹出引导
+      if(!localStorage.getItem(GUIDE_KEY)){
+        // 等数据加载完再弹（给 1.5s）
+        setTimeout(start, 1500);
+      }
+    })();
 
     /* ---------- 初始化 ---------- */
     applyI18n();
