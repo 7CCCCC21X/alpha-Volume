@@ -157,7 +157,7 @@
     }
     #hourlyWrap .hourly-bar{display:flex;align-items:flex-end;gap:4px;margin-top:0;min-width:max-content;padding-bottom:2px}
     #hourlyWrap .hourly-bar .h-col{
-      display:flex;flex-direction:column;align-items:center;gap:2px;min-width:52px;flex:1;
+      display:flex;flex-direction:column;align-items:center;gap:2px;min-width:72px;flex:1;
       transition:transform .15s;cursor:default
     }
     #hourlyWrap .hourly-bar .h-col:hover{transform:scaleY(1.03) translateY(-1px)}
@@ -173,7 +173,7 @@
     }
     #hourlyWrap .hourly-bar .h-col .h-val{font-size:.68rem;color:var(--sub);font-weight:600;white-space:nowrap}
     #hourlyWrap .hourly-bar .h-col:hover .h-val{color:var(--primary)}
-    #hourlyWrap .hourly-bar .h-col .h-lbl{font-size:.66rem;color:var(--sub);padding-bottom:2px}
+    #hourlyWrap .hourly-bar .h-col .h-lbl{font-size:.66rem;color:var(--sub);padding-bottom:2px;white-space:nowrap}
     #hourlyWrap .hourly-bar .h-col.h-max .h-bar{background:linear-gradient(180deg,#22c55e,#16a34a);box-shadow:0 1px 3px rgba(22,163,74,.25)}
     #hourlyWrap .hourly-bar .h-col.h-max .h-val{color:var(--green);font-weight:700}
     #hourlyWrap .hourly-bar .h-col.h-min .h-bar{background:linear-gradient(180deg,#f87171,#dc2626);box-shadow:0 1px 3px rgba(220,38,38,.25)}
@@ -905,8 +905,13 @@
       const maxBarH=120;
       const fmtHour=(ts,partial)=>{
         const d=new Date(ts);
+        if(partial){const hh=String(d.getHours()).padStart(2,'0');const mm=String(d.getMinutes()).padStart(2,'0');return `${hh}:${mm}`;}
         const hh=String(d.getHours()).padStart(2,'0');
-        if(partial){const mm=String(d.getMinutes()).padStart(2,'0');return `${hh}:${mm}`;}
+        return `${hh}:00`;
+      };
+      const fmtHourEnd=(ts)=>{
+        const d=new Date(ts+1);
+        const hh=String(d.getHours()).padStart(2,'0');
         return `${hh}:00`;
       };
       hourlyWrap.innerHTML=`<div class="hourly-header"><span class="hourly-title">${t('hourlyTpl')(row.symbol||sym,hours)}</span><span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}<br><small style="font-weight:normal;color:#888">${t('tradeStats')(nf0.format(totalTrades), nf0.format(totalAvg))}</small></span></div>
@@ -917,7 +922,7 @@
           return `<div class="${cls}">
             <div class="h-val">${nf0.format(d.vol)}<br><small style="color:#888;font-size:11px">${t('avgPerTrade')(nf0.format(avg))}</small></div>
             <div class="h-bar" style="height:${h}px;animation-delay:${i*30}ms"></div>
-            <div class="h-lbl">${fmtHour(d.start,false)}${d.partial?'*':''}</div>
+            <div class="h-lbl">${fmtHour(d.start,false)}-${d.partial?fmtHour(d.end,true):fmtHourEnd(d.end)}${d.partial?'*':''}</div>
           </div>`;
         }).join('')}</div></div>`;
 
