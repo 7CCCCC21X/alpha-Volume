@@ -450,7 +450,7 @@
         onlyComp: '仅看交易赛',
         thCompVol: '交易赛交易量',
         compTag: '交易赛',
-        compActive: (d) => `🏆 交易赛 剩${d}天`,
+        compActive: (d,unit) => `🏆 交易赛 剩${d}${unit==='h'?'小时':'天'}`,
         compEnded: '🏆 已结束',
         compUpcoming: '🏆 未开始',
         compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`
@@ -510,7 +510,7 @@
         onlyComp: 'Competition only',
         thCompVol: 'Competition Volume',
         compTag: 'Comp',
-        compActive: (d) => `🏆 Comp ${d}d left`,
+        compActive: (d,unit) => `🏆 Comp ${d}${unit==='h'?'h':'d'} left`,
         compEnded: '🏆 Ended',
         compUpcoming: '🏆 Upcoming',
         compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`
@@ -848,8 +848,10 @@
           if(now<c.start){
             compTag=`<span class="tag-comp comp-upcoming" title="${compTip}">${t('compUpcoming')}</span>`;
           } else if(now<=c.end){
-            const daysLeft=Math.max(1, Math.ceil((c.end-now)/86400000));
-            compTag=`<span class="tag-comp comp-active" title="${compTip}">${t('compActive')(daysLeft)}</span>`;
+            const remain=c.end-now;
+            const unit=remain<86400000?'h':'d';
+            const val=unit==='h'?Math.max(1,Math.ceil(remain/3600000)):Math.ceil(remain/86400000);
+            compTag=`<span class="tag-comp comp-active" title="${compTip}">${t('compActive')(val,unit)}</span>`;
           } else {
             compTag=`<span class="tag-comp comp-ended" title="${compTip}">${t('compEnded')}</span>`;
           }
