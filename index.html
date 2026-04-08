@@ -861,7 +861,12 @@
         let compCell='-';
         if(r.comp){
           if(r.compVol==null) compCell='…';
-          else compCell=`${nf0.format(r.compVol)}<span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`;
+          else {
+            const rewardAmt=parseFloat(r.comp.perWinner.replace(/,/g,''))||0;
+            const rewardUsd=rewardAmt*r.price;
+            compCell=`${nf0.format(r.compVol)}<span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
+              +`<span class="subl">🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardUsd)}</span>`;
+          }
         }
 
         return `
