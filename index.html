@@ -381,10 +381,10 @@
         <th id="thChg">24H 变化</th>
         <th id="thToday" class="sortable" data-key="todayQV">当天限价单成交额</th>
         <th id="thPrev" class="sortable" data-key="prevQV">前一天限价单成交额</th>
-        <th id="thCompVol" class="sortable" data-key="compVol">交易赛交易量</th>
+        <th id="thCompVol" class="sortable" data-key="compVol" style="display:none">交易赛交易量</th>
       </tr>
     </thead>
-    <tbody><tr><td colspan="9">加载中…</td></tr></tbody>
+    <tbody><tr><td colspan="8">加载中…</td></tr></tbody>
   </table>
   </div>
 
@@ -881,7 +881,7 @@
           <td class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</td>
           <td>${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
           <td>${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
-          <td>${compCell}</td>
+          ${showCompOnly?`<td>${compCell}</td>`:''}
         </tr>
       `;
       }).join('');
@@ -891,7 +891,7 @@
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const isFirstLoad=!rows||rows.length===0;
-      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:24px">加载中…</td></tr>`;
+      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px">加载中…</td></tr>`;
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
 
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
@@ -907,7 +907,7 @@
       }catch(e){
         console.error(e);
         const msg=e.message||t('unknownErr');
-        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9">${t('failLoad')}${msg}</td></tr>`;
+        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8">${t('failLoad')}${msg}</td></tr>`;
         showToast(`${t('failLoad')}${msg}`);
       }finally{
         refreshBtn.disabled=false;
@@ -1129,6 +1129,7 @@
 
     onlyCompEl.addEventListener('change', (e)=>{
       showCompOnly = e.target.checked;
+      thCompVol.style.display = showCompOnly ? '' : 'none';
       render();
     });
 
