@@ -904,7 +904,20 @@
 
       try{
         const newRows=await fetchList();
-        await fillQVAll(newRows,today8,yest8,endTs);
+        if(showCompOnly && rows.length>0){
+          // 仅刷新有交易赛的币种，其余复用旧数据
+          const oldMap=Object.fromEntries(rows.map(r=>[r.symbol,r]));
+          newRows.forEach(r=>{
+            if(!r.comp && oldMap[r.symbol]){
+              const o=oldMap[r.symbol];
+              r.todayQV=o.todayQV; r.prevQV=o.prevQV; r.qSym=o.qSym;
+            }
+          });
+          const compRows=newRows.filter(r=>r.comp);
+          await fillQVAll(compRows,today8,yest8,endTs);
+        }else{
+          await fillQVAll(newRows,today8,yest8,endTs);
+        }
         rows=newRows;
         render();
         lastUpEl.textContent=`${t('lastUp')} ${fmtFull(Date.now())}`;
