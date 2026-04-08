@@ -129,6 +129,21 @@
       color:#f59e0b;background:rgba(245,158,11,.08);font-weight:700
     }
 
+    /* ✅ 交易赛标记 */
+    .tag-comp{
+      display:inline-block;margin-left:4px;padding:0 5px;border-radius:10px;
+      font-size:.68rem;line-height:1.4;font-weight:700;cursor:help
+    }
+    .tag-comp.comp-active{
+      border:1px solid #16a34a;color:#16a34a;background:rgba(22,163,74,.08)
+    }
+    .tag-comp.comp-ended{
+      border:1px solid #9ca3af;color:#9ca3af;background:rgba(156,163,175,.08)
+    }
+    .tag-comp.comp-upcoming{
+      border:1px solid #2563eb;color:#2563eb;background:rgba(37,99,235,.08)
+    }
+
     /* Toast */
     #toast{
       position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
@@ -309,6 +324,7 @@
       <label class="chk"><input id="onlyNew" type="checkbox"> <span data-i18n="onlyNew">仅看30天内上新</span></label>
       <label class="chk"><input id="onlyFutures" type="checkbox"> <span data-i18n="onlyFutures">仅看有合约</span></label>
       <label class="chk"><input id="onlySec" type="checkbox"> <span data-i18n="onlySec">仅看代币化证券</span></label>
+      <label class="chk"><input id="onlyComp" type="checkbox"> <span data-i18n="onlyComp">仅看交易赛</span></label>
       <div id="bar-right">
         <button id="langBtn" title="Switch Language">EN</button>
         <button id="themeBtn" title="切换深色/浅色模式">🌓</button>
@@ -365,9 +381,10 @@
         <th id="thChg">24H 变化</th>
         <th id="thToday" class="sortable" data-key="todayQV">当天限价单成交额</th>
         <th id="thPrev" class="sortable" data-key="prevQV">前一天限价单成交额</th>
+        <th id="thCompVol" class="sortable" data-key="compVol">交易赛交易量</th>
       </tr>
     </thead>
-    <tbody><tr><td colspan="8">加载中…</td></tr></tbody>
+    <tbody><tr><td colspan="9">加载中…</td></tr></tbody>
   </table>
   </div>
 
@@ -429,7 +446,14 @@
         hourlyTotal: (vol) => `合计：${vol}`,
         tradeStats: (trades, avg) => `共 ${trades} 笔 | 约 ${avg} USD/笔`,
         avgPerTrade: (avg) => `约$${avg}/笔`,
-        hourlyType: 'hourly'
+        hourlyType: 'hourly',
+        onlyComp: '仅看交易赛',
+        thCompVol: '交易赛交易量',
+        compTag: '交易赛',
+        compActive: (d) => `🏆 交易赛 剩${d}天`,
+        compEnded: '🏆 已结束',
+        compUpcoming: '🏆 未开始',
+        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -482,7 +506,14 @@
         hourlyTotal: (vol) => `Total: ${vol}`,
         tradeStats: (trades, avg) => `${trades} trades | ~${avg} USD/trade`,
         avgPerTrade: (avg) => `~$${avg}/trade`,
-        hourlyType: 'hourly'
+        hourlyType: 'hourly',
+        onlyComp: 'Competition only',
+        thCompVol: 'Competition Volume',
+        compTag: 'Comp',
+        compActive: (d) => `🏆 Comp ${d}d left`,
+        compEnded: '🏆 Ended',
+        compUpcoming: '🏆 Upcoming',
+        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -495,6 +526,7 @@
       document.querySelector('[data-i18n="onlyNew"]').textContent = t('onlyNew');
       document.querySelector('[data-i18n="onlyFutures"]').textContent = t('onlyFutures');
       document.querySelector('[data-i18n="onlySec"]').textContent = t('onlySec');
+      document.querySelector('[data-i18n="onlyComp"]').textContent = t('onlyComp');
       document.getElementById('tokenInput').placeholder = t('tokenPh');
       document.getElementById('rangeBtn').textContent = t('rangeQuery');
       document.getElementById('hourlyBtn').textContent = t('hourlyQuery');
@@ -521,6 +553,16 @@
     const LIST_API='https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list';
     const K_API ='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines';
     const FUTURES_API='https://fapi.binance.com/fapi/v1/exchangeInfo';
+
+    /* ---------- 交易赛配置（手动维护） ---------- */
+    const COMPETITIONS = [
+      { symbol:'EDGE',  start:Date.parse('2026-04-02T21:00:00+08:00'), end:Date.parse('2026-04-09T21:00:00+08:00'), topN:2700, pool:'135,000 EDGE',     perWinner:'50 EDGE' },
+      { symbol:'BLUAI', start:Date.parse('2026-04-02T21:00:00+08:00'), end:Date.parse('2026-04-09T21:00:00+08:00'), topN:3330, pool:'13,653,000 BLUAI',  perWinner:'4,100 BLUAI' },
+      { symbol:'BEAT',  start:Date.parse('2026-04-03T21:00:00+08:00'), end:Date.parse('2026-04-10T21:00:00+08:00'), topN:2000, pool:'200,000 BEAT',      perWinner:'100 BEAT' },
+      { symbol:'BASED', start:Date.parse('2026-04-07T21:00:00+08:00'), end:Date.parse('2026-04-14T21:00:00+08:00'), topN:3330, pool:'865,800 BASED',     perWinner:'260 BASED' },
+      { symbol:'PRL',   start:Date.parse('2026-04-08T21:00:00+08:00'), end:Date.parse('2026-04-15T21:00:00+08:00'), topN:3330, pool:'799,200 PRL',       perWinner:'240 PRL' },
+    ];
+    const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     /* 智能价格格式化：小于 0.01 的价格自动显示更多有效位 */
@@ -606,13 +648,15 @@
     const onlyNewEl=document.getElementById('onlyNew');
     const onlyFuturesEl=document.getElementById('onlyFutures');
     const onlySecEl=document.getElementById('onlySec');
+    const onlyCompEl=document.getElementById('onlyComp');
+    const thCompVol=document.getElementById('thCompVol');
 
     function showToast(msg){
       toast.textContent=msg;toast.style.opacity='1';
       setTimeout(()=>toast.style.opacity='0',3000);
     }
 
-    let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false,showFuturesOnly=false,showSecOnly=false;
+    let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false,showFuturesOnly=false,showSecOnly=false,showCompOnly=false;
     window._boundary=nearest8UTC();
 
     function pLimit(n){
@@ -688,6 +732,17 @@
           qvAuto(r,yest8,today8-1)
         ]);
         r.todayQV=todayRes.vol; r.prevQV=prevRes.vol;
+        // ✅ 交易赛交易量（qSym 已在上面的请求中解析）
+        if(r.comp){
+          const now=Date.now();
+          const cStart=r.comp.start, cEnd=r.comp.end;
+          if(now>cStart){
+            const compRes=await qvAuto(r, cStart, Math.min(now, cEnd));
+            r.compVol=compRes.vol; r.compTrades=compRes.trades;
+          } else {
+            r.compVol=0; r.compTrades=0;
+          }
+        }
         progressEl.textContent=`${Math.floor(++done/total*100)}%`;
       })));
       progressEl.style.display='none';
@@ -740,13 +795,18 @@
             isTokenizedSecurity: t.stockState === true && t.rwaInfo != null,
 
             // ✅ 是否上了币安合约
-            hasFutures: futuresSet.has(t.symbol.toUpperCase())
+            hasFutures: futuresSet.has(t.symbol.toUpperCase()),
+
+            // ✅ 交易赛
+            comp: COMP_MAP[t.symbol.toUpperCase()] || null,
+            compVol: null,
+            compTrades: null
           };
         });
     }
 
     function sortRows(arr){
-      const gv = o => (o[sortKey]==null ? 0 : o[sortKey]);
+      const gv = o => (o[sortKey]==null ? (sortKey==='compVol'&&!o.comp ? -1 : 0) : o[sortKey]);
       return [...arr].sort((a,b)=>sortDir==='desc'?gv(b)-gv(a):gv(a)-gv(b));
     }
     function updateSortIcons(){
@@ -769,7 +829,8 @@
         const newOk = !showNewOnly || r.isNew;
         const futuresOk = !showFuturesOnly || r.hasFutures;
         const secOk = !showSecOnly || r.isTokenizedSecurity;
-        return matched && newOk && futuresOk && secOk;
+        const compOk = !showCompOnly || r.comp;
+        return matched && newOk && futuresOk && secOk && compOk;
       });
 
       const sorted=sortRows(filtered);
@@ -778,6 +839,28 @@
       tbody.innerHTML=display.map((r,i)=>{
         const left = r.isNew && r.listingTime ? daysLeft(r.listingTime) : 0;
         const tipPrefix = t('listingTip');
+
+        // ✅ 交易赛标记
+        let compTag='';
+        if(r.comp){
+          const now=Date.now(), c=r.comp;
+          const compTip=t('compTip')(c.topN, c.pool, c.perWinner, fmtFull(c.start), fmtFull(c.end));
+          if(now<c.start){
+            compTag=`<span class="tag-comp comp-upcoming" title="${compTip}">${t('compUpcoming')}</span>`;
+          } else if(now<=c.end){
+            const daysLeft=Math.max(1, Math.ceil((c.end-now)/86400000));
+            compTag=`<span class="tag-comp comp-active" title="${compTip}">${t('compActive')(daysLeft)}</span>`;
+          } else {
+            compTag=`<span class="tag-comp comp-ended" title="${compTip}">${t('compEnded')}</span>`;
+          }
+        }
+
+        // ✅ 交易赛交易量列
+        let compCell='-';
+        if(r.comp){
+          if(r.compVol==null) compCell='…';
+          else compCell=`${nf0.format(r.compVol)}<span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`;
+        }
 
         return `
         <tr data-sym="${r.sym}">
@@ -789,12 +872,14 @@
             ${r.symbol}
             ${r.hasFutures ? `<span class="tag-futures">${t('futuresTag')}</span>` : ''}
             ${r.isNew ? `<span class="tag-new" title="${tipPrefix}${r.listingTimeFmt}">${t('newTag')(left)}</span>` : ''}
+            ${compTag}
           </td>
           <td>${fmtPrice(r.price)}</td>
           <td>${nf0.format(r.vol24h)}</td>
           <td class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</td>
           <td>${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
           <td>${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
+          <td>${compCell}</td>
         </tr>
       `;
       }).join('');
@@ -804,7 +889,7 @@
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const isFirstLoad=!rows||rows.length===0;
-      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px">加载中…</td></tr>`;
+      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:24px">加载中…</td></tr>`;
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
 
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
@@ -820,7 +905,7 @@
       }catch(e){
         console.error(e);
         const msg=e.message||t('unknownErr');
-        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8">${t('failLoad')}${msg}</td></tr>`;
+        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9">${t('failLoad')}${msg}</td></tr>`;
         showToast(`${t('failLoad')}${msg}`);
       }finally{
         refreshBtn.disabled=false;
@@ -1040,6 +1125,11 @@
       render();
     });
 
+    onlyCompEl.addEventListener('change', (e)=>{
+      showCompOnly = e.target.checked;
+      render();
+    });
+
     refreshBtn.addEventListener('click', reloadAll);
 
     document.addEventListener('visibilitychange',()=>{
@@ -1071,6 +1161,7 @@
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
       thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
+      thCompVol.textContent=t('thCompVol');
       render();
     });
 
