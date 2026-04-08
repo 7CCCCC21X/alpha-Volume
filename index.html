@@ -845,7 +845,7 @@
       if(!st||!et||st>=et){showToast(t('badRange'));return;}
 
       rangeBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
-      const res=await qvAuto(row,st,et);
+      const res=await qvAuto(row,st,et-1);
       rangeBtn.disabled=false;progressEl.style.display='none';
       const avgPerTrade=res.trades>0?(res.vol/res.trades):0;
       customVolEl.innerHTML=t('rangeTpl')(row.symbol||sym, fmtFull(st), fmtFull(et), nf0.format(res.vol))
