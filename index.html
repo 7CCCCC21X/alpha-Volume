@@ -904,17 +904,26 @@
 
       try{
         const newRows=await fetchList();
-        if(showCompOnly && rows.length>0){
-          // 仅刷新有交易赛的币种，其余复用旧数据
+        const hasFilter=showCompOnly||showNewOnly||showFuturesOnly||showSecOnly;
+        if(hasFilter && rows.length>0){
+          // 有筛选时只刷新符合条件的币种，其余复用旧数据
+          const visibleSet=new Set(newRows.filter(r=>{
+            const newOk=!showNewOnly||r.isNew;
+            const futuresOk=!showFuturesOnly||r.hasFutures;
+            const secOk=!showSecOnly||r.isTokenizedSecurity;
+            const compOk=!showCompOnly||r.comp;
+            return newOk&&futuresOk&&secOk&&compOk;
+          }).map(r=>r.symbol));
           const oldMap=Object.fromEntries(rows.map(r=>[r.symbol,r]));
           newRows.forEach(r=>{
-            if(!r.comp && oldMap[r.symbol]){
+            if(!visibleSet.has(r.symbol)&&oldMap[r.symbol]){
               const o=oldMap[r.symbol];
               r.todayQV=o.todayQV; r.prevQV=o.prevQV; r.qSym=o.qSym;
+              if(o.compVol!=null){r.compVol=o.compVol; r.compTrades=o.compTrades;}
             }
           });
-          const compRows=newRows.filter(r=>r.comp);
-          await fillQVAll(compRows,today8,yest8,endTs);
+          const toRefresh=newRows.filter(r=>visibleSet.has(r.symbol));
+          await fillQVAll(toRefresh,today8,yest8,endTs);
         }else{
           await fillQVAll(newRows,today8,yest8,endTs);
         }
