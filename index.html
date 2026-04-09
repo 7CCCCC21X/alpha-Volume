@@ -143,6 +143,17 @@
       color:#f59e0b;background:rgba(245,158,11,.08);font-weight:700
     }
 
+    /* ✅ 交易赛总交易量：主数字加深加粗 + 点击复制 */
+    .comp-vol-main{
+      display:inline-block;font-weight:800;color:#111827;font-size:.92rem;
+      cursor:copy;padding:0 2px;border-radius:3px;transition:background .15s
+    }
+    .comp-vol-main:hover{background:rgba(37,99,235,.12)}
+    :root.dark .comp-vol-main{color:#f9fafb}
+    @media(prefers-color-scheme:dark){
+      :root:not(.light) .comp-vol-main{color:#f9fafb}
+    }
+
     /* ✅ 交易赛标记 */
     .tag-comp{
       display:inline-block;margin-left:4px;padding:0 5px;border-radius:10px;
@@ -180,6 +191,17 @@
       font-size:.82rem;color:var(--text);font-weight:600;
       background:rgba(37,99,235,.1);padding:2px 10px;border-radius:12px
     }
+    .hourly-header .hourly-actions{
+      display:inline-flex;align-items:center;gap:6px;margin-left:4px
+    }
+    .hourly-header .hourly-min{
+      background:transparent;border:1px solid var(--border);color:var(--text);
+      border-radius:4px;padding:2px 10px;font-size:.76rem;cursor:pointer;
+      line-height:1.3;user-select:none
+    }
+    .hourly-header .hourly-min:hover{background:rgba(37,99,235,.1);border-color:var(--primary);color:var(--primary)}
+    #hourlyWrap.collapsed .hourly-scroll{display:none}
+    #hourlyWrap.collapsed .hourly-header{border-radius:8px}
     .hourly-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;
       background:repeating-linear-gradient(0deg,transparent,transparent 24px,var(--border) 24px,var(--border) 25px);
       border-radius:0 0 8px 8px;padding:8px 4px 0;border:1px solid var(--border);border-top:none
@@ -433,12 +455,13 @@
         <th id="thPrice">价格</th>
         <th id="thVol24h" class="sortable" data-key="vol24h">24H 交易量</th>
         <th id="thChg">24H 变化</th>
+        <th id="thFdv" class="sortable" data-key="fdv">FDV</th>
         <th id="thToday" class="sortable" data-key="todayQV">当天限价单成交额</th>
         <th id="thPrev" class="sortable" data-key="prevQV">前一天限价单成交额</th>
-        <th id="thCompVol" class="sortable" data-key="compVol" style="display:none">交易赛交易量</th>
+        <th id="thCompVol" class="sortable" data-key="compVol" style="display:none">交易赛总交易量</th>
       </tr>
     </thead>
-    <tbody><tr><td colspan="8" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
+    <tbody><tr><td colspan="9" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
   </table>
   </div>
 
@@ -466,6 +489,7 @@
         adHint: '👆 点击上方按钮绑定邀请码',
         thName: '代币名字',
         thPrice: '价格',
+        thFdv: 'FDV',
         thVol24h: '24H 交易量',
         thChg: '24H 变化',
         thTodayLabel: '当天限价单成交额',
@@ -503,7 +527,11 @@
         avgPerTrade: (avg) => `约$${avg}/笔`,
         hourlyType: 'hourly',
         onlyComp: '仅看交易赛',
-        thCompVol: '交易赛交易量',
+        thCompVol: '交易赛总交易量',
+        copied: '已复制',
+        copyFail: '复制失败',
+        hourlyMinimize: '收起',
+        hourlyExpand: '展开',
         compTag: '交易赛',
         compActive: (d,unit) => `🏆 交易赛 剩${d}${unit==='m'?'分钟':unit==='h'?'小时':'天'}`,
         compEnded: '🏆 已结束',
@@ -527,6 +555,7 @@
         adHint: '👆 Click above to bind referral',
         thName: 'Token',
         thPrice: 'Price',
+        thFdv: 'FDV',
         thVol24h: '24H Volume',
         thChg: '24H Change',
         thTodayLabel: 'Today Limit Order Volume',
@@ -564,7 +593,11 @@
         avgPerTrade: (avg) => `~$${avg}/trade`,
         hourlyType: 'hourly',
         onlyComp: 'Competition only',
-        thCompVol: 'Competition Volume',
+        thCompVol: 'Total Competition Volume',
+        copied: 'Copied',
+        copyFail: 'Copy failed',
+        hourlyMinimize: 'Minimize',
+        hourlyExpand: 'Expand',
         compTag: 'Comp',
         compActive: (d,unit) => `🏆 Comp ${d}${unit==='m'?'m':unit==='h'?'h':'d'} left`,
         compEnded: '🏆 Ended',
@@ -599,6 +632,7 @@
       document.querySelector('.ad-links').setAttribute('data-hint', t('adHint'));
       document.getElementById('thName').textContent = t('thName');
       document.getElementById('thPrice').textContent = t('thPrice');
+      document.getElementById('thFdv').childNodes[0].textContent = t('thFdv');
       document.getElementById('thVol24h').childNodes[0].textContent = t('thVol24h');
       document.getElementById('thChg').textContent = t('thChg');
       document.getElementById('langBtn').textContent = t('langBtn');
@@ -634,6 +668,14 @@
       const s=p.toFixed(20);const m=s.match(/^0\.(0+)/);
       const zeros=m?m[1].length:0;
       return new Intl.NumberFormat('en-US',{minimumFractionDigits:zeros+3,maximumFractionDigits:zeros+3}).format(p);
+    }
+    /* ✅ FDV 紧凑格式化 */
+    function fmtFdv(n){
+      if(!n||n<=0) return '-';
+      if(n>=1e9) return '$'+(n/1e9).toFixed(2)+'B';
+      if(n>=1e6) return '$'+(n/1e6).toFixed(2)+'M';
+      if(n>=1e3) return '$'+(n/1e3).toFixed(2)+'K';
+      return '$'+nf0.format(n);
     }
     const FAV_KEY='alphaFavs',CONCURRENCY=15;
 
@@ -717,6 +759,23 @@
     function showToast(msg){
       toast.textContent=msg;toast.style.opacity='1';
       setTimeout(()=>toast.style.opacity='0',3000);
+    }
+
+    /* ✅ 复制到剪贴板（带 execCommand 回退） */
+    function copyText(text){
+      const done = ok => showToast(ok ? `${t('copied')}：${text}` : t('copyFail'));
+      if(navigator.clipboard && window.isSecureContext){
+        navigator.clipboard.writeText(text).then(()=>done(true)).catch(()=>done(false));
+        return;
+      }
+      try{
+        const ta=document.createElement('textarea');
+        ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select();
+        const ok=document.execCommand('copy');
+        document.body.removeChild(ta);
+        done(ok);
+      }catch{ done(false); }
     }
 
     let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false,showFuturesOnly=false,showSecOnly=false,showCompOnly=false;
@@ -826,14 +885,32 @@
       const {data=[]}=await resp.json();
 
       return data
-        .filter(t => +t.volume24h > 0 || (t.stockState === true && t.rwaInfo != null))
+        .filter(t => {
+          // ✅ 过滤：已上 CEX 现货的代币不显示
+          if (t.listingCex === true) return false;
+          // ✅ 过滤：下线/非活跃代币不显示
+          if (t.offline === true) return false;
+          return +t.volume24h > 0 || (t.stockState === true && t.rwaInfo != null);
+        })
         .map(t=>{
           const raw = Number(t.listingTime || 0);
           const ltMs = raw ? (raw < 1e12 ? raw*1000 : raw) : 0;
-          const isNew = ltMs ? (Date.now() - ltMs) < THIRTY_DAYS : false;
+          const isTokenizedSecurity = t.stockState === true && t.rwaInfo != null;
+          // ✅ 代币化证券不计入"30天内上新"
+          const isNew = !isTokenizedSecurity && ltMs ? (Date.now() - ltMs) < THIRTY_DAYS : false;
+
+          // ✅ FDV：优先使用 API 返回字段，否则用 price × totalSupply
+          const priceN = +t.price || 0;
+          const totalSupplyN = +t.totalSupply || +t.circulatingSupply || 0;
+          const fdv =
+            +t.fdv ||
+            +t.fullyDilutedMarketCap ||
+            +t.fullyDilutedValuation ||
+            +t.marketCap ||
+            (priceN && totalSupplyN ? priceN * totalSupplyN : 0);
 
           return {
-            price:+t.price,
+            price:priceN,
             vol24h:+t.volume24h,
             chg:+t.percentChange24h,
             symbol:t.symbol,
@@ -854,8 +931,11 @@
             listingTimeFmt: ltMs ? fmtFull(ltMs) : '',
             isNew,
 
+            // ✅ FDV
+            fdv,
+
             // 代币化证券：按上面的答案，用 stockState + rwaInfo 判断
-            isTokenizedSecurity: t.stockState === true && t.rwaInfo != null,
+            isTokenizedSecurity,
 
             // ✅ 是否上了币安合约
             hasFutures: futuresSet.has(t.symbol.toUpperCase()),
@@ -927,7 +1007,7 @@
           else {
             const rewardAmt=parseFloat(r.comp.perWinner.replace(/,/g,''))||0;
             const rewardUsd=rewardAmt*r.price;
-            compCell=`${nf0.format(r.compVol)}<span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
+            compCell=`<span class="comp-vol-main" data-vol="${r.compVol}" title="点击复制">${nf0.format(r.compVol)}</span><span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
               +`<span class="subl">🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardUsd)}</span>`;
           }
         }
@@ -947,6 +1027,7 @@
           <td>${fmtPrice(r.price)}</td>
           <td>${nf0.format(r.vol24h)}</td>
           <td class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</td>
+          <td>${fmtFdv(r.fdv)}</td>
           <td>${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
           <td>${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
           ${showCompOnly?`<td>${compCell}</td>`:''}
@@ -959,7 +1040,7 @@
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const isFirstLoad=!rows||rows.length===0;
-      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
+      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
 
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
@@ -997,7 +1078,7 @@
       }catch(e){
         console.error(e);
         const msg=e.message||t('unknownErr');
-        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8">${t('failLoad')}${msg}</td></tr>`;
+        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9">${t('failLoad')}${msg}</td></tr>`;
         showToast(`${t('failLoad')}${msg}`);
       }finally{
         refreshBtn.disabled=false;
@@ -1106,7 +1187,10 @@
         const hh=String(d.getHours()).padStart(2,'0');
         return `${hh}:00`;
       };
-      hourlyWrap.innerHTML=`<div class="hourly-header"><span class="hourly-title">${t('hourlyTpl')(symbol,hours)}</span><span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}<br><small style="font-weight:normal;color:#888">${t('tradeStats')(nf0.format(totalTrades), nf0.format(totalAvg))}</small></span></div>
+      const collapsed = hourlyWrap.classList.contains('collapsed');
+      const minLabel = collapsed ? t('hourlyExpand') : t('hourlyMinimize');
+      const minIcon = collapsed ? '▼' : '▲';
+      hourlyWrap.innerHTML=`<div class="hourly-header"><span class="hourly-title">${t('hourlyTpl')(symbol,hours)}</span><span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}<br><small style="font-weight:normal;color:#888">${t('tradeStats')(nf0.format(totalTrades), nf0.format(totalAvg))}</small></span><span class="hourly-actions"><button type="button" class="hourly-min" id="hourlyMinBtn" title="${minLabel}">${minIcon} ${minLabel}</button></span></div>
         <div class="hourly-scroll"><div class="hourly-bar">${hourlyData.map((d,i)=>{
           const h=Math.max(4,Math.round(d.vol/maxVol*maxBarH));
           const cls=hours>1&&d.vol===maxVol?'h-col h-max':hours>1&&d.vol===minVol?'h-col h-min':'h-col';
@@ -1201,6 +1285,13 @@
     tbody.addEventListener('click',e=>{
       const s=e.target.closest('.star');
       if(s){s.classList.add('bounce');setTimeout(()=>s.classList.remove('bounce'),150);toggleFav(s.closest('tr').dataset.sym);return;}
+      // ✅ 点击交易赛总交易量 → 复制原始数字
+      const cv=e.target.closest('.comp-vol-main');
+      if(cv&&cv.dataset.vol){
+        e.stopPropagation();
+        copyText(cv.dataset.vol);
+        return;
+      }
       // 点击表格行自动填充代币名到输入框
       const tr=e.target.closest('tr');
       if(tr&&tr.dataset.sym){
@@ -1209,7 +1300,18 @@
       }
     });
 
-    document.querySelectorAll('th.sortable').forEach(th=>{
+    /* ✅ 小时图：缩小/展开 */
+    hourlyWrap.addEventListener('click',e=>{
+      const btn=e.target.closest('#hourlyMinBtn');
+      if(!btn) return;
+      const collapsed = hourlyWrap.classList.toggle('collapsed');
+      const label = collapsed ? t('hourlyExpand') : t('hourlyMinimize');
+      const icon = collapsed ? '▼' : '▲';
+      btn.textContent = `${icon} ${label}`;
+      btn.title = label;
+    });
+
+document.querySelectorAll('th.sortable').forEach(th=>{
       th.addEventListener('click',()=>{
         const key=th.dataset.key;
         sortDir=(sortKey===key&&sortDir==='desc')?'asc':'desc';sortKey=key;render();
