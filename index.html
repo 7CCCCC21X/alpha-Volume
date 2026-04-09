@@ -311,6 +311,43 @@
         text-align:left;
       }
     }
+
+    /* ========== 手机端全局优化 ========== */
+    @media(max-width:760px){
+      h1{font-size:1.1rem;padding:10px 8px 6px}
+      .last-up{font-size:.72rem;margin-bottom:6px}
+      #bar{gap:5px;padding:0 4px;margin-bottom:8px}
+      #bar-row1{gap:5px}
+      #bar-row1 input[type="search"]{min-width:120px;font-size:.78rem;padding:5px 6px}
+      .btn{padding:5px 8px;font-size:.78rem}
+      .chk{font-size:.76rem;gap:3px}
+      #bar-right{gap:5px}
+      #author{font-size:.72rem}
+      #bar-row2{gap:4px}
+      #bar-row2 input[type="text"]{width:80px;font-size:.78rem;padding:5px 6px}
+      #bar-row2 input[type="datetime-local"]{font-size:.72rem;padding:4px 4px}
+      #bar-row2 input[type="number"]{font-size:.78rem;padding:4px}
+      /* 广告区紧凑 */
+      .ad{padding:6px 8px;gap:6px;margin-bottom:6px}
+      .ad-badge{font-size:.62rem}
+      .tg-badge{font-size:.68rem;padding:1px 6px}
+      .ad-links .btn{padding:6px 8px;font-size:.72rem;border-radius:8px}
+      /* 表格紧凑 */
+      table{min-width:560px}
+      th,td{padding:7px 4px;font-size:.76rem}
+      .tag-new,.tag-futures,.tag-comp{font-size:.6rem;padding:0 4px;margin-left:2px}
+      .logo{width:16px;height:16px;margin-right:2px}
+      .subl{font-size:.64rem}
+      /* 小时图紧凑 */
+      #hourlyWrap{margin-top:6px}
+      .hourly-header{padding:6px 8px}
+      .hourly-header .hourly-title{font-size:.78rem}
+      .hourly-header .hourly-total{font-size:.72rem}
+      /* 缓存区紧凑 */
+      #cacheWrap{margin-top:4px}
+      #cacheToggle{font-size:.74rem}
+      #cacheList .cache-item{padding:4px 8px;font-size:.74rem}
+    }
   </style>
 </head>
 <body>
