@@ -107,7 +107,7 @@
     th.sortable.asc::after{content:'▲';opacity:1}
 
     /* Star */
-    .star{cursor:pointer;font-size:1rem;color:var(--sub);user-select:none;transition:transform .15s,color .15s}
+    .star{cursor:pointer;font-size:1rem;color:var(--sub);user-select:none;transition:transform .15s,color .15s;background:none;border:none;padding:0;line-height:1}
     .star.fav{color:#f7b500}.star.bounce{transform:scale(1.4)}
 
     /* 颜色 & 小字 */
@@ -332,12 +332,12 @@
       </div>
     </div>
     <div id="bar-row2">
-      <input id="tokenInput" type="text" placeholder="输入代币名称">
-      <input id="startTime" type="datetime-local">
-      <input id="endTime" type="datetime-local">
+      <input id="tokenInput" type="text" placeholder="输入代币名称" aria-label="输入代币名称">
+      <input id="startTime" type="datetime-local" aria-label="开始时间">
+      <input id="endTime" type="datetime-local" aria-label="结束时间">
       <button id="rangeBtn" class="btn" data-i18n="rangeQuery">区间查询</button>
       <span style="margin-left:8px;color:var(--sub);font-size:.82rem">|</span>
-      <input id="hourlyHours" type="number" min="1" max="72" value="6" style="width:52px" title="小时数">
+      <input id="hourlyHours" type="number" min="1" max="72" value="6" style="width:52px" title="小时数" aria-label="小时数">
       <button id="hourlyBtn" class="btn" data-i18n="hourlyQuery">小时交易量</button>
     </div>
   </div>
@@ -384,7 +384,7 @@
         <th id="thCompVol" class="sortable" data-key="compVol" style="display:none">交易赛交易量</th>
       </tr>
     </thead>
-    <tbody><tr><td colspan="8">加载中…</td></tr></tbody>
+    <tbody><tr><td colspan="8" id="initLoading">Loading…</td></tr></tbody>
   </table>
   </div>
 
@@ -453,7 +453,14 @@
         compActive: (d,unit) => `🏆 交易赛 剩${d}${unit==='m'?'分钟':unit==='h'?'小时':'天'}`,
         compEnded: '🏆 已结束',
         compUpcoming: '🏆 未开始',
-        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
+        themeTitle: '切换深色/浅色模式',
+        tgAriaLabel: '加入Alpha交流群',
+        tgTitle: '加入 Telegram 频道',
+        tzHint: '(UTC+8)',
+        startTimeLabel: '开始时间',
+        endTimeLabel: '结束时间',
+        hourlyHoursLabel: '小时数'
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -513,15 +520,25 @@
         compActive: (d,unit) => `🏆 Comp ${d}${unit==='m'?'m':unit==='h'?'h':'d'} left`,
         compEnded: '🏆 Ended',
         compUpcoming: '🏆 Upcoming',
-        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
+        themeTitle: 'Toggle dark/light mode',
+        tgAriaLabel: 'Join Alpha Group',
+        tgTitle: 'Join Telegram Channel',
+        tzHint: '(UTC+8)',
+        startTimeLabel: 'Start time',
+        endTimeLabel: 'End time',
+        hourlyHoursLabel: 'Hours'
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
     function t(key){ return I18N[curLang][key] || I18N.zh[key] || key; }
 
     function applyI18n(){
+      document.documentElement.lang = curLang==='zh'?'zh':'en';
+      document.title = t('title').replace(/&nbsp;/g,' ').replace(/\u00a0/g,' ');
       document.getElementById('title').innerHTML = t('title');
       document.getElementById('search').placeholder = t('searchPh');
+      document.getElementById('search').setAttribute('aria-label', t('searchPh').replace(/🔍\s*/,''));
       document.querySelector('[data-i18n="refresh"]').textContent = t('refresh');
       document.querySelector('[data-i18n="onlyNew"]').textContent = t('onlyNew');
       document.querySelector('[data-i18n="onlyFutures"]').textContent = t('onlyFutures');
@@ -545,8 +562,20 @@
       document.getElementById('thChg').textContent = t('thChg');
       document.getElementById('langBtn').textContent = t('langBtn');
       document.getElementById('backTop').title = t('backTop');
+      document.getElementById('themeBtn').title = t('themeTitle');
+      const tgLink = document.querySelector('.tg-badge');
+      tgLink.setAttribute('aria-label', t('tgAriaLabel'));
+      tgLink.title = t('tgTitle');
+      document.getElementById('tokenInput').setAttribute('aria-label', t('tokenPh'));
+      document.getElementById('startTime').setAttribute('aria-label', t('startTimeLabel'));
+      document.getElementById('endTime').setAttribute('aria-label', t('endTimeLabel'));
+      document.getElementById('hourlyHours').setAttribute('aria-label', t('hourlyHoursLabel'));
       const authorEl = document.getElementById('author');
       authorEl.innerHTML = `${t('author')}&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank">@0xXIAOc</a>`;
+      // refresh lastUpEl if data has been loaded
+      if(rows && rows.length>0){
+        lastUpEl.textContent=`${t('lastUp')} ${fmtFull(Date.now())} ${t('tzHint')}`;
+      }
     }
 
     /* ---------- 常量 & 工具 ---------- */
@@ -578,19 +607,20 @@
     /* ✅ 严格 30 天（毫秒） */
     const THIRTY_DAYS = 29*24*60*60*1000;
 
-    const fmtShort=ts=>new Intl.DateTimeFormat('zh-CN', {
+    const fmtLocale=()=>curLang==='zh'?'zh-CN':'en-US';
+    const fmtShort=ts=>new Intl.DateTimeFormat(fmtLocale(), {
       timeZone:'Asia/Shanghai',hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'
     }).format(new Date(ts)).replace(/\//g,'-');
 
-    const fmtFull=ts=>new Intl.DateTimeFormat('zh-CN', {
+    const fmtFull=ts=>new Intl.DateTimeFormat(fmtLocale(), {
       timeZone:'Asia/Shanghai',hour12:false,year:'numeric',month:'2-digit',day:'2-digit',
       hour:'2-digit',minute:'2-digit',second:'2-digit'
     }).format(new Date(ts)).replace(/\//g,'-');
 
     const nearest8UTC=()=>{
       const n=new Date(),b=new Date();
-      b.setHours(8,0,0,0);
-      if(n<b)b.setDate(b.getDate()-1);
+      b.setUTCHours(8,0,0,0);
+      if(n<b)b.setUTCDate(b.getUTCDate()-1);
       return b.getTime();
     };
 
@@ -812,7 +842,12 @@
     function updateSortIcons(){
       document.querySelectorAll('th.sortable').forEach(th=>{
         th.classList.remove('asc','desc');
-        if(th.dataset.key===sortKey)th.classList.add(sortDir);
+        if(th.dataset.key===sortKey){
+          th.classList.add(sortDir);
+          th.setAttribute('aria-sort', sortDir==='asc'?'ascending':'descending');
+        } else {
+          th.setAttribute('aria-sort','none');
+        }
       });
     }
 
@@ -871,10 +906,10 @@
 
         return `
         <tr data-sym="${r.sym}">
-          <td class="star ${favSet.has(r.sym)?'fav':''}">${favSet.has(r.sym)?'★':'☆'}</td>
+          <td><button type="button" class="star ${favSet.has(r.sym)?'fav':''}" aria-label="${favSet.has(r.sym)?t('favDel'):t('favAdd')}">${favSet.has(r.sym)?'★':'☆'}</button></td>
           <td>${i+1}</td>
           <td title="${r.listingTimeFmt ? (tipPrefix+r.listingTimeFmt) : ''}">
-            <img class="logo" loading="lazy" src="${r.icon}" referrerpolicy="no-referrer"
+            <img class="logo" loading="lazy" src="${r.icon}" alt="${r.symbol}" referrerpolicy="no-referrer"
                  onerror="this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">
             ${r.symbol}
             ${r.hasFutures ? `<span class="tag-futures">${t('futuresTag')}</span>` : ''}
@@ -896,7 +931,7 @@
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const isFirstLoad=!rows||rows.length===0;
-      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px">加载中…</td></tr>`;
+      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
 
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
@@ -929,7 +964,7 @@
         }
         rows=newRows;
         render();
-        lastUpEl.textContent=`${t('lastUp')} ${fmtFull(Date.now())}`;
+        lastUpEl.textContent=`${t('lastUp')} ${fmtFull(Date.now())} ${t('tzHint')}`;
         window._boundary=today8;
       }catch(e){
         console.error(e);
@@ -1017,16 +1052,16 @@
       const totalTrades=hourlyData.reduce((s,d)=>s+d.trades,0);
       const totalAvg=totalTrades>0?Math.round(totalVol/totalTrades):0;
       const maxBarH=120;
+      const shanghaiHM=(ts)=>{
+        const f=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Shanghai',hour12:false,hour:'2-digit',minute:'2-digit'});
+        return f.format(new Date(ts));
+      };
       const fmtHour=(ts,partial)=>{
-        const d=new Date(ts);
-        if(partial){const hh=String(d.getHours()).padStart(2,'0');const mm=String(d.getMinutes()).padStart(2,'0');return `${hh}:${mm}`;}
-        const hh=String(d.getHours()).padStart(2,'0');
-        return `${hh}:00`;
+        if(partial) return shanghaiHM(ts);
+        return shanghaiHM(ts).replace(/:\d{2}$/,':00');
       };
       const fmtHourEnd=(ts)=>{
-        const d=new Date(ts+1);
-        const hh=String(d.getHours()).padStart(2,'0');
-        return `${hh}:00`;
+        return shanghaiHM(ts+1).replace(/:\d{2}$/,':00');
       };
       hourlyWrap.innerHTML=`<div class="hourly-header"><span class="hourly-title">${t('hourlyTpl')(row.symbol||sym,hours)}</span><span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}<br><small style="font-weight:normal;color:#888">${t('tradeStats')(nf0.format(totalTrades), nf0.format(totalAvg))}</small></span></div>
         <div class="hourly-scroll"><div class="hourly-bar">${hourlyData.map((d,i)=>{
@@ -1193,6 +1228,16 @@
       thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
       thCompVol.textContent=t('thCompVol');
       render();
+      // 刷新缓存区文案
+      renderCache();
+      const cacheOpen=cacheListEl.style.display==='block';
+      cacheToggleBtn.textContent=cacheOpen?t('cacheHide'):t('cacheTitle');
+      cacheClearAllBtn.textContent=t('cacheClearAll');
+      // 刷新区间查询结果（如果有内容则重新从缓存渲染）
+      if(customVolEl.innerHTML){
+        const cache=getCache();
+        if(cache.length>0)loadCache(0);
+      }
     });
 
     /* ---------- 回到顶部 ---------- */
@@ -1206,6 +1251,8 @@
 
     /* ---------- 初始化 ---------- */
     applyI18n();
+    const initLoadEl=document.getElementById('initLoading');
+    if(initLoadEl) initLoadEl.textContent=t('loading');
     // 先拉合约列表，再加载主数据
     fetchFutures().then(()=>reloadAll());
   </script>
