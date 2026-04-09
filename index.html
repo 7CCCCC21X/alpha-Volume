@@ -70,8 +70,39 @@
     /* 新增：过滤开关 */
     .chk{
       display:inline-flex;align-items:center;gap:6px;
-      font-size:.85rem;color:var(--text);user-select:none
+      font-size:.85rem;color:var(--text);user-select:none;
+      padding:4px 10px;border-radius:14px;
+      border:1px solid transparent;
+      transition:background .2s ease,border-color .2s ease,color .2s ease
     }
+    /* ✅ 勾选后变成高亮胶囊（每项独立色调） */
+    #onlyNew{accent-color:#2563eb}
+    .chk:has(#onlyNew:checked){
+      background:rgba(37,99,235,.12);border-color:rgba(37,99,235,.35)
+    }
+    .chk:has(#onlyNew:checked) span{color:#2563eb;font-weight:700}
+    :root.dark .chk:has(#onlyNew:checked) span{color:#93c5fd}
+
+    #onlyFutures{accent-color:#f59e0b}
+    .chk:has(#onlyFutures:checked){
+      background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35)
+    }
+    .chk:has(#onlyFutures:checked) span{color:#d97706;font-weight:700}
+    :root.dark .chk:has(#onlyFutures:checked) span{color:#fbbf24}
+
+    #onlySec{accent-color:#a855f7}
+    .chk:has(#onlySec:checked){
+      background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.35)
+    }
+    .chk:has(#onlySec:checked) span{color:#9333ea;font-weight:700}
+    :root.dark .chk:has(#onlySec:checked) span{color:#c084fc}
+
+    #onlyComp{accent-color:#f59e0b}
+    .chk:has(#onlyComp:checked){
+      background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.4)
+    }
+    .chk:has(#onlyComp:checked) span{color:#b45309;font-weight:700}
+    :root.dark .chk:has(#onlyComp:checked) span{color:#fbbf24}
 
     /* ---------- 广告位 ---------- */
     .ad{
@@ -167,11 +198,6 @@
       border:1px solid #2563eb;color:#2563eb;background:rgba(37,99,235,.1)
     }
 
-    /* ✅ 仅看交易赛：checkbox 金色强调 */
-    #onlyComp{accent-color:#f59e0b}
-    .chk:has(#onlyComp:checked) span{color:#b45309;font-weight:700}
-    :root.dark .chk:has(#onlyComp:checked) span{color:#fbbf24}
-
     /* ✅ 交易赛单元格：增强显示 */
     .comp-cell{
       display:flex;flex-direction:column;gap:3px;min-width:170px
@@ -212,37 +238,6 @@
     }
     :root.dark .comp-cell .cc-reward{color:#fbbf24;border-color:rgba(251,191,36,.4)}
 
-    /* ✅ 交易赛汇总面板 */
-    #compSummary{max-width:1200px;margin:8px auto 0;padding:0 6px;display:none}
-    #compSummary.show{display:block}
-    #compSummary .cs-wrap{
-      display:flex;flex-wrap:wrap;gap:8px;align-items:center;
-      padding:10px 14px;border-radius:10px;
-      background:linear-gradient(135deg,rgba(251,191,36,.14),rgba(245,158,11,.04));
-      border:1px solid rgba(245,158,11,.32)
-    }
-    #compSummary .cs-title{
-      display:inline-flex;align-items:center;gap:6px;
-      font-weight:800;font-size:.92rem;color:#b45309
-    }
-    :root.dark #compSummary .cs-title{color:#fbbf24}
-    #compSummary .cs-stat{
-      display:inline-flex;align-items:center;gap:5px;font-size:.8rem;
-      padding:3px 10px;border-radius:14px;background:rgba(255,255,255,.55);
-      color:var(--text);border:1px solid rgba(245,158,11,.22)
-    }
-    :root.dark #compSummary .cs-stat{background:rgba(0,0,0,.22)}
-    #compSummary .cs-stat strong{font-weight:800}
-    #compSummary .cs-stat.cs-active strong{color:#16a34a}
-    #compSummary .cs-stat.cs-upcoming strong{color:#2563eb}
-    #compSummary .cs-stat.cs-ended strong{color:#9ca3af}
-    #compSummary .cs-stat.cs-total strong{color:#b45309}
-    :root.dark #compSummary .cs-stat.cs-total strong{color:#fbbf24}
-    #compSummary .cs-dot{
-      display:inline-block;width:6px;height:6px;border-radius:50%;
-      background:currentColor;margin-right:1px
-    }
-
     /* Toast */
     #toast{
       position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
@@ -251,43 +246,43 @@
     }
 
     /* 自定义区间结果 */
-    #customVol{max-width:1200px;margin:4px auto 0;font-size:.9rem;color:var(--primary)}
+    #customVol{max-width:1200px;margin:4px auto 0;font-size:.78rem;color:var(--primary);line-height:1.5}
 
     /* ---------- 小时交易量 ---------- */
-    #hourlyWrap{max-width:1200px;margin:10px auto 0;padding:0 6px}
+    #hourlyWrap{max-width:1200px;margin:6px auto 0;padding:0 6px}
     .hourly-header{
-      display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;
-      padding:8px 12px;background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(37,99,235,.02));
-      border-radius:8px;border:1px solid rgba(37,99,235,.15)
+      display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;
+      padding:5px 10px;background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(37,99,235,.02));
+      border-radius:6px;border:1px solid rgba(37,99,235,.15)
     }
-    .hourly-header .hourly-title{font-size:.9rem;color:var(--primary);font-weight:700}
+    .hourly-header .hourly-title{font-size:.78rem;color:var(--primary);font-weight:700}
     .hourly-header .hourly-total{
-      font-size:.82rem;color:var(--text);font-weight:600;
-      background:rgba(37,99,235,.1);padding:2px 10px;border-radius:12px
+      font-size:.72rem;color:var(--text);font-weight:600;
+      background:rgba(37,99,235,.1);padding:1px 8px;border-radius:10px;line-height:1.45
     }
     .hourly-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;
-      background:repeating-linear-gradient(0deg,transparent,transparent 24px,var(--border) 24px,var(--border) 25px);
-      border-radius:0 0 8px 8px;padding:8px 4px 0;border:1px solid var(--border);border-top:none
+      background:repeating-linear-gradient(0deg,transparent,transparent 20px,var(--border) 20px,var(--border) 21px);
+      border-radius:0 0 6px 6px;padding:5px 3px 0;border:1px solid var(--border);border-top:none
     }
-    #hourlyWrap .hourly-bar{display:flex;align-items:flex-end;gap:4px;margin-top:0;min-width:max-content;padding-bottom:2px}
+    #hourlyWrap .hourly-bar{display:flex;align-items:flex-end;gap:3px;margin-top:0;min-width:max-content;padding-bottom:2px}
     #hourlyWrap .hourly-bar .h-col{
-      display:flex;flex-direction:column;align-items:center;gap:2px;min-width:72px;flex:1;
+      display:flex;flex-direction:column;align-items:center;gap:1px;min-width:58px;flex:1;
       transition:transform .15s;cursor:default
     }
     #hourlyWrap .hourly-bar .h-col:hover{transform:scaleY(1.03) translateY(-1px)}
     #hourlyWrap .hourly-bar .h-col .h-bar{
-      width:calc(100% - 8px);min-height:4px;border-radius:4px 4px 1px 1px;
+      width:calc(100% - 6px);min-height:3px;border-radius:3px 3px 1px 1px;
       background:linear-gradient(180deg,#3b82f6,#2563eb);
-      box-shadow:0 1px 3px rgba(37,99,235,.2);
+      box-shadow:0 1px 2px rgba(37,99,235,.2);
       transition:height .4s cubic-bezier(.4,0,.2,1),opacity .3s
     }
     #hourlyWrap .hourly-bar .h-col:hover .h-bar{
       background:linear-gradient(180deg,#60a5fa,#3b82f6);
-      box-shadow:0 2px 8px rgba(37,99,235,.35)
+      box-shadow:0 2px 6px rgba(37,99,235,.35)
     }
-    #hourlyWrap .hourly-bar .h-col .h-val{font-size:.68rem;color:var(--sub);font-weight:600;white-space:nowrap}
+    #hourlyWrap .hourly-bar .h-col .h-val{font-size:.6rem;color:var(--sub);font-weight:600;white-space:nowrap;text-align:center}
     #hourlyWrap .hourly-bar .h-col:hover .h-val{color:var(--primary)}
-    #hourlyWrap .hourly-bar .h-col .h-lbl{font-size:.66rem;color:var(--sub);padding-bottom:2px;white-space:nowrap}
+    #hourlyWrap .hourly-bar .h-col .h-lbl{font-size:.58rem;color:var(--sub);padding-bottom:1px;white-space:nowrap}
     #hourlyWrap .hourly-bar .h-col.h-max .h-bar{background:linear-gradient(180deg,#22c55e,#16a34a);box-shadow:0 1px 3px rgba(22,163,74,.25)}
     #hourlyWrap .hourly-bar .h-col.h-max .h-val{color:var(--green);font-weight:700}
     #hourlyWrap .hourly-bar .h-col.h-min .h-bar{background:linear-gradient(180deg,#f87171,#dc2626);box-shadow:0 1px 3px rgba(220,38,38,.25)}
@@ -419,7 +414,7 @@
       #bar-row1{gap:5px}
       #bar-row1 input[type="search"]{min-width:120px;font-size:.8rem;padding:5px 6px}
       .btn{padding:5px 10px;font-size:.8rem}
-      .chk{font-size:.78rem;gap:3px}
+      .chk{font-size:.78rem;gap:3px;padding:3px 7px;border-radius:12px}
       #bar-right{gap:5px}
       #author{font-size:.74rem}
       #bar-row2{gap:5px}
@@ -454,10 +449,6 @@
       .comp-cell .cc-vol{font-size:.8rem}
       .comp-cell .cc-time{font-size:.62rem}
       .comp-cell .cc-reward{font-size:.64rem;padding:1px 5px;border-radius:6px}
-      #compSummary{margin-top:4px}
-      #compSummary .cs-wrap{padding:7px 9px;gap:6px}
-      #compSummary .cs-title{font-size:.8rem}
-      #compSummary .cs-stat{font-size:.7rem;padding:2px 7px}
     }
   </style>
 </head>
@@ -509,7 +500,6 @@
     </div>
   </div>
 
-  <div id="compSummary"></div>
   <div id="customVol"></div>
   <div id="hourlyWrap"></div>
   <div id="cacheWrap">
@@ -528,12 +518,13 @@
         <th id="thPrice">价格</th>
         <th id="thVol24h" class="sortable" data-key="vol24h">24H 交易量</th>
         <th id="thChg">24H 变化</th>
+        <th id="thMcap" class="sortable" data-key="mcap">流通市值｜FDV</th>
         <th id="thToday" class="sortable" data-key="todayQV">当天限价单成交额</th>
         <th id="thPrev" class="sortable" data-key="prevQV">前一天限价单成交额</th>
         <th id="thCompVol" class="sortable" data-key="compVol" style="display:none">交易赛交易量</th>
       </tr>
     </thead>
-    <tbody><tr><td colspan="8" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
+    <tbody><tr><td colspan="9" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
   </table>
   </div>
 
@@ -563,6 +554,7 @@
         thPrice: '价格',
         thVol24h: '24H 交易量',
         thChg: '24H 变化',
+        thMcap: '流通市值｜FDV',
         thTodayLabel: '当天限价单成交额',
         thPrevLabel: '前一天限价单成交额',
         loading: '加载中…',
@@ -603,12 +595,7 @@
         compActive: (d,unit) => `🏆 交易赛 剩${d}${unit==='m'?'分钟':unit==='h'?'小时':'天'}`,
         compEnded: '🏆 已结束',
         compUpcoming: '🏆 未开始',
-        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
-        compSummaryTitle: '交易赛概览',
-        compActiveLabel: '进行中',
-        compUpcomingLabel: '未开始',
-        compEndedLabel: '已结束',
-        compTotalVol: '合计交易量'
+        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -629,6 +616,7 @@
         thPrice: 'Price',
         thVol24h: '24H Volume',
         thChg: '24H Change',
+        thMcap: 'MCap｜FDV',
         thTodayLabel: 'Today Limit Order Volume',
         thPrevLabel: 'Prev Day Limit Order Volume',
         loading: 'Loading…',
@@ -669,12 +657,7 @@
         compActive: (d,unit) => `🏆 Comp ${d}${unit==='m'?'m':unit==='h'?'h':'d'} left`,
         compEnded: '🏆 Ended',
         compUpcoming: '🏆 Upcoming',
-        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
-        compSummaryTitle: 'Competition Overview',
-        compActiveLabel: 'Active',
-        compUpcomingLabel: 'Upcoming',
-        compEndedLabel: 'Ended',
-        compTotalVol: 'Total Volume'
+        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -706,6 +689,7 @@
       document.getElementById('thPrice').textContent = t('thPrice');
       document.getElementById('thVol24h').childNodes[0].textContent = t('thVol24h');
       document.getElementById('thChg').textContent = t('thChg');
+      document.getElementById('thMcap').childNodes[0].textContent = t('thMcap');
       document.getElementById('langBtn').textContent = t('langBtn');
       document.getElementById('themeBtn').title = t('themeBtn');
       document.getElementById('backTop').title = t('backTop');
@@ -739,6 +723,14 @@
       const s=p.toFixed(20);const m=s.match(/^0\.(0+)/);
       const zeros=m?m[1].length:0;
       return new Intl.NumberFormat('en-US',{minimumFractionDigits:zeros+3,maximumFractionDigits:zeros+3}).format(p);
+    }
+    /* 市值 / FDV 紧凑格式化：1.23M / 4.56B */
+    function fmtMoney(v){
+      if(!v || v<=0) return '-';
+      if(v>=1e9) return '$'+(v/1e9).toFixed(2)+'B';
+      if(v>=1e6) return '$'+(v/1e6).toFixed(2)+'M';
+      if(v>=1e3) return '$'+(v/1e3).toFixed(2)+'K';
+      return '$'+nf0.format(v);
     }
     const FAV_KEY='alphaFavs',CONCURRENCY=15;
 
@@ -931,14 +923,27 @@
       const {data=[]}=await resp.json();
 
       return data
+        // ✅ 已上现货 CEX 的 & 已下线的直接过滤掉
+        .filter(t => t.listingCex !== true && t.offline !== true)
         .filter(t => +t.volume24h > 0 || (t.stockState === true && t.rwaInfo != null))
         .map(t=>{
           const raw = Number(t.listingTime || 0);
           const ltMs = raw ? (raw < 1e12 ? raw*1000 : raw) : 0;
-          const isNew = ltMs ? (Date.now() - ltMs) < THIRTY_DAYS : false;
+          const isTokenizedSecurity = t.stockState === true && t.rwaInfo != null;
+          // ✅ 代币化证券不参与"30天内上新"
+          const isNew = ltMs && !isTokenizedSecurity ? (Date.now() - ltMs) < THIRTY_DAYS : false;
+
+          // ✅ 流通市值 & 完全稀释估值（FDV）：兼容多种字段命名，回退到 price * supply
+          const price=+t.price;
+          const mcap = +(t.marketCap || t.circulatingMarketCap || 0)
+                    || (+(t.circulatingSupply||0) * price)
+                    || 0;
+          const fdv = +(t.fdv || t.fullyDilutedMarketCap || t.fullyDilutedValuation || 0)
+                   || (+(t.totalSupply||0) * price)
+                   || 0;
 
           return {
-            price:+t.price,
+            price,
             vol24h:+t.volume24h,
             chg:+t.percentChange24h,
             symbol:t.symbol,
@@ -960,10 +965,14 @@
             isNew,
 
             // 代币化证券：按上面的答案，用 stockState + rwaInfo 判断
-            isTokenizedSecurity: t.stockState === true && t.rwaInfo != null,
+            isTokenizedSecurity,
 
             // ✅ 是否上了币安合约
             hasFutures: futuresSet.has(t.symbol.toUpperCase()),
+
+            // ✅ 流通市值 / FDV
+            mcap,
+            fdv,
 
             // ✅ 交易赛
             comp: COMP_MAP[t.symbol.toUpperCase()] || null,
@@ -1063,6 +1072,7 @@
           <td>${fmtPrice(r.price)}</td>
           <td>${nf0.format(r.vol24h)}</td>
           <td class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</td>
+          <td class="mcap-cell">${fmtMoney(r.mcap)}<span class="subl">${fmtMoney(r.fdv)}</span></td>
           <td>${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
           <td>${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
           ${showCompOnly?`<td>${compCell}</td>`:''}
@@ -1070,35 +1080,12 @@
       `;
       }).join('');
       updateSortIcons();
-      renderCompSummary();
-    }
-
-    /* ---------- 交易赛汇总面板 ---------- */
-    function renderCompSummary(){
-      const el=document.getElementById('compSummary');
-      if(!showCompOnly){ el.classList.remove('show'); el.innerHTML=''; return; }
-      const now=Date.now();
-      let active=0, upcoming=0, ended=0, totalVol=0;
-      rows.forEach(r=>{
-        if(!r.comp) return;
-        if(now<r.comp.start) upcoming++;
-        else if(now<=r.comp.end){ active++; if(r.compVol) totalVol+=r.compVol; }
-        else ended++;
-      });
-      el.innerHTML=`<div class="cs-wrap">
-        <span class="cs-title">🏆 ${t('compSummaryTitle')}</span>
-        <span class="cs-stat cs-active"><span class="cs-dot"></span>${t('compActiveLabel')}&nbsp;<strong>${active}</strong></span>
-        <span class="cs-stat cs-upcoming"><span class="cs-dot"></span>${t('compUpcomingLabel')}&nbsp;<strong>${upcoming}</strong></span>
-        <span class="cs-stat cs-ended"><span class="cs-dot"></span>${t('compEndedLabel')}&nbsp;<strong>${ended}</strong></span>
-        <span class="cs-stat cs-total">${t('compTotalVol')}&nbsp;<strong>${nf0.format(totalVol)}</strong></span>
-      </div>`;
-      el.classList.add('show');
     }
 
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const isFirstLoad=!rows||rows.length===0;
-      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
+      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
 
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
@@ -1136,7 +1123,7 @@
       }catch(e){
         console.error(e);
         const msg=e.message||t('unknownErr');
-        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8">${t('failLoad')}${msg}</td></tr>`;
+        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9">${t('failLoad')}${msg}</td></tr>`;
         showToast(`${t('failLoad')}${msg}`);
       }finally{
         refreshBtn.disabled=false;
@@ -1233,7 +1220,7 @@
       const totalVol=hourlyData.reduce((s,d)=>s+d.vol,0);
       const totalTrades=hourlyData.reduce((s,d)=>s+d.trades,0);
       const totalAvg=totalTrades>0?Math.round(totalVol/totalTrades):0;
-      const maxBarH=120;
+      const maxBarH=80;
       const fmtHour=(ts,partial)=>{
         const d=new Date(ts);
         if(partial){const hh=String(d.getHours()).padStart(2,'0');const mm=String(d.getMinutes()).padStart(2,'0');return `${hh}:${mm}`;}
@@ -1251,7 +1238,7 @@
           const cls=hours>1&&d.vol===maxVol?'h-col h-max':hours>1&&d.vol===minVol?'h-col h-min':'h-col';
           const avg=d.trades>0?Math.round(d.vol/d.trades):0;
           return `<div class="${cls}">
-            <div class="h-val">${nf0.format(d.vol)}<br><small style="color:#888;font-size:11px">${t('avgPerTrade')(nf0.format(avg))}</small></div>
+            <div class="h-val">${nf0.format(d.vol)}<br><small style="color:#888;font-size:9px">${t('avgPerTrade')(nf0.format(avg))}</small></div>
             <div class="h-bar" style="height:${h}px;animation-delay:${i*30}ms"></div>
             <div class="h-lbl">${fmtHour(d.start,false)}-${d.partial?fmtHour(d.end,true):fmtHourEnd(d.end)}${d.partial?'*':''}</div>
           </div>`;
