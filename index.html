@@ -6,6 +6,15 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=0.25,maximum-scale=5,user-scalable=yes">
   <title>Alpha Token Volume Board</title>
 
+  <!-- 预连接 Binance API / CDN，减少首屏 DNS+TLS 握手延迟 -->
+  <link rel="preconnect" href="https://www.binance.com" crossorigin>
+  <link rel="preconnect" href="https://fapi.binance.com" crossorigin>
+  <link rel="preconnect" href="https://bin.bnbstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://www.binance.com">
+
+  <!-- ✅ 在 CSS 解析前应用深色模式，避免 FOUC -->
+  <script>try{var _s=localStorage.getItem('theme');if(_s)document.documentElement.classList.add(_s);}catch(e){}</script>
+
   <!-- 手机端自动缩小视口，让页面显示更完整 -->
   <script>
   (function(){
@@ -59,10 +68,7 @@
       color:#fff;background:var(--primary);border-radius:4px;cursor:pointer
     }
     .btn[disabled]{background:#9ca3af;border-color:#9ca3af;cursor:not-allowed}
-    .badge{ /* 仅用于进度百分比 */
-      display:none;padding:0 6px;border-radius:10px;font-size:.7rem;font-weight:700;
-      background:#fff;color:var(--primary)
-    }
+    #progress{display:none;margin-left:4px;padding:0 6px;border-radius:10px;font-size:.7rem;font-weight:700;background:#fff;color:var(--primary)}
     #bar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto}
     #author{font-size:.8rem;white-space:nowrap}
     #author a{color:var(--primary);text-decoration:none}
@@ -145,14 +151,10 @@
 
     /* ✅ 交易赛总交易量：主数字加深加粗 + 点击复制 */
     .comp-vol-main{
-      display:inline-block;font-weight:800;color:#111827;font-size:.92rem;
+      display:inline-block;font-weight:800;color:var(--text);font-size:.92rem;
       cursor:copy;padding:0 2px;border-radius:3px;transition:background .15s
     }
     .comp-vol-main:hover{background:rgba(37,99,235,.12)}
-    :root.dark .comp-vol-main{color:#f9fafb}
-    @media(prefers-color-scheme:dark){
-      :root:not(.light) .comp-vol-main{color:#f9fafb}
-    }
 
     /* ✅ 交易赛标记 */
     .tag-comp{
@@ -164,6 +166,10 @@
     }
     .tag-comp.comp-ended{
       border:1px solid #9ca3af;color:#9ca3af;background:rgba(156,163,175,.08)
+    }
+    :root.dark .tag-comp.comp-ended{border-color:#d1d5db;color:#d1d5db;background:rgba(209,213,219,.12)}
+    @media(prefers-color-scheme:dark){
+      :root:not(.light) .tag-comp.comp-ended{border-color:#d1d5db;color:#d1d5db;background:rgba(209,213,219,.12)}
     }
     .tag-comp.comp-upcoming{
       border:1px solid #2563eb;color:#2563eb;background:rgba(37,99,235,.08)
@@ -387,10 +393,24 @@
       #cacheToggle{font-size:.76rem}
       #cacheList .cache-item{padding:4px 8px;font-size:.76rem}
     }
+
+    /* ✅ 尊重系统"减少动态效果"偏好 */
+    @media (prefers-reduced-motion: reduce){
+      *,*::before,*::after{
+        animation-duration:.001ms !important;
+        animation-iteration-count:1 !important;
+        transition-duration:.001ms !important;
+        scroll-behavior:auto !important;
+      }
+    }
+
+    /* ✅ 空状态 / 骨架样式 */
+    .empty-state{text-align:center;padding:32px 12px;color:var(--sub);font-size:.9rem}
+    .retry-btn{margin-left:12px}
   </style>
 </head>
 <body>
-  <h1 id="title">Binance&nbsp;Alpha&nbsp;&mdash;&nbsp;24H&nbsp;交易量排行榜</h1>
+  <h1 id="title"></h1>
   <p id="lastUp" class="last-up"></p>
 
   <div id="bar">
@@ -402,8 +422,8 @@
       <label class="chk"><input id="onlySec" type="checkbox"> <span data-i18n="onlySec">仅看代币化证券</span></label>
       <label class="chk"><input id="onlyComp" type="checkbox"> <span data-i18n="onlyComp">仅看交易赛</span></label>
       <div id="bar-right">
-        <button id="langBtn" title="Switch Language">EN</button>
-        <button id="themeBtn" title="切换深色/浅色模式">🌓</button>
+        <button id="langBtn" title="Switch Language" aria-label="Switch Language">EN</button>
+        <button id="themeBtn" title="切换深色/浅色模式" aria-label="切换深色/浅色模式">🌓</button>
         <div id="author"> 作者&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank">@0xXIAOc</a> </div>
       </div>
     </div>
@@ -458,15 +478,15 @@
         <th id="thFdv" class="sortable" data-key="fdv">FDV</th>
         <th id="thToday" class="sortable" data-key="todayQV">当天限价单成交额</th>
         <th id="thPrev" class="sortable" data-key="prevQV">前一天限价单成交额</th>
-        <th id="thCompVol" class="sortable" data-key="compVol" style="display:none">交易赛总交易量</th>
+        <th id="thCompVol" class="sortable" data-key="compVol">交易赛总交易量</th>
       </tr>
     </thead>
-    <tbody><tr><td colspan="9" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
+    <tbody><tr><td colspan="99" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
   </table>
   </div>
 
-  <button id="backTop" title="回到顶部">↑</button>
-  <div id="toast"></div>
+  <button id="backTop" title="回到顶部" aria-label="回到顶部">↑</button>
+  <div id="toast" role="status" aria-live="polite"></div>
   <footer></footer>
 
   <script>
@@ -536,7 +556,13 @@
         compActive: (d,unit) => `🏆 交易赛 剩${d}${unit==='m'?'分钟':unit==='h'?'小时':'天'}`,
         compEnded: '🏆 已结束',
         compUpcoming: '🏆 未开始',
-        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
+        emptyState: '没有匹配的代币',
+        retry: '重试',
+        priceUp: '上涨',
+        priceDown: '下跌',
+        starAdd: '加入收藏',
+        starRemove: '取消收藏'
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -602,7 +628,13 @@
         compActive: (d,unit) => `🏆 Comp ${d}${unit==='m'?'m':unit==='h'?'h':'d'} left`,
         compEnded: '🏆 Ended',
         compUpcoming: '🏆 Upcoming',
-        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
+        emptyState: 'No tokens match',
+        retry: 'Retry',
+        priceUp: 'Up',
+        priceDown: 'Down',
+        starAdd: 'Add to favorites',
+        starRemove: 'Remove from favorites'
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -636,8 +668,10 @@
       document.getElementById('thVol24h').childNodes[0].textContent = t('thVol24h');
       document.getElementById('thChg').textContent = t('thChg');
       document.getElementById('langBtn').textContent = t('langBtn');
-      document.getElementById('themeBtn').title = t('themeBtn');
-      document.getElementById('backTop').title = t('backTop');
+      const themeBtnEl = document.getElementById('themeBtn');
+      themeBtnEl.title = t('themeBtn'); themeBtnEl.setAttribute('aria-label', t('themeBtn'));
+      const backTopEl = document.getElementById('backTop');
+      backTopEl.title = t('backTop'); backTopEl.setAttribute('aria-label', t('backTop'));
       const authorEl = document.getElementById('author');
       authorEl.innerHTML = `${t('author')}&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank">@0xXIAOc</a>`;
       // update initial loading text if still present
@@ -658,16 +692,29 @@
       { symbol:'BASED', start:Date.parse('2026-04-07T21:00:00+08:00'), end:Date.parse('2026-04-14T21:00:00+08:00'), topN:3330, pool:'865,800 BASED',     perWinner:'260 BASED' },
       { symbol:'PRL',   start:Date.parse('2026-04-08T21:00:00+08:00'), end:Date.parse('2026-04-15T21:00:00+08:00'), topN:3330, pool:'799,200 PRL',       perWinner:'240 PRL' },
     ];
+    // ✅ 预解析每人奖励数字，避免 render 时反复 parseFloat
+    COMPETITIONS.forEach(c=>{ c._rewardAmt = parseFloat(String(c.perWinner).replace(/,/g,''))||0; });
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    /* ✅ HTML 转义，用于任何拼接到 innerHTML 的外部字符串 */
+    const _ESC_MAP={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+    function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>_ESC_MAP[c]); }
+    /* ✅ 缓存 Intl.NumberFormat，避免 render 循环里反复 new */
+    const _nfCache=new Map();
+    function _getNF(min,max){
+      const k=min+'/'+max;
+      let f=_nfCache.get(k);
+      if(!f){ f=new Intl.NumberFormat('en-US',{minimumFractionDigits:min,maximumFractionDigits:max}); _nfCache.set(k,f); }
+      return f;
+    }
     /* 智能价格格式化：小于 0.01 的价格自动显示更多有效位 */
     function fmtPrice(p){
       if(p>=1) return nf2.format(p);
-      if(p>=0.01) return new Intl.NumberFormat('en-US',{minimumFractionDigits:4,maximumFractionDigits:4}).format(p);
+      if(p>=0.01) return _getNF(4,4).format(p);
       const s=p.toFixed(20);const m=s.match(/^0\.(0+)/);
       const zeros=m?m[1].length:0;
-      return new Intl.NumberFormat('en-US',{minimumFractionDigits:zeros+3,maximumFractionDigits:zeros+3}).format(p);
+      return _getNF(zeros+3,zeros+3).format(p);
     }
     /* ✅ FDV 紧凑格式化 */
     function fmtFdv(n){
@@ -680,14 +727,22 @@
     const FAV_KEY='alphaFavs',CONCURRENCY=15;
 
     /* ✅ 严格 30 天（毫秒） */
-    const THIRTY_DAYS = 29*24*60*60*1000;
+    const THIRTY_DAYS = 30*24*60*60*1000;
 
     function dateLoc(){ return curLang==='zh'?'zh-CN':'en-GB'; }
-    const fmtShort=ts=>new Intl.DateTimeFormat(dateLoc(), {
+    /* ✅ 缓存 Intl.DateTimeFormat，按 lang+key 维度；语言切换时调用 _dtCache.clear() */
+    const _dtCache=new Map();
+    function _getDT(key, opts){
+      const k=curLang+'|'+key;
+      let f=_dtCache.get(k);
+      if(!f){ f=new Intl.DateTimeFormat(dateLoc(), opts); _dtCache.set(k,f); }
+      return f;
+    }
+    const fmtShort=ts=>_getDT('short',{
       timeZone:'Asia/Shanghai',hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'
     }).format(new Date(ts)).replace(/\//g,'-');
 
-    const fmtFull=ts=>new Intl.DateTimeFormat(dateLoc(), {
+    const fmtFull=ts=>_getDT('full',{
       timeZone:'Asia/Shanghai',hour12:false,year:'numeric',month:'2-digit',day:'2-digit',
       hour:'2-digit',minute:'2-digit',second:'2-digit'
     }).format(new Date(ts)).replace(/\//g,'-');
@@ -909,6 +964,9 @@
             +t.marketCap ||
             (priceN && totalSupplyN ? priceN * totalSupplyN : 0);
 
+          // ✅ 预计算 daysLeft，避免 render 循环里反复调用 Date.now()
+          const daysLeftCached = isNew && ltMs ? daysLeft(ltMs) : 0;
+
           return {
             price:priceN,
             vol24h:+t.volume24h,
@@ -930,6 +988,7 @@
             listingTime: ltMs,
             listingTimeFmt: ltMs ? fmtFull(ltMs) : '',
             isNew,
+            daysLeft: daysLeftCached,
 
             // ✅ FDV
             fdv,
@@ -952,42 +1011,75 @@
       const gv = o => (o[sortKey]==null ? (sortKey==='compVol'&&!o.comp ? -1 : 0) : o[sortKey]);
       return [...arr].sort((a,b)=>sortDir==='desc'?gv(b)-gv(a):gv(a)-gv(b));
     }
+    // ✅ 启动时缓存 sortable 表头 NodeList，避免 render 时反复查询
+    const _sortableThs = document.querySelectorAll('th.sortable');
     function updateSortIcons(){
-      document.querySelectorAll('th.sortable').forEach(th=>{
+      _sortableThs.forEach(th=>{
         th.classList.remove('asc','desc');
         if(th.dataset.key===sortKey)th.classList.add(sortDir);
       });
     }
 
+    // ✅ 统一的过滤谓词（render 和 reloadAll 共用）
+    function passesFilters(r){
+      return (!showNewOnly || r.isNew)
+          && (!showFuturesOnly || r.hasFutures)
+          && (!showSecOnly || r.isTokenizedSecurity)
+          && (!showCompOnly || r.comp);
+    }
+
+    // ✅ 更新表头时间区间显示（reloadAll 和语言切换共用）
+    function updateRangeHeaders(){
+      const today8=nearest8UTC(), yest8=today8-864e5, endTs=Date.now();
+      thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
+      thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
+      return {today8, yest8, endTs};
+    }
+
+    // ✅ 当前是否有任一交易赛代币（用于是否显示交易赛列）
+    function hasAnyComp(){ return rows.some(r=>r.comp); }
+
     function render(){
       const favSet=new Set(favs());
-      const filtered=rows.filter(r=>{
-        const f = filter;
+      const now=Date.now();
+      // ✅ 只要存在任一 comp 代币就显示该列（不再与 showCompOnly 耦合）
+      const showCompCol = hasAnyComp();
+      thCompVol.style.display = showCompCol ? '' : 'none';
+
+      // ✅ 单次遍历 + 单次分桶：过滤 + 收藏/非收藏分组
+      const filtered=[];
+      const f=filter;
+      for(const r of rows){
         const matched =
           r.symbol.toLowerCase().includes(f) ||
           (r.sym||'').toLowerCase().includes(f) ||
           (r.symUSDC||'').toLowerCase().includes(f) ||
           (r.qSym||'').toLowerCase().includes(f);
-
-        const newOk = !showNewOnly || r.isNew;
-        const futuresOk = !showFuturesOnly || r.hasFutures;
-        const secOk = !showSecOnly || r.isTokenizedSecurity;
-        const compOk = !showCompOnly || r.comp;
-        return matched && newOk && futuresOk && secOk && compOk;
-      });
+        if(matched && passesFilters(r)) filtered.push(r);
+      }
 
       const sorted=sortRows(filtered);
-      const display=[...sorted.filter(x=>favSet.has(x.sym)),...sorted.filter(x=>!favSet.has(x.sym))];
+      const favArr=[], otherArr=[];
+      for(const x of sorted) (favSet.has(x.sym) ? favArr : otherArr).push(x);
+      const display = favArr.concat(otherArr);
 
+      updateSortIcons();
+
+      // ✅ 空状态
+      if(display.length===0){
+        tbody.innerHTML = `<tr><td colspan="99" class="empty-state">${esc(t('emptyState'))}</td></tr>`;
+        return;
+      }
+
+      const tipPrefix = t('listingTip');
       tbody.innerHTML=display.map((r,i)=>{
-        const left = r.isNew && r.listingTime ? daysLeft(r.listingTime) : 0;
-        const tipPrefix = t('listingTip');
+        const left = r.daysLeft || 0;
 
         // ✅ 交易赛标记
         let compTag='';
         if(r.comp){
-          const now=Date.now(), c=r.comp;
-          const compTip=t('compTip')(c.topN, c.pool, c.perWinner, fmtFull(c.start), fmtFull(c.end));
+          const c=r.comp;
+          const compTip=esc(t('compTip')(c.topN, c.pool, c.perWinner, fmtFull(c.start), fmtFull(c.end)));
           if(now<c.start){
             compTag=`<span class="tag-comp comp-upcoming" title="${compTip}">${t('compUpcoming')}</span>`;
           } else if(now<=c.end){
@@ -1005,59 +1097,54 @@
         if(r.comp){
           if(r.compVol==null) compCell='…';
           else {
-            const rewardAmt=parseFloat(r.comp.perWinner.replace(/,/g,''))||0;
-            const rewardUsd=rewardAmt*r.price;
-            compCell=`<span class="comp-vol-main" data-vol="${r.compVol}" title="点击复制">${nf0.format(r.compVol)}</span><span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
-              +`<span class="subl">🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardUsd)}</span>`;
+            const rewardUsd=(r.comp._rewardAmt||0)*r.price;
+            compCell=`<span class="comp-vol-main" data-vol="${r.compVol}" title="点击复制">${nf0.format(r.compVol)}</span><span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(now,r.comp.end))}</span>`
+              +`<span class="subl">🎁 ${esc(r.comp.perWinner)} ≈ $${nf2.format(rewardUsd)}</span>`;
           }
         }
 
+        const isFav = favSet.has(r.sym);
+        const starLabel = esc(isFav ? t('starRemove') : t('starAdd'));
+        const chgUp = r.chg>=0;
+        const chgLabel = esc((chgUp ? t('priceUp') : t('priceDown')) + ' ' + Math.abs(r.chg).toFixed(2) + '%');
+        const titleListing = r.listingTimeFmt ? esc(tipPrefix+r.listingTimeFmt) : '';
+
         return `
-        <tr data-sym="${r.sym}">
-          <td class="star ${favSet.has(r.sym)?'fav':''}">${favSet.has(r.sym)?'★':'☆'}</td>
+        <tr data-sym="${esc(r.sym)}">
+          <td class="star ${isFav?'fav':''}" role="button" tabindex="0" aria-pressed="${isFav}" aria-label="${starLabel}">${isFav?'★':'☆'}</td>
           <td>${i+1}</td>
-          <td title="${r.listingTimeFmt ? (tipPrefix+r.listingTimeFmt) : ''}">
-            <img class="logo" loading="lazy" src="${r.icon}" referrerpolicy="no-referrer"
-                 onerror="this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">
-            ${r.symbol}
+          <td title="${titleListing}">
+            <img class="logo" loading="lazy" src="${esc(r.icon)}" referrerpolicy="no-referrer" alt=""
+                 onerror="this.onerror=null;this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">
+            ${esc(r.symbol)}
             ${r.hasFutures ? `<span class="tag-futures">${t('futuresTag')}</span>` : ''}
-            ${r.isNew ? `<span class="tag-new" title="${tipPrefix}${r.listingTimeFmt}">${t('newTag')(left)}</span>` : ''}
+            ${r.isNew ? `<span class="tag-new" title="${esc(tipPrefix+r.listingTimeFmt)}">${t('newTag')(left)}</span>` : ''}
             ${compTag}
           </td>
           <td>${fmtPrice(r.price)}</td>
           <td>${nf0.format(r.vol24h)}</td>
-          <td class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</td>
+          <td class="${chgUp?'up':'down'}" aria-label="${chgLabel}">${chgUp?'▲':'▼'} ${r.chg.toFixed(2)}%</td>
           <td>${fmtFdv(r.fdv)}</td>
           <td>${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
           <td>${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
-          ${showCompOnly?`<td>${compCell}</td>`:''}
+          ${showCompCol?`<td>${compCell}</td>`:''}
         </tr>
       `;
       }).join('');
-      updateSortIcons();
     }
 
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const isFirstLoad=!rows||rows.length===0;
-      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
-      const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
-
-      thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
-      thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
+      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="99" style="text-align:center;padding:24px">${esc(t('loading'))}</td></tr>`;
+      const {today8, yest8, endTs} = updateRangeHeaders();
 
       try{
         const newRows=await fetchList();
         const hasFilter=showCompOnly||showNewOnly||showFuturesOnly||showSecOnly;
         if(hasFilter && rows.length>0){
           // 有筛选时只刷新符合条件的币种，其余复用旧数据
-          const visibleSet=new Set(newRows.filter(r=>{
-            const newOk=!showNewOnly||r.isNew;
-            const futuresOk=!showFuturesOnly||r.hasFutures;
-            const secOk=!showSecOnly||r.isTokenizedSecurity;
-            const compOk=!showCompOnly||r.comp;
-            return newOk&&futuresOk&&secOk&&compOk;
-          }).map(r=>r.symbol));
+          const visibleSet=new Set(newRows.filter(passesFilters).map(r=>r.symbol));
           const oldMap=Object.fromEntries(rows.map(r=>[r.symbol,r]));
           newRows.forEach(r=>{
             if(!visibleSet.has(r.symbol)&&oldMap[r.symbol]){
@@ -1078,7 +1165,11 @@
       }catch(e){
         console.error(e);
         const msg=e.message||t('unknownErr');
-        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9">${t('failLoad')}${msg}</td></tr>`;
+        if(isFirstLoad){
+          tbody.innerHTML=`<tr><td colspan="99" style="text-align:center;padding:24px">${esc(t('failLoad'))}${esc(msg)}<button type="button" id="retryBtn" class="btn retry-btn">${esc(t('retry'))}</button></td></tr>`;
+          const rb=document.getElementById('retryBtn');
+          if(rb) rb.addEventListener('click', reloadAll);
+        }
         showToast(`${t('failLoad')}${msg}`);
       }finally{
         refreshBtn.disabled=false;
@@ -1106,10 +1197,11 @@
       const res=await qvAuto(row,st,et-1);
       rangeBtn.disabled=false;progressEl.style.display='none';
       const avgPerTrade=res.trades>0?(res.vol/res.trades):0;
+      const displaySym = row.symbol||sym;
       // store for lang-switch re-render
-      customVolEl.dataset.sym=row.symbol||sym; customVolEl.dataset.st=st; customVolEl.dataset.et=et;
+      customVolEl.dataset.sym=displaySym; customVolEl.dataset.st=st; customVolEl.dataset.et=et;
       customVolEl.dataset.vol=res.vol; customVolEl.dataset.trades=res.trades;
-      customVolEl.innerHTML=t('rangeTpl')(row.symbol||sym, fmtFull(st), fmtFull(et), nf0.format(res.vol))
+      customVolEl.innerHTML=t('rangeTpl')(esc(displaySym), fmtFull(st), fmtFull(et), nf0.format(res.vol))
         + `<br>${t('tradeStats')(nf0.format(res.trades), nf0.format(Math.round(avgPerTrade)))}`;
 
       // 保存到缓存
@@ -1132,6 +1224,12 @@
 
       hourlyBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
 
+      // ✅ 先做一次探测以锁定 USDT/USDC 交易对，让后续所有 slot 共享 qSym 缓存
+      // （直接传 row 本体，qvAuto 只会写 row.qSym；避免旧版 {...row} spread 导致探测失效）
+      const probeStart=startTs;
+      const probeEnd=Math.min(startTs+3600000-1, now);
+      await qvAuto(row, probeStart, probeEnd);
+
       const hourlyData=[];
       const totalSlots=hours+(hasPartial?1:0);
       let done=0;
@@ -1140,7 +1238,7 @@
         const hStart=startTs+i*3600000;
         const hEnd=hStart+3600000-1;
         tasks.push(limit(async()=>{
-          const res=await qvAuto({...row},hStart,hEnd);
+          const res=await qvAuto(row,hStart,hEnd);
           hourlyData[i]={start:hStart,end:hEnd,vol:res.vol,trades:res.trades};
           progressEl.textContent=`${Math.floor(++done/totalSlots*100)}%`;
         }));
@@ -1148,7 +1246,7 @@
       // 当前不完整小时
       if(hasPartial){
         tasks.push(limit(async()=>{
-          const res=await qvAuto({...row},endTs,now);
+          const res=await qvAuto(row,endTs,now);
           hourlyData[hours]={start:endTs,end:now,vol:res.vol,trades:res.trades,partial:true};
           progressEl.textContent=`${Math.floor(++done/totalSlots*100)}%`;
         }));
@@ -1157,8 +1255,9 @@
 
       hourlyBtn.disabled=false;progressEl.style.display='none';
 
-      const totalVol=hourlyData.reduce((s,d)=>s+d.vol,0);
-      const totalTrades=hourlyData.reduce((s,d)=>s+d.trades,0);
+      // ✅ 单次遍历计算总和，供缓存使用（renderHourly 内部也会单次计算 max/min/total）
+      let totalVol=0, totalTrades=0;
+      for(const d of hourlyData){ totalVol+=d.vol; totalTrades+=d.trades; }
       // store for lang-switch re-render
       window._lastHourlyData={symbol:row.symbol||sym, hours, data:hourlyData};
       renderHourly(window._lastHourlyData);
@@ -1170,10 +1269,15 @@
     /* ---------- 小时图渲染（可复用） ---------- */
     function renderHourly(info){
       const {symbol, hours, data:hourlyData}=info;
-      const maxVol=Math.max(...hourlyData.map(d=>d.vol),1);
-      const minVol=Math.min(...hourlyData.map(d=>d.vol));
-      const totalVol=hourlyData.reduce((s,d)=>s+d.vol,0);
-      const totalTrades=hourlyData.reduce((s,d)=>s+d.trades,0);
+      // ✅ 单次遍历同时算 max / min / total / totalTrades
+      let maxVol=1, minVol=Infinity, totalVol=0, totalTrades=0;
+      for(const d of hourlyData){
+        if(d.vol>maxVol) maxVol=d.vol;
+        if(d.vol<minVol) minVol=d.vol;
+        totalVol+=d.vol;
+        totalTrades+=d.trades;
+      }
+      if(minVol===Infinity) minVol=0;
       const totalAvg=totalTrades>0?Math.round(totalVol/totalTrades):0;
       const maxBarH=120;
       const fmtHour=(ts,partial)=>{
@@ -1224,7 +1328,7 @@
       if(!item)return;
       customVolEl.dataset.sym=item.symbol; customVolEl.dataset.st=item.start; customVolEl.dataset.et=item.end;
       customVolEl.dataset.vol=item.vol; customVolEl.dataset.trades=item.trades||0;
-      customVolEl.innerHTML=t('rangeTpl')(item.symbol, fmtFull(item.start), fmtFull(item.end), nf0.format(item.vol))
+      customVolEl.innerHTML=t('rangeTpl')(esc(item.symbol), fmtFull(item.start), fmtFull(item.end), nf0.format(item.vol))
         + (item.trades ? `<br>${t('tradeStats')(nf0.format(item.trades), nf0.format(Math.round(item.vol/item.trades)))}` : '');
       // 回填输入框，方便微调再查
       tokenEl.value=item.symbol;
@@ -1246,7 +1350,7 @@
         const typeBadge=c.type==='hourly'?`<span style="font-size:.68rem;padding:0 4px;border-radius:4px;background:rgba(37,99,235,.1);color:var(--primary);margin-right:4px">${c.hours||6}h</span>`:'';
         const timeStr=c.time?`<span style="color:var(--sub);font-size:.72rem;margin-left:6px">${t('cacheTime')} ${fmtFull(c.time)}</span>`:'';
         return `<div class="cache-item">
-          <span class="ci-info" data-idx="${i}">${typeBadge}<strong>${c.symbol}</strong>&nbsp; ${fmtFull(c.start)} ~ ${fmtFull(c.end)}&nbsp; → ${nf0.format(c.vol)}${timeStr}</span>
+          <span class="ci-info" data-idx="${i}">${typeBadge}<strong>${esc(c.symbol)}</strong>&nbsp; ${fmtFull(c.start)} ~ ${fmtFull(c.end)}&nbsp; → ${nf0.format(c.vol)}${timeStr}</span>
           <span class="ci-del" data-delidx="${i}">${t('cacheDel')}</span>
         </div>`;
       }).join('');
@@ -1299,6 +1403,15 @@
         if(row){tokenEl.value=row.symbol;showToast(row.symbol);}
       }
     });
+    // ✅ 星标键盘可访问性：Enter / Space 切换收藏
+    tbody.addEventListener('keydown',e=>{
+      if(e.key!=='Enter' && e.key!==' ') return;
+      const s=e.target.closest('.star');
+      if(!s) return;
+      e.preventDefault();
+      s.classList.add('bounce');setTimeout(()=>s.classList.remove('bounce'),150);
+      toggleFav(s.closest('tr').dataset.sym);
+    });
 
     /* ✅ 小时图：缩小/展开 */
     hourlyWrap.addEventListener('click',e=>{
@@ -1335,7 +1448,6 @@ document.querySelectorAll('th.sortable').forEach(th=>{
 
     onlyCompEl.addEventListener('change', (e)=>{
       showCompOnly = e.target.checked;
-      thCompVol.style.display = showCompOnly ? '' : 'none';
       render();
     });
 
@@ -1346,11 +1458,7 @@ document.querySelectorAll('th.sortable').forEach(th=>{
     });
     setInterval(()=>{if(document.visibilityState==='visible')reloadAll();},300000);
 
-    /* ---------- 深色模式切换 ---------- */
-    (function initTheme(){
-      const saved=localStorage.getItem('theme');
-      if(saved)document.documentElement.classList.add(saved);
-    })();
+    /* ---------- 深色模式切换（initTheme 已在 <head> 内联执行，避免 FOUC） ---------- */
     document.getElementById('themeBtn').addEventListener('click',()=>{
       const root=document.documentElement;
       const isDark=root.classList.contains('dark')||(
@@ -1365,11 +1473,11 @@ document.querySelectorAll('th.sortable').forEach(th=>{
     document.getElementById('langBtn').addEventListener('click',()=>{
       curLang = curLang==='zh' ? 'en' : 'zh';
       localStorage.setItem('lang', curLang);
+      // ✅ 语言变更后 Intl.DateTimeFormat 缓存必须失效（按 locale 分 key）
+      _dtCache.clear();
       applyI18n();
       // 刷新表头时间 & 表格内容
-      const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
-      thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
-      thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
+      updateRangeHeaders();
       thCompVol.textContent=t('thCompVol');
       // 刷新 lastUp 时间文案
       if(lastUpEl.textContent) lastUpEl.textContent=`${t('lastUp')} ${fmtFull(Date.now())}`;
@@ -1381,7 +1489,7 @@ document.querySelectorAll('th.sortable').forEach(th=>{
       // 刷新区间查询结果（如果有内容）
       if(customVolEl.dataset.sym){
         const d=customVolEl.dataset;
-        customVolEl.innerHTML=t('rangeTpl')(d.sym, fmtFull(+d.st), fmtFull(+d.et), nf0.format(+d.vol))
+        customVolEl.innerHTML=t('rangeTpl')(esc(d.sym), fmtFull(+d.st), fmtFull(+d.et), nf0.format(+d.vol))
           + (d.trades>0 ? `<br>${t('tradeStats')(nf0.format(+d.trades), nf0.format(Math.round(+d.vol/+d.trades)))}` : '');
       }
       // 刷新小时图（如果有内容）
@@ -1393,8 +1501,13 @@ document.querySelectorAll('th.sortable').forEach(th=>{
 
     /* ---------- 回到顶部 ---------- */
     const backTopBtn=document.getElementById('backTop');
+    let _backTopVisible=false;
     window.addEventListener('scroll',()=>{
-      backTopBtn.style.display=window.scrollY>300?'flex':'none';
+      const shouldShow=window.scrollY>300;
+      if(shouldShow!==_backTopVisible){
+        _backTopVisible=shouldShow;
+        backTopBtn.style.display=shouldShow?'flex':'none';
+      }
     },{passive:true});
     backTopBtn.addEventListener('click',()=>{
       window.scrollTo({top:0,behavior:'smooth'});
