@@ -652,12 +652,11 @@
 
     /* ---------- 交易赛配置（手动维护） ---------- */
     const COMPETITIONS = [
-      { symbol:'EDGE',  start:Date.parse('2026-04-02T21:00:00+08:00'), end:Date.parse('2026-04-09T21:00:00+08:00'), topN:2700, pool:'135,000 EDGE',     perWinner:'50 EDGE' },
-      { symbol:'BLUAI', start:Date.parse('2026-04-02T21:00:00+08:00'), end:Date.parse('2026-04-09T21:00:00+08:00'), topN:3330, pool:'13,653,000 BLUAI',  perWinner:'4,100 BLUAI' },
       { symbol:'BEAT',  start:Date.parse('2026-04-03T21:00:00+08:00'), end:Date.parse('2026-04-10T21:00:00+08:00'), topN:2000, pool:'200,000 BEAT',      perWinner:'100 BEAT' },
       { symbol:'BASED', start:Date.parse('2026-04-07T21:00:00+08:00'), end:Date.parse('2026-04-14T21:00:00+08:00'), topN:3330, pool:'865,800 BASED',     perWinner:'260 BASED' },
       { symbol:'PRL',   start:Date.parse('2026-04-08T21:00:00+08:00'), end:Date.parse('2026-04-15T21:00:00+08:00'), topN:3330, pool:'799,200 PRL',       perWinner:'240 PRL' },
       {symbol:'RTX',   start:Date.parse('2026-04-09T21:00:00+08:00'), end:Date.parse('2026-04-16T21:00:00+08:00'), topN:2040, pool:'61,200 RTX',       perWinner:'30 RTX' },
+      { symbol:'EDGE',  start:Date.parse('2026-04-09T21:00:00+08:00'), end:Date.parse('2026-04-16T21:00:00+08:00'), topN:2700, pool:'135,000 EDGE',     perWinner:'50 EDGE' },
     ];
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
