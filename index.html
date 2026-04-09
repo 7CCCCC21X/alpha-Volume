@@ -417,9 +417,9 @@
       <span class="card-sub" id="cardTopGainSub"></span>
     </div>
     <div class="summary-card">
-      <span class="card-label" id="cardActiveLabel">异常活跃币</span>
-      <span class="card-value" id="cardActiveValue">-</span>
-      <span class="card-sub" id="cardActiveSub"></span>
+      <span class="card-label" id="cardActiveLabel">今日交易笔数 Top 3</span>
+      <span class="card-value" id="cardActiveValue" style="font-size:.95rem">-</span>
+      <span class="card-sub" id="cardActiveSub" style="white-space:normal;line-height:1.4"></span>
     </div>
   </div>
 
@@ -550,10 +550,8 @@
         cardTotal: '总代币数',
         cardComp: '交易赛代币',
         cardTopGain: '今日最大涨幅',
-        cardActive: '异常活跃币',
-        cardCompActive: (n) => `${n} 个进行中`,
-        cardActiveDesc: '今日限价单额>前日2倍',
-        noActiveToken: '暂无'
+        cardActive: '今日交易笔数 Top 3',
+        cardCompActive: (n) => `${n} 个进行中`
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -628,10 +626,8 @@
         cardTotal: 'Total Tokens',
         cardComp: 'Competition',
         cardTopGain: 'Top Gainer',
-        cardActive: 'Abnormally Active',
-        cardCompActive: (n) => `${n} active`,
-        cardActiveDesc: 'Today limit vol > 2x prev',
-        noActiveToken: 'None'
+        cardActive: 'Top 3 by Trades Today',
+        cardCompActive: (n) => `${n} active`
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -875,7 +871,7 @@
           qvAuto(r,today8,endTs),
           qvAuto(r,yest8,today8-1)
         ]);
-        r.todayQV=todayRes.vol; r.prevQV=prevRes.vol;
+        r.todayQV=todayRes.vol; r.todayTrades=todayRes.trades; r.prevQV=prevRes.vol;
         // ✅ 交易赛交易量（qSym 已在上面的请求中解析）
         if(r.comp){
           const now=Date.now();
@@ -929,8 +925,9 @@
             // ✅ 缓存：实际能用的交易对（USDT/USDC）
             qSym:null,
 
-            // ✅ null 表示"还在加载"；0 才是真正的 0
+            // null 表示"还在加载"；0 才是真正的 0
             todayQV:null,
+            todayTrades:null,
             prevQV:null,
 
             listingTime: ltMs,
@@ -973,8 +970,9 @@
       let topGain = rows[0];
       rows.forEach(r=>{ if(r.chg > topGain.chg) topGain = r; });
 
-      // 异常活跃币：当日限价单 > 前日 2 倍
-      const activeTokens = rows.filter(r=> r.todayQV!=null && r.prevQV!=null && r.prevQV>0 && r.todayQV > r.prevQV*2);
+      // 今日交易笔数 Top 3
+      const withTrades = rows.filter(r=> r.todayTrades!=null && r.todayTrades>0);
+      const top3Trades = [...withTrades].sort((a,b)=>b.todayTrades-a.todayTrades).slice(0,3);
 
       document.getElementById('cardTotalValue').textContent = total;
       document.getElementById('cardTotalSub').textContent = `${rows.filter(r=>r.isNew).length} ${curLang==='zh'?'个新币':'new'}`;
@@ -987,12 +985,15 @@
       gainEl.className = 'card-value ' + (topGain && topGain.chg>=0 ? 'up' : 'down');
       document.getElementById('cardTopGainSub').textContent = topGain ? topGain.symbol : '';
 
-      document.getElementById('cardActiveValue').textContent = activeTokens.length || t('noActiveToken');
-      if(activeTokens.length>0){
-        const topActive = activeTokens.sort((a,b)=>(b.todayQV/b.prevQV)-(a.todayQV/a.prevQV))[0];
-        document.getElementById('cardActiveSub').textContent = topActive.symbol + ` (${(topActive.todayQV/topActive.prevQV).toFixed(1)}x)`;
+      if(top3Trades.length>0){
+        document.getElementById('cardActiveValue').textContent = top3Trades.map(r=>r.symbol).join(' / ');
+        document.getElementById('cardActiveSub').textContent = top3Trades.map(r=>{
+          const avg = r.todayTrades>0 ? Math.round(r.todayQV/r.todayTrades) : 0;
+          return `${r.symbol}: ${nf0.format(r.todayTrades)}${curLang==='zh'?'笔':'tx'} ~$${nf0.format(avg)}`;
+        }).join('  |  ');
       } else {
-        document.getElementById('cardActiveSub').textContent = t('cardActiveDesc');
+        document.getElementById('cardActiveValue').textContent = '-';
+        document.getElementById('cardActiveSub').textContent = '';
       }
     }
 
