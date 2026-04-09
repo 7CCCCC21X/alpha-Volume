@@ -89,14 +89,15 @@
     }
     .filter-bar .chip{
       display:inline-flex;align-items:center;gap:4px;
-      padding:4px 12px;border-radius:20px;font-size:.8rem;
-      border:1px solid var(--border);color:var(--sub);
-      cursor:pointer;user-select:none;transition:all .15s;background:transparent
+      padding:5px 14px;border-radius:20px;font-size:.82rem;
+      border:1.5px solid var(--border);color:var(--text);
+      cursor:pointer;user-select:none;transition:all .15s;background:var(--card-bg);
+      font-weight:500
     }
-    .filter-bar .chip:hover{border-color:var(--primary);color:var(--primary)}
+    .filter-bar .chip:hover{border-color:var(--primary);color:var(--primary);background:rgba(37,99,235,.04)}
     .filter-bar .chip.active{
-      border-color:var(--primary);color:var(--primary);
-      background:rgba(37,99,235,.08);font-weight:600
+      border-color:var(--primary);color:#fff;
+      background:var(--primary);font-weight:600
     }
     .filter-bar .chip input{display:none}
     .filter-bar .reset-btn{
@@ -124,6 +125,11 @@
     .summary-card .card-label{font-size:.72rem;color:var(--sub);white-space:nowrap}
     .summary-card .card-value{font-size:1.15rem;font-weight:700;color:var(--text);white-space:nowrap}
     .summary-card .card-sub{font-size:.7rem;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .detail-tbl{width:100%;border-collapse:collapse;font-size:.76rem;color:var(--text)}
+    .detail-tbl td{padding:1px 0;white-space:nowrap;border:none}
+    .detail-tbl .dt-sym{font-weight:700;padding-right:8px;color:var(--text)}
+    .detail-tbl .dt-num{padding-right:8px;color:var(--sub);text-align:right;font-variant-numeric:tabular-nums}
+    .detail-tbl .dt-avg{color:var(--sub);font-variant-numeric:tabular-nums}
     .summary-card .card-value.up{color:var(--green)}
     .summary-card .card-value.down{color:var(--red)}
 
@@ -415,7 +421,7 @@
     </div>
     <div class="summary-card">
       <span class="card-label" id="cardActiveDetailLabel">笔数 · 均额明细</span>
-      <span class="card-sub" id="cardActiveSub" style="white-space:normal;line-height:1.6;font-size:.78rem"></span>
+      <div id="cardActiveSub" style="margin-top:2px"></div>
     </div>
   </div>
 
@@ -970,11 +976,11 @@
         document.getElementById('cardActiveValue').textContent = top3Trades.map(r=>r.symbol).join(' / ');
         const txLabel = curLang==='zh' ? '笔' : ' tx';
         const avgLabel = curLang==='zh' ? '均额' : 'avg';
-        document.getElementById('cardActiveSub').innerHTML = top3Trades.map(r=>{
+        const tblRows = top3Trades.map(r=>{
           const avg = r.todayTrades>0 ? Math.round(r.todayQV/r.todayTrades) : 0;
-          const vol = fmtCompact(r.todayQV);
-          return `<b>${r.symbol}</b>　${nf0.format(r.todayTrades)}${txLabel}　${avgLabel} $${nf0.format(avg)}　${curLang==='zh'?'总额':'vol'} $${vol}`;
-        }).join('<br>');
+          return `<tr><td class="dt-sym">${r.symbol}</td><td class="dt-num">${nf0.format(r.todayTrades)}${txLabel}</td><td class="dt-avg">${avgLabel} $${nf0.format(avg)}</td></tr>`;
+        }).join('');
+        document.getElementById('cardActiveSub').innerHTML = `<table class="detail-tbl">${tblRows}</table>`;
       } else {
         document.getElementById('cardActiveValue').textContent = '-';
         document.getElementById('cardActiveSub').innerHTML = '';
