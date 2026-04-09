@@ -111,9 +111,26 @@
     .filter-bar .filter-info .result-count{font-weight:600;color:var(--text)}
     .filter-bar .filter-info .sort-indicator{color:var(--sub)}
 
+    /* ========== Collapsible Section ========== */
+    .collapsible-section{max-width:1200px;margin:0 auto 10px;padding:0 12px}
+    .section-header{
+      display:flex;align-items:center;gap:8px;margin-bottom:6px;
+      font-size:.78rem;color:var(--sub)
+    }
+    .section-title{font-weight:600}
+    .collapse-btn{
+      width:22px;height:22px;border:1px solid var(--border);border-radius:4px;
+      background:var(--card-bg);color:var(--sub);cursor:pointer;
+      font-size:1rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;
+      transition:all .15s;padding:0
+    }
+    .collapse-btn:hover{border-color:var(--primary);color:var(--primary)}
+    .collapse-btn.collapsed{color:var(--primary)}
+    .section-body{transition:max-height .25s ease,opacity .2s ease,margin .2s ease;overflow:hidden}
+    .section-body.collapsed{max-height:0;opacity:0;margin:0;pointer-events:none}
+
     /* ========== Row 4: Summary Cards ========== */
     .summary-cards{
-      max-width:1200px;margin:0 auto 10px;padding:0 12px;
       display:grid;grid-template-columns:repeat(4,1fr);gap:10px
     }
     .summary-card{
@@ -330,7 +347,8 @@
       .btn{padding:5px 10px;font-size:.8rem}
       .filter-bar{gap:4px;padding:0 8px}
       .filter-bar .chip{padding:3px 8px;font-size:.74rem}
-      .summary-cards{grid-template-columns:repeat(2,1fr);gap:6px;padding:0 8px;margin-bottom:8px}
+      .collapsible-section{padding:0 8px;margin-bottom:8px}
+      .summary-cards{grid-template-columns:repeat(2,1fr);gap:6px}
       .summary-card{padding:8px 10px}
       .summary-card .card-value{font-size:1rem}
       #bar-right{gap:5px}
@@ -404,24 +422,32 @@
   </div>
 
   <!-- ========== Row 4: Summary Cards ========== -->
-  <div class="summary-cards" id="summaryCards">
-    <div class="summary-card">
-      <span class="card-label" id="cardTotalLabel">总代币数</span>
-      <span class="card-value" id="cardTotalValue">-</span>
-      <span class="card-sub" id="cardTotalSub"></span>
+  <div class="collapsible-section" id="summarySection">
+    <div class="section-header">
+      <span class="section-title" id="summaryTitle">数据概览</span>
+      <button class="collapse-btn" data-target="summaryBody" title="收起/展开">−</button>
     </div>
-    <div class="summary-card">
-      <span class="card-label" id="cardCompLabel">交易赛代币</span>
-      <span class="card-value" id="cardCompValue">-</span>
-      <span class="card-sub" id="cardCompSub"></span>
-    </div>
-    <div class="summary-card">
-      <span class="card-label" id="cardActiveLabel">今日交易笔数 Top 3</span>
-      <span class="card-value" id="cardActiveValue" style="font-size:.95rem">-</span>
-    </div>
-    <div class="summary-card">
-      <span class="card-label" id="cardActiveDetailLabel">笔数 · 均额明细</span>
-      <div id="cardActiveSub" style="margin-top:2px"></div>
+    <div class="section-body" id="summaryBody">
+      <div class="summary-cards" id="summaryCards">
+        <div class="summary-card">
+          <span class="card-label" id="cardTotalLabel">总代币数</span>
+          <span class="card-value" id="cardTotalValue">-</span>
+          <span class="card-sub" id="cardTotalSub"></span>
+        </div>
+        <div class="summary-card">
+          <span class="card-label" id="cardCompLabel">交易赛代币</span>
+          <span class="card-value" id="cardCompValue">-</span>
+          <span class="card-sub" id="cardCompSub"></span>
+        </div>
+        <div class="summary-card">
+          <span class="card-label" id="cardActiveLabel">今日交易笔数 Top 3</span>
+          <span class="card-value" id="cardActiveValue" style="font-size:.95rem">-</span>
+        </div>
+        <div class="summary-card">
+          <span class="card-label" id="cardActiveDetailLabel">笔数 · 均额明细</span>
+          <div id="cardActiveSub" style="margin-top:2px"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -442,9 +468,17 @@
     </div>
   </div>
 
-  <!-- ========== Table ========== -->
-  <div id="customVol"></div>
-  <div id="hourlyWrap"></div>
+  <!-- ========== Query Result ========== -->
+  <div class="collapsible-section" id="querySection" style="display:none">
+    <div class="section-header">
+      <span class="section-title" id="queryTitle">查询结果</span>
+      <button class="collapse-btn" data-target="queryBody" title="收起/展开">−</button>
+    </div>
+    <div class="section-body" id="queryBody">
+      <div id="customVol"></div>
+      <div id="hourlyWrap"></div>
+    </div>
+  </div>
   <div id="cacheWrap">
     <div class="cache-hd">
       <button id="cacheToggle" style="display:none"></button>
@@ -551,7 +585,9 @@
         cardComp: '交易赛代币',
         cardActive: '今日交易笔数 Top 3',
         cardActiveDetail: '笔数 · 均额明细',
-        cardCompActive: (n) => `${n} 个进行中`
+        cardCompActive: (n) => `${n} 个进行中`,
+        sectionSummary: '数据概览',
+        sectionQuery: '查询结果'
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -625,7 +661,9 @@
         cardComp: 'Competition',
         cardActive: 'Top 3 by Trades Today',
         cardActiveDetail: 'Trades · Avg Detail',
-        cardCompActive: (n) => `${n} active`
+        cardCompActive: (n) => `${n} active`,
+        sectionSummary: 'Overview',
+        sectionQuery: 'Query Result'
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -671,6 +709,10 @@
       document.getElementById('cardCompLabel').textContent = t('cardComp');
       document.getElementById('cardActiveLabel').textContent = t('cardActive');
       document.getElementById('cardActiveDetailLabel').textContent = t('cardActiveDetail');
+      const summaryTitleEl=document.getElementById('summaryTitle');
+      if(summaryTitleEl) summaryTitleEl.textContent = t('sectionSummary');
+      const queryTitleEl=document.getElementById('queryTitle');
+      if(queryTitleEl) queryTitleEl.textContent = t('sectionQuery');
       // update initial loading text if still present
       const initEl = document.getElementById('initLoading');
       if(initEl) initEl.textContent = t('loading');
@@ -1162,6 +1204,7 @@
       customVolEl.dataset.vol=res.vol; customVolEl.dataset.trades=res.trades;
       customVolEl.innerHTML=t('rangeTpl')(row.symbol||sym, fmtFull(st), fmtFull(et), nf0.format(res.vol))
         + `<br>${t('tradeStats')(nf0.format(res.trades), nf0.format(Math.round(avgPerTrade)))}`;
+      showQuerySection();
 
       // 保存到缓存
       saveCache({symbol:row.symbol||sym, start:st, end:et, vol:res.vol, trades:res.trades, time:Date.now()});
@@ -1213,6 +1256,7 @@
       // store for lang-switch re-render
       window._lastHourlyData={symbol:row.symbol||sym, hours, data:hourlyData};
       renderHourly(window._lastHourlyData);
+      showQuerySection();
 
       // 保存小时查询到缓存
       saveCache({symbol:row.symbol||sym, start:startTs, end:endTs, vol:totalVol, trades:totalTrades, time:Date.now(), type:'hourly', hours});
@@ -1274,6 +1318,7 @@
       customVolEl.dataset.vol=item.vol; customVolEl.dataset.trades=item.trades||0;
       customVolEl.innerHTML=t('rangeTpl')(item.symbol, fmtFull(item.start), fmtFull(item.end), nf0.format(item.vol))
         + (item.trades ? `<br>${t('tradeStats')(nf0.format(item.trades), nf0.format(Math.round(item.vol/item.trades)))}` : '');
+      showQuerySection();
       // 回填输入框，方便微调再查
       tokenEl.value=item.symbol;
       const pad=n=>String(n).padStart(2,'0');
@@ -1439,6 +1484,42 @@
     backTopBtn.addEventListener('click',()=>{
       window.scrollTo({top:0,behavior:'smooth'});
     });
+
+    /* ---------- 可折叠区域 ---------- */
+    const COLLAPSE_KEY='alphaCollapse';
+    function getCollapseState(){try{return JSON.parse(localStorage.getItem(COLLAPSE_KEY)||'{}');}catch{return {};}}
+    function setCollapseState(s){localStorage.setItem(COLLAPSE_KEY,JSON.stringify(s));}
+    function applyCollapse(targetId, collapsed){
+      const body=document.getElementById(targetId);
+      const btn=document.querySelector(`.collapse-btn[data-target="${targetId}"]`);
+      if(!body||!btn) return;
+      if(collapsed){
+        body.classList.add('collapsed');
+        btn.classList.add('collapsed');
+        btn.textContent='+';
+      } else {
+        body.classList.remove('collapsed');
+        btn.classList.remove('collapsed');
+        btn.textContent='−';
+      }
+    }
+    document.querySelectorAll('.collapse-btn').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const target=btn.dataset.target;
+        const state=getCollapseState();
+        state[target]=!state[target];
+        setCollapseState(state);
+        applyCollapse(target, state[target]);
+      });
+    });
+    (function initCollapse(){
+      const state=getCollapseState();
+      Object.keys(state).forEach(k=>applyCollapse(k, state[k]));
+    })();
+    // 当有查询结果时显示 query section
+    function showQuerySection(){
+      document.getElementById('querySection').style.display='';
+    }
 
     /* ---------- 初始化 ---------- */
     applyI18n();
