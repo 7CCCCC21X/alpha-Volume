@@ -440,6 +440,8 @@
       <tr>
         <th style="width:26px"></th><th>#</th><th id="thName">代币名字</th>
         <th id="thPrice">价格</th>
+        <th id="thMcap" class="sortable" data-key="marketCap">流通市值</th>
+        <th id="thFdv" class="sortable" data-key="fdv">FDV</th>
         <th id="thVol24h" class="sortable" data-key="vol24h">24H 交易量</th>
         <th id="thChg">24H 变化</th>
         <th id="thToday" class="sortable" data-key="todayQV">当天限价单成交额</th>
@@ -447,7 +449,7 @@
         <th id="thCompVol" class="sortable" data-key="compVol" style="display:none">交易赛交易量</th>
       </tr>
     </thead>
-    <tbody><tr><td colspan="8" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
+    <tbody><tr><td colspan="10" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
   </table>
   </div>
 
@@ -492,6 +494,8 @@
         adHint: '👆 点击上方按钮绑定邀请码',
         thName: '代币',
         thPrice: '价格',
+        thMcap: '流通市值',
+        thFdv: 'FDV',
         thVol24h: '24H 交易量',
         thChg: '24H 涨跌',
         thTodayLabel: '当日限价单额',
@@ -542,7 +546,7 @@
         resetFilters: '重置筛选',
         resultCount: (n,total) => `显示 ${n} / ${total} 个代币`,
         sortLabel: (key,dir) => `排序：${key} ${dir==='desc'?'↓':'↑'}`,
-        sortKeyName: {vol24h:'24H量', todayQV:'当日限价单', prevQV:'前日限价单', compVol:'交易赛量'},
+        sortKeyName: {vol24h:'24H量', todayQV:'当日限价单', prevQV:'前日限价单', compVol:'交易赛量', marketCap:'流通市值', fdv:'FDV'},
         cardTotal: '总代币数',
         cardComp: '交易赛代币',
         cardTopGain: '今日最大涨幅',
@@ -568,6 +572,8 @@
         adHint: '👆 Click above to bind referral',
         thName: 'Token',
         thPrice: 'Price',
+        thMcap: 'Mkt Cap',
+        thFdv: 'FDV',
         thVol24h: '24H Volume',
         thChg: '24H Chg',
         thTodayLabel: 'Today Limit Vol',
@@ -618,7 +624,7 @@
         resetFilters: 'Reset',
         resultCount: (n,total) => `${n} / ${total} tokens`,
         sortLabel: (key,dir) => `Sort: ${key} ${dir==='desc'?'↓':'↑'}`,
-        sortKeyName: {vol24h:'24H Vol', todayQV:'Today Limit', prevQV:'Prev Limit', compVol:'Comp Vol'},
+        sortKeyName: {vol24h:'24H Vol', todayQV:'Today Limit', prevQV:'Prev Limit', compVol:'Comp Vol', marketCap:'Mkt Cap', fdv:'FDV'},
         cardTotal: 'Total Tokens',
         cardComp: 'Competition',
         cardTopGain: 'Top Gainer',
@@ -655,6 +661,8 @@
       document.querySelector('.ad-links').setAttribute('data-hint', t('adHint'));
       document.getElementById('thName').textContent = t('thName');
       document.getElementById('thPrice').textContent = t('thPrice');
+      document.getElementById('thMcap').childNodes[0].textContent = t('thMcap');
+      document.getElementById('thFdv').childNodes[0].textContent = t('thFdv');
       document.getElementById('thVol24h').childNodes[0].textContent = t('thVol24h');
       document.getElementById('thChg').textContent = t('thChg');
       document.getElementById('langBtn').textContent = t('langBtn');
@@ -691,6 +699,14 @@
     ];
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
+    /* 紧凑格式：1.23B / 456.7M / 12.3K */
+    function fmtCompact(v){
+      if(v==null||v===0) return '-';
+      if(v>=1e9) return (v/1e9).toFixed(2)+'B';
+      if(v>=1e6) return (v/1e6).toFixed(1)+'M';
+      if(v>=1e3) return (v/1e3).toFixed(1)+'K';
+      return nf0.format(v);
+    }
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     /* 智能价格格式化：小于 0.01 的价格自动显示更多有效位 */
     function fmtPrice(p){
@@ -901,6 +917,8 @@
             price:+t.price,
             vol24h:+t.volume24h,
             chg:+t.percentChange24h,
+            marketCap: +(t.marketCap||0),
+            fdv: +(t.fullyDilutedValuation||t.fdv||0),
             symbol:t.symbol,
             icon:t.iconUrl,
 
@@ -1066,6 +1084,8 @@
             ${compTag}
           </td>
           <td>${fmtPrice(r.price)}</td>
+          <td>${fmtCompact(r.marketCap)}</td>
+          <td>${fmtCompact(r.fdv)}</td>
           <td style="font-weight:600">${nf0.format(r.vol24h)}</td>
           <td class="${r.chg>=0?'up':'down'}" style="font-weight:600">${r.chg.toFixed(2)}%</td>
           <td style="font-weight:600">${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
@@ -1080,7 +1100,7 @@
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const isFirstLoad=!rows||rows.length===0;
-      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
+      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
 
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
@@ -1118,7 +1138,7 @@
       }catch(e){
         console.error(e);
         const msg=e.message||t('unknownErr');
-        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8">${t('failLoad')}${msg}</td></tr>`;
+        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="10">${t('failLoad')}${msg}</td></tr>`;
         showToast(`${t('failLoad')}${msg}`);
       }finally{
         refreshBtn.disabled=false;
