@@ -22,80 +22,113 @@
   <script defer src="/_vercel/insights/script.js"></script>
 
   <style>
-    :root{ --bg:#f9fafb;--text:#1f2937;--sub:#6b7280;--border:#e5e7eb; --green:#16a34a;--red:#dc2626;--primary:#2563eb }
+    :root{ --bg:#f9fafb;--text:#1f2937;--sub:#6b7280;--border:#e5e7eb; --green:#16a34a;--red:#dc2626;--primary:#2563eb;--card-bg:#fff }
     @media(prefers-color-scheme:dark){
-      :root{--bg:#1e293b;--text:#f3f4f6;--sub:#9ca3af;--border:#334155}
+      :root{--bg:#1e293b;--text:#f3f4f6;--sub:#9ca3af;--border:#334155;--card-bg:#273548}
     }
-    :root.dark{--bg:#1e293b;--text:#f3f4f6;--sub:#9ca3af;--border:#334155}
-    :root.light{--bg:#f9fafb;--text:#1f2937;--sub:#6b7280;--border:#e5e7eb}
+    :root.dark{--bg:#1e293b;--text:#f3f4f6;--sub:#9ca3af;--border:#334155;--card-bg:#273548}
+    :root.light{--bg:#f9fafb;--text:#1f2937;--sub:#6b7280;--border:#e5e7eb;--card-bg:#fff}
     #themeBtn,#langBtn{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:4px;padding:4px 8px;cursor:pointer;font-size:.85rem}
     *{box-sizing:border-box;margin:0;padding:0}
     body{
       font-family:-apple-system,"Segoe UI","PingFang SC",sans-serif;
       background:var(--bg);color:var(--text);line-height:1.5
     }
-    h1{padding:18px 12px;text-align:center;font-size:1.35rem;color:var(--primary)}
 
-    /* 最后更新时间 */
-    .last-up{ text-align:center;font-size:.8rem;color:var(--sub);margin-top:-6px;margin-bottom:12px }
-
-    /* ---------- 顶栏 ---------- */
-    #bar{
-      max-width:1200px;margin:0 auto 12px;
-      display:flex;flex-direction:column;gap:8px;
-      padding:0 6px
+    /* ========== Row 1: Header Bar ========== */
+    .header-bar{
+      max-width:1200px;margin:0 auto;padding:14px 12px 10px;
+      display:flex;align-items:center;flex-wrap:wrap;gap:8px
     }
-    #bar-row1{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-    #bar-row1 input[type="search"]{flex:1;min-width:160px}
-    #bar-row2{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-    #bar-row2 input[type="text"]{width:120px}
-    #bar-row2 input[type="datetime-local"]{width:190px}
-    #bar input{
-      padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:.85rem
+    .header-bar h1{font-size:1.25rem;color:var(--primary);white-space:nowrap}
+    .header-meta{display:flex;align-items:center;gap:12px;margin-left:auto;flex-wrap:wrap}
+    .header-meta .last-up{font-size:.78rem;color:var(--sub);white-space:nowrap}
+    .header-meta .auto-refresh{font-size:.72rem;color:var(--sub);display:flex;align-items:center;gap:4px}
+    .header-meta .auto-refresh .dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+    .header-meta .data-note{font-size:.72rem;color:var(--sub);cursor:help;border-bottom:1px dashed var(--sub)}
+    #bar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    #author{font-size:.8rem;white-space:nowrap}
+    #author a{color:var(--primary);text-decoration:none}
+
+    /* ========== Row 2: Search / Time / Sort / Query ========== */
+    .ctrl-bar{
+      max-width:1200px;margin:0 auto 8px;padding:0 12px;
+      display:flex;flex-wrap:wrap;align-items:center;gap:8px
+    }
+    .ctrl-bar input{
+      padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;
+      background:var(--bg);color:var(--text)
+    }
+    .ctrl-bar input[type="search"]{flex:1;min-width:160px;max-width:280px}
+    .ctrl-bar input[type="text"]{width:110px}
+    .ctrl-bar input[type="datetime-local"]{width:185px}
+    .ctrl-bar input[type="number"]{width:52px}
+    .ctrl-bar .sep{color:var(--sub);font-size:.78rem;margin:0 2px}
+    .ctrl-bar select{
+      padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;
+      background:var(--bg);color:var(--text);cursor:pointer
     }
     .btn{
       display:inline-flex;align-items:center;gap:4px;
       padding:6px 12px;font-size:.85rem;border:1px solid var(--primary);
-      color:#fff;background:var(--primary);border-radius:4px;cursor:pointer
+      color:#fff;background:var(--primary);border-radius:6px;cursor:pointer;white-space:nowrap
     }
     .btn[disabled]{background:#9ca3af;border-color:#9ca3af;cursor:not-allowed}
-    .badge{ /* 仅用于进度百分比 */
+    .btn-sm{padding:4px 10px;font-size:.8rem}
+    .btn-outline{background:transparent;color:var(--primary);border:1px solid var(--primary)}
+    .btn-outline:hover{background:rgba(37,99,235,.08)}
+    .badge{
       display:none;padding:0 6px;border-radius:10px;font-size:.7rem;font-weight:700;
       background:#fff;color:var(--primary)
     }
-    #bar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto}
-    #author{font-size:.8rem;white-space:nowrap}
-    #author a{color:var(--primary);text-decoration:none}
 
-    /* 新增：过滤开关 */
-    .chk{
-      display:inline-flex;align-items:center;gap:6px;
-      font-size:.85rem;color:var(--text);user-select:none
+    /* ========== Row 3: Filter Chips / Reset / Result Count ========== */
+    .filter-bar{
+      max-width:1200px;margin:0 auto 8px;padding:0 12px;
+      display:flex;flex-wrap:wrap;align-items:center;gap:6px
     }
+    .filter-bar .chip{
+      display:inline-flex;align-items:center;gap:4px;
+      padding:4px 12px;border-radius:20px;font-size:.8rem;
+      border:1px solid var(--border);color:var(--sub);
+      cursor:pointer;user-select:none;transition:all .15s;background:transparent
+    }
+    .filter-bar .chip:hover{border-color:var(--primary);color:var(--primary)}
+    .filter-bar .chip.active{
+      border-color:var(--primary);color:var(--primary);
+      background:rgba(37,99,235,.08);font-weight:600
+    }
+    .filter-bar .chip input{display:none}
+    .filter-bar .reset-btn{
+      font-size:.78rem;color:var(--sub);cursor:pointer;border:none;
+      background:none;text-decoration:underline;padding:0 4px;display:none
+    }
+    .filter-bar .reset-btn:hover{color:var(--red)}
+    .filter-bar .filter-info{
+      margin-left:auto;display:flex;align-items:center;gap:10px;font-size:.78rem;color:var(--sub)
+    }
+    .filter-bar .filter-info .result-count{font-weight:600;color:var(--text)}
+    .filter-bar .filter-info .sort-indicator{color:var(--sub)}
 
-    /* ---------- 广告位 ---------- */
-    .ad{
-      max-width:1200px;margin:0 auto 10px;padding:8px 10px;
-      display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-      border:1px dashed var(--border);border-radius:6px;background:rgba(0,0,0,.02)
+    /* ========== Row 4: Summary Cards ========== */
+    .summary-cards{
+      max-width:1200px;margin:0 auto 10px;padding:0 12px;
+      display:grid;grid-template-columns:repeat(4,1fr);gap:10px
     }
-    .ad-badge{
-      font-size:.68rem;padding:0 6px;border-radius:8px;color:#fff;background:#6b7280
+    .summary-card{
+      background:var(--card-bg);border:1px solid var(--border);border-radius:8px;
+      padding:12px 14px;display:flex;flex-direction:column;gap:2px;
+      transition:box-shadow .15s
     }
-    .ad-note{font-size:.82rem;color:var(--primary)}
-    .ad-links{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-    .ad .btn{padding:6px 10px}
+    .summary-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .summary-card .card-label{font-size:.72rem;color:var(--sub);white-space:nowrap}
+    .summary-card .card-value{font-size:1.15rem;font-weight:700;color:var(--text);white-space:nowrap}
+    .summary-card .card-sub{font-size:.7rem;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .summary-card .card-value.up{color:var(--green)}
+    .summary-card .card-value.down{color:var(--red)}
 
-    /* ✅ Telegram 徽章 */
-    .tg-badge{
-      display:inline-flex;align-items:center;gap:6px;
-      font-size:.75rem;padding:2px 8px;border-radius:10px;
-      color:#fff;background:#229ED9;text-decoration:none;line-height:1.6
-    }
-    .tg-badge:hover{opacity:.9}
-    .tg-badge .icon{font-size:.9rem;line-height:1}
-
-    /* ---------- 表格 ---------- */
+    /* ========== 表格 ========== */
     .table-wrap{max-width:1200px;margin:0 auto;overflow-x:auto;-webkit-overflow-scrolling:touch}
     table{ width:100%;border-collapse:collapse;min-width:620px }
     th,td{
@@ -104,7 +137,6 @@
     }
     tbody tr:hover{background:rgba(0,0,0,.04);cursor:pointer}
 
-    /* 窄屏固定前3列（星标 + 序号 + 代币名）—— 仅在未启用宽视口时生效 */
     @media(max-width:760px){
       th:nth-child(-n+3),td:nth-child(-n+3){position:sticky;background:var(--bg);z-index:1}
       th:nth-child(1),td:nth-child(1){left:0;min-width:26px}
@@ -112,13 +144,13 @@
       th:nth-child(3),td:nth-child(3){left:54px;box-shadow:2px 0 4px rgba(0,0,0,.06)}
     }
 
-    th.sortable{cursor:pointer;user-select:none;position:relative}
+    th.sortable{cursor:pointer;user-select:none;position:relative;padding-right:14px}
     th.sortable::after{
-      content:'▲';position:absolute;right:4px;font-size:.6rem;color:var(--sub);
-      transform:scale(.8);opacity:0;transition:opacity .2s
+      content:'▲';position:absolute;right:2px;top:50%;margin-top:-5px;font-size:.55rem;color:var(--sub);
+      opacity:0;transition:opacity .2s
     }
-    th.sortable.desc::after{content:'▼';opacity:1}
-    th.sortable.asc::after{content:'▲';opacity:1}
+    th.sortable.desc::after{content:'▼';opacity:1;color:var(--primary)}
+    th.sortable.asc::after{content:'▲';opacity:1;color:var(--primary)}
 
     /* Star */
     .star{cursor:pointer;font-size:1rem;color:var(--sub);user-select:none;transition:transform .15s,color .15s}
@@ -129,34 +161,24 @@
     .up{color:var(--green)}.down{color:var(--red)}
     .subl{display:block;font-size:.72rem;color:var(--sub)}
 
-    /* ✅ 30天内上新标记 */
+    /* ✅ 弱化标记：更轻量的视觉 */
     .tag-new{
-      display:inline-block;margin-left:6px;padding:0 6px;border-radius:10px;
-      font-size:.68rem;line-height:1.4;border:1px solid var(--primary);
-      color:var(--primary);background:rgba(37,99,235,.08)
+      display:inline-block;margin-left:4px;padding:0 4px;border-radius:3px;
+      font-size:.65rem;line-height:1.5;color:var(--primary);background:rgba(37,99,235,.06);
+      font-weight:normal
     }
-
-    /* ✅ 合约标记 */
     .tag-futures{
-      display:inline-block;margin-left:4px;padding:0 5px;border-radius:10px;
-      font-size:.68rem;line-height:1.4;border:1px solid #f59e0b;
-      color:#f59e0b;background:rgba(245,158,11,.08);font-weight:700
+      display:inline-block;margin-left:3px;padding:0 4px;border-radius:3px;
+      font-size:.65rem;line-height:1.5;color:#d97706;background:rgba(245,158,11,.06);
+      font-weight:normal
     }
-
-    /* ✅ 交易赛标记 */
     .tag-comp{
-      display:inline-block;margin-left:4px;padding:0 5px;border-radius:10px;
-      font-size:.68rem;line-height:1.4;font-weight:700;cursor:help
+      display:inline-block;margin-left:3px;padding:0 4px;border-radius:3px;
+      font-size:.65rem;line-height:1.5;font-weight:normal;cursor:help
     }
-    .tag-comp.comp-active{
-      border:1px solid #16a34a;color:#16a34a;background:rgba(22,163,74,.08)
-    }
-    .tag-comp.comp-ended{
-      border:1px solid #9ca3af;color:#9ca3af;background:rgba(156,163,175,.08)
-    }
-    .tag-comp.comp-upcoming{
-      border:1px solid #2563eb;color:#2563eb;background:rgba(37,99,235,.08)
-    }
+    .tag-comp.comp-active{color:#16a34a;background:rgba(22,163,74,.06)}
+    .tag-comp.comp-ended{color:#9ca3af;background:rgba(156,163,175,.06)}
+    .tag-comp.comp-upcoming{color:#2563eb;background:rgba(37,99,235,.06)}
 
     /* Toast */
     #toast{
@@ -166,9 +188,9 @@
     }
 
     /* 自定义区间结果 */
-    #customVol{max-width:1200px;margin:4px auto 0;font-size:.9rem;color:var(--primary)}
+    #customVol{max-width:1200px;margin:4px auto 0;padding:0 12px;font-size:.9rem;color:var(--primary)}
 
-    /* ---------- 小时交易量 ---------- */
+    /* ========== 小时交易量 ========== */
     #hourlyWrap{max-width:1200px;margin:10px auto 0;padding:0 6px}
     .hourly-header{
       display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;
@@ -210,14 +232,13 @@
     @keyframes barGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
     #hourlyWrap .hourly-bar .h-col .h-bar{transform-origin:bottom;animation:barGrow .5s cubic-bezier(.4,0,.2,1) both}
 
-    /* ---------- 查询缓存记录 ---------- */
+    /* ========== 查询缓存记录 ========== */
     #cacheWrap{max-width:1200px;margin:6px auto 0;padding:0 6px}
     .cache-hd{display:flex;align-items:center;gap:8px}
     #cacheToggle{font-size:.82rem;color:var(--primary);cursor:pointer;user-select:none;background:none;border:none}
     #cacheToggle:hover{text-decoration:underline}
     #cacheClearAll{font-size:.76rem;color:var(--red);cursor:pointer;background:none;border:1px solid var(--red);border-radius:4px;padding:1px 8px;display:none}
     #cacheClearAll:hover{background:rgba(220,38,38,.08)}
-    /* hourly-total styles moved to #hourlyWrap section */
     #cacheList{margin-top:4px;display:none;border:1px solid var(--border);border-radius:6px;overflow:hidden;max-height:260px;overflow-y:auto}
     #cacheList .cache-item{
       display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:.82rem;
@@ -233,9 +254,56 @@
     #cacheList .cache-item .ci-del:hover{border-color:var(--red);background:rgba(220,38,38,.06)}
     #cacheList .cache-empty{padding:10px;text-align:center;font-size:.8rem;color:var(--sub)}
 
+    /* ========== 广告位（移至表格下方） ========== */
+    .ad{
+      max-width:1200px;margin:16px auto 10px;padding:10px 12px;
+      display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+      border:1px dashed var(--border);border-radius:6px;background:rgba(0,0,0,.02)
+    }
+    .ad-badge{
+      font-size:.68rem;padding:0 6px;border-radius:8px;color:#fff;background:#6b7280
+    }
+    .ad-note{font-size:.82rem;color:var(--primary)}
+    .ad-links{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center;position:relative;padding-bottom:18px}
+    .ad .btn{padding:6px 10px}
+
+    .tg-badge{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:.75rem;padding:2px 8px;border-radius:10px;
+      color:#fff;background:#229ED9;text-decoration:none;line-height:1.6
+    }
+    .tg-badge:hover{opacity:.9}
+    .tg-badge .icon{font-size:.9rem;line-height:1}
+
+    .ad-links .btn{
+      padding:9px 14px;border-radius:12px;font-weight:800;line-height:1.2;
+      text-decoration:none;transition:transform .15s,box-shadow .15s,background .2s,color .2s,border-color .2s;
+      white-space:nowrap
+    }
+    .ad-links .btn:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(0,0,0,.12)}
+    .ad-links .btn-main,.ad-links .btn-ghost{
+      background:transparent !important;border-color:var(--primary) !important;
+      color:var(--primary) !important;position:relative
+    }
+    .ad-links .btn-main:hover,.ad-links .btn-ghost:hover{background:rgba(37,99,235,.10) !important}
+    .ad-links .btn-main::after,.ad-links .btn-ghost::after{
+      content:attr(data-badge);position:absolute;top:-8px;right:-8px;
+      font-size:.68rem;padding:2px 6px;border-radius:999px;
+      background:#f59e0b;color:#fff;box-shadow:0 8px 18px rgba(0,0,0,.16)
+    }
+    @keyframes hintNudge{
+      0%,100%{transform:translateX(-50%) translateY(0)}
+      50%{transform:translateX(-50%) translateY(-2px)}
+    }
+    .ad-links::after{
+      content:attr(data-hint);position:absolute;left:50%;bottom:0;
+      transform:translateX(-50%);font-size:.72rem;color:var(--sub);
+      white-space:nowrap;pointer-events:none;opacity:.9;animation:hintNudge 1.4s ease-in-out 6
+    }
+
     footer{height:16px;margin-bottom:12px}
 
-    /* ---------- 回到顶部按钮 ---------- */
+    /* ========== 回到顶部按钮 ========== */
     #backTop{
       position:fixed;bottom:32px;right:20px;width:40px;height:40px;
       border-radius:50%;border:1px solid var(--border);background:var(--bg);color:var(--text);
@@ -244,123 +312,42 @@
     }
     #backTop:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
 
+    /* ========== 手机端响应 ========== */
     @media(max-width:860px){
-      #bar-row2 input[type="datetime-local"]{flex:1;min-width:140px}
-      .ad-links{width:100%;justify-content:flex-start;margin-left:0}
-    }
-
-    /* =========================================================
-       ✅ 仅优化广告位 ad-links 里的注册链接按钮 + 引导提示（不影响顶部按钮）
-       ========================================================= */
-    .ad-links{gap:10px;align-items:center; position:relative; padding-bottom:18px;}
-
-    /* 覆盖广告区按钮尺寸与圆角 */
-    .ad-links .btn{
-      padding:9px 14px;
-      border-radius:12px;
-      font-weight:800;
-      line-height:1.2;
-      text-decoration:none;
-      transition:transform .15s, box-shadow .15s, background .2s, color .2s, border-color .2s;
-      white-space:nowrap;
-    }
-    .ad-links .btn:hover{
-      transform:translateY(-1px);
-      box-shadow:0 10px 22px rgba(0,0,0,.12);
-    }
-
-    /* ✅ 币安 & OKX 按钮：透明描边 + 推荐角标（合并重复样式） */
-    .ad-links .btn-main,
-    .ad-links .btn-ghost{
-      background:transparent !important;
-      border-color:var(--primary) !important;
-      color:var(--primary) !important;
-      position:relative;
-    }
-    .ad-links .btn-main:hover,
-    .ad-links .btn-ghost:hover{
-      background:rgba(37,99,235,.10) !important;
-    }
-    .ad-links .btn-main::after,
-    .ad-links .btn-ghost::after{
-      content:attr(data-badge);
-      position:absolute;
-      top:-8px; right:-8px;
-      font-size:.68rem;
-      padding:2px 6px;
-      border-radius:999px;
-      background:#f59e0b;
-      color:#fff;
-      box-shadow:0 8px 18px rgba(0,0,0,.16);
-    }
-
-    /* ✅ 引导标志：点击注册提醒（桌面端显示在按钮下方） */
-    @keyframes hintNudge{
-      0%,100%{ transform:translateX(-50%) translateY(0); }
-      50%{ transform:translateX(-50%) translateY(-2px); }
-    }
-    .ad-links::after{
-      content:attr(data-hint);
-      position:absolute;
-      left:50%;
-      bottom:0;
-      transform:translateX(-50%);
-      font-size:.72rem;
-      color:var(--sub);
-      white-space:nowrap;
-      pointer-events:none;
-      opacity:.9;
-      animation:hintNudge 1.4s ease-in-out 6;
-    }
-
-    /* 手机端：提示改为正常占位，避免绝对定位挤压布局 */
-    @media(max-width:860px){
-      .ad-links{ padding-bottom:0; }
-      .ad-links::after{
-        position:static;
-        display:block;
-        transform:none;
-        animation:none;
-        margin-top:6px;
-        text-align:left;
-      }
-    }
-
-    /* ========== 手机端全局优化（视口已被 JS 拉宽到 860px） ========== */
-    @media(max-width:860px){
-      h1{font-size:1.1rem;padding:10px 8px 6px}
-      .last-up{font-size:.72rem;margin-bottom:6px}
-      #bar{gap:5px;padding:0 6px;margin-bottom:8px}
-      #bar-row1{gap:5px}
-      #bar-row1 input[type="search"]{min-width:120px;font-size:.8rem;padding:5px 6px}
+      .header-bar{padding:10px 8px 6px}
+      .header-bar h1{font-size:1.1rem}
+      .header-meta{gap:8px}
+      .ctrl-bar{gap:5px;padding:0 8px}
+      .ctrl-bar input[type="search"]{min-width:120px;font-size:.8rem;padding:5px 6px}
+      .ctrl-bar input[type="text"]{width:90px;font-size:.8rem;padding:5px 6px}
+      .ctrl-bar input[type="datetime-local"]{flex:1;min-width:140px;font-size:.75rem;padding:4px 5px}
+      .ctrl-bar input[type="number"]{font-size:.8rem;padding:4px}
       .btn{padding:5px 10px;font-size:.8rem}
-      .chk{font-size:.78rem;gap:3px}
+      .filter-bar{gap:4px;padding:0 8px}
+      .filter-bar .chip{padding:3px 8px;font-size:.74rem}
+      .summary-cards{grid-template-columns:repeat(2,1fr);gap:6px;padding:0 8px;margin-bottom:8px}
+      .summary-card{padding:8px 10px}
+      .summary-card .card-value{font-size:1rem}
       #bar-right{gap:5px}
       #author{font-size:.74rem}
-      #bar-row2{gap:5px}
-      #bar-row2 input[type="text"]{width:90px;font-size:.8rem;padding:5px 6px}
-      #bar-row2 input[type="datetime-local"]{font-size:.75rem;padding:4px 5px}
-      #bar-row2 input[type="number"]{font-size:.8rem;padding:4px}
       /* 广告区紧凑 */
-      .ad{padding:6px 8px;gap:6px;margin-bottom:6px}
+      .ad{padding:6px 8px;gap:6px;margin-top:10px}
       .ad-badge{font-size:.64rem}
       .tg-badge{font-size:.7rem;padding:1px 6px}
       .ad-links .btn{padding:6px 10px;font-size:.74rem;border-radius:8px}
-      .ad-links{gap:8px}
-      /* 表格 —— 不再需要水平滚动 */
+      .ad-links{gap:8px;width:100%;justify-content:flex-start;margin-left:0;padding-bottom:0}
+      .ad-links::after{position:static;display:block;transform:none;animation:none;margin-top:6px;text-align:left}
+      /* 表格 */
       table{min-width:auto;width:100%}
       th,td{padding:8px 4px;font-size:.78rem}
-      .tag-new,.tag-futures,.tag-comp{font-size:.62rem;padding:0 4px;margin-left:2px}
+      .tag-new,.tag-futures,.tag-comp{font-size:.6rem;padding:0 3px;margin-left:2px}
       .logo{width:16px;height:16px;margin-right:2px}
       .subl{font-size:.66rem}
-      /* 手机端不再需要 sticky 列（整个表格已可见） */
       th:nth-child(-n+3),td:nth-child(-n+3){position:static;box-shadow:none}
-      /* 小时图紧凑 */
       #hourlyWrap{margin-top:6px}
       .hourly-header{padding:6px 8px}
       .hourly-header .hourly-title{font-size:.8rem}
       .hourly-header .hourly-total{font-size:.74rem}
-      /* 缓存区紧凑 */
       #cacheWrap{margin-top:4px}
       #cacheToggle{font-size:.76rem}
       #cacheList .cache-item{padding:4px 8px;font-size:.76rem}
@@ -368,53 +355,75 @@
   </style>
 </head>
 <body>
-  <h1 id="title">Binance&nbsp;Alpha&nbsp;&mdash;&nbsp;24H&nbsp;交易量排行榜</h1>
-  <p id="lastUp" class="last-up"></p>
 
-  <div id="bar">
-    <div id="bar-row1">
-      <input id="search" type="search" placeholder="🔍 按代币名称 / 符号过滤…">
-      <button id="refreshBtn" class="btn"> ⟳ <span data-i18n="refresh">刷新数据</span> <span id="progress" class="badge">0%</span> </button>
-      <label class="chk"><input id="onlyNew" type="checkbox"> <span data-i18n="onlyNew">仅看30天内上新</span></label>
-      <label class="chk"><input id="onlyFutures" type="checkbox"> <span data-i18n="onlyFutures">仅看有合约</span></label>
-      <label class="chk"><input id="onlySec" type="checkbox"> <span data-i18n="onlySec">仅看代币化证券</span></label>
-      <label class="chk"><input id="onlyComp" type="checkbox"> <span data-i18n="onlyComp">仅看交易赛</span></label>
+  <!-- ========== Row 1: Header ========== -->
+  <div class="header-bar">
+    <h1 id="title">Binance&nbsp;Alpha&nbsp;&mdash;&nbsp;24H&nbsp;交易量排行榜</h1>
+    <div class="header-meta">
+      <span id="lastUp" class="last-up"></span>
+      <span class="data-note" id="dataNote" title="24H 交易量来自币安 API；限价单成交额基于 K 线数据按 UTC+8 每日 08:00 切割">数据说明</span>
+      <span class="auto-refresh"><span class="dot"></span> <span id="autoRefreshLabel">5分钟自动刷新</span></span>
       <div id="bar-right">
         <button id="langBtn" title="Switch Language">EN</button>
         <button id="themeBtn" title="切换深色/浅色模式">🌓</button>
         <div id="author"> 作者&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank">@0xXIAOc</a> </div>
       </div>
     </div>
-    <div id="bar-row2">
-      <input id="tokenInput" type="text" placeholder="输入代币名称">
-      <input id="startTime" type="datetime-local">
-      <input id="endTime" type="datetime-local">
-      <button id="rangeBtn" class="btn" data-i18n="rangeQuery">区间查询</button>
-      <span style="margin-left:8px;color:var(--sub);font-size:.82rem">|</span>
-      <input id="hourlyHours" type="number" min="1" max="72" value="6" style="width:52px" title="小时数">
-      <button id="hourlyBtn" class="btn" data-i18n="hourlyQuery">小时交易量</button>
+  </div>
+
+  <!-- ========== Row 2: Search / Time / Sort / Query ========== -->
+  <div class="ctrl-bar">
+    <input id="search" type="search" placeholder="🔍 按代币名称 / 符号过滤…">
+    <span class="sep">|</span>
+    <input id="tokenInput" type="text" placeholder="输入代币名称">
+    <input id="startTime" type="datetime-local">
+    <input id="endTime" type="datetime-local">
+    <button id="rangeBtn" class="btn btn-sm" data-i18n="rangeQuery">区间查询</button>
+    <span class="sep">|</span>
+    <input id="hourlyHours" type="number" min="1" max="72" value="6" title="小时数">
+    <button id="hourlyBtn" class="btn btn-sm" data-i18n="hourlyQuery">小时交易量</button>
+    <span class="sep">|</span>
+    <button id="refreshBtn" class="btn btn-sm"> ⟳ <span data-i18n="refresh">刷新数据</span> <span id="progress" class="badge">0%</span></button>
+  </div>
+
+  <!-- ========== Row 3: Filter Chips / Reset / Result Count ========== -->
+  <div class="filter-bar">
+    <label class="chip" id="chipNew"><input id="onlyNew" type="checkbox"><span data-i18n="onlyNew">30天内上新</span></label>
+    <label class="chip" id="chipFutures"><input id="onlyFutures" type="checkbox"><span data-i18n="onlyFutures">有合约</span></label>
+    <label class="chip" id="chipSec"><input id="onlySec" type="checkbox"><span data-i18n="onlySec">代币化证券</span></label>
+    <label class="chip" id="chipComp"><input id="onlyComp" type="checkbox"><span data-i18n="onlyComp">交易赛</span></label>
+    <button class="reset-btn" id="resetFilters" data-i18n="resetFilters">重置筛选</button>
+    <div class="filter-info">
+      <span class="sort-indicator" id="sortIndicator"></span>
+      <span class="result-count" id="resultCount"></span>
     </div>
   </div>
 
-  <!-- 广告位 -->
-  <div class="ad">
-    <span class="ad-badge" data-i18n="adBadge">广告</span>
-    <span class="ad-note"></span>
-
-    <a class="tg-badge" href="https://t.me/+lKbtX0zMcAVjYjMx" target="_blank" rel="noopener noreferrer" aria-label="加入Alpha交流群" title="加入 Telegram 频道">
-      <span class="icon">✈️</span> <span data-i18n="joinTg">加入Alpha交流群</span>
-    </a>
-
-    <div class="ad-links" data-hint="👆 点击上方按钮绑定邀请码" data-badge-text="推荐">
-      <a class="btn btn-main" data-badge="推荐" href="https://web3.binance.com/referral?ref=XIAOCC" target="_blank" rel="noopener noreferrer" data-i18n="bnbReg">
-        币安钱包注册｜手续费7折
-      </a>
-      <a class="btn btn-ghost" data-badge="推荐" href="https://web3.okx.com/ul/joindex?ref=XIAOCC" target="_blank" rel="noopener noreferrer" data-i18n="okxReg">
-        OKX 钱包注册｜手续费8折
-      </a>
+  <!-- ========== Row 4: Summary Cards ========== -->
+  <div class="summary-cards" id="summaryCards">
+    <div class="summary-card">
+      <span class="card-label" id="cardTotalLabel">总代币数</span>
+      <span class="card-value" id="cardTotalValue">-</span>
+      <span class="card-sub" id="cardTotalSub"></span>
+    </div>
+    <div class="summary-card">
+      <span class="card-label" id="cardCompLabel">交易赛代币</span>
+      <span class="card-value" id="cardCompValue">-</span>
+      <span class="card-sub" id="cardCompSub"></span>
+    </div>
+    <div class="summary-card">
+      <span class="card-label" id="cardTopGainLabel">今日最大涨幅</span>
+      <span class="card-value up" id="cardTopGainValue">-</span>
+      <span class="card-sub" id="cardTopGainSub"></span>
+    </div>
+    <div class="summary-card">
+      <span class="card-label" id="cardActiveLabel">异常活跃币</span>
+      <span class="card-value" id="cardActiveValue">-</span>
+      <span class="card-sub" id="cardActiveSub"></span>
     </div>
   </div>
 
+  <!-- ========== Row 5: Table ========== -->
   <div id="customVol"></div>
   <div id="hourlyWrap"></div>
   <div id="cacheWrap">
@@ -442,6 +451,23 @@
   </table>
   </div>
 
+  <!-- ========== Ad (moved below table) ========== -->
+  <div class="ad">
+    <span class="ad-badge" data-i18n="adBadge">广告</span>
+    <span class="ad-note"></span>
+    <a class="tg-badge" href="https://t.me/+lKbtX0zMcAVjYjMx" target="_blank" rel="noopener noreferrer" aria-label="加入Alpha交流群" title="加入 Telegram 频道">
+      <span class="icon">✈️</span> <span data-i18n="joinTg">加入Alpha交流群</span>
+    </a>
+    <div class="ad-links" data-hint="👆 点击上方按钮绑定邀请码" data-badge-text="推荐">
+      <a class="btn btn-main" data-badge="推荐" href="https://web3.binance.com/referral?ref=XIAOCC" target="_blank" rel="noopener noreferrer" data-i18n="bnbReg">
+        币安钱包注册｜手续费7折
+      </a>
+      <a class="btn btn-ghost" data-badge="推荐" href="https://web3.okx.com/ul/joindex?ref=XIAOCC" target="_blank" rel="noopener noreferrer" data-i18n="okxReg">
+        OKX 钱包注册｜手续费8折
+      </a>
+    </div>
+  </div>
+
   <button id="backTop" title="回到顶部">↑</button>
   <div id="toast"></div>
   <footer></footer>
@@ -452,10 +478,10 @@
       zh: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0交易量排行榜',
         searchPh: '🔍 按代币名称 / 符号过滤…',
-        refresh: '刷新数据',
-        onlyNew: '仅看30天内上新',
-        onlyFutures: '仅看有合约',
-        onlySec: '仅看代币化证券',
+        refresh: '刷新',
+        onlyNew: '30天内上新',
+        onlyFutures: '有合约',
+        onlySec: '代币化证券',
         tokenPh: '输入代币名称',
         rangeQuery: '区间查询',
         adBadge: '广告',
@@ -464,14 +490,14 @@
         okxReg: 'OKX 钱包注册｜手续费8折',
         badge: '推荐',
         adHint: '👆 点击上方按钮绑定邀请码',
-        thName: '代币名字',
+        thName: '代币',
         thPrice: '价格',
         thVol24h: '24H 交易量',
-        thChg: '24H 变化',
-        thTodayLabel: '当天限价单成交额',
-        thPrevLabel: '前一天限价单成交额',
+        thChg: '24H 涨跌',
+        thTodayLabel: '当日限价单额',
+        thPrevLabel: '前日限价单额',
         loading: '加载中…',
-        lastUp: '最后更新时间：',
+        lastUp: '更新于 ',
         failLoad: '加载失败：',
         unknownErr: '未知错误',
         favAdd: '已加入收藏',
@@ -481,14 +507,14 @@
         badRange: '时间范围不合法',
         querying: '查询…',
         rangeTpl: (sym,s,e,vol) => `<strong>${sym}</strong> 在\u00a0<span>${s}</span> ~ <span>${e}</span> 的限价单成交额：<strong>${vol}</strong>`,
-        newTag: (d) => `🆕 剩${d}天`,
+        newTag: (d) => `${d}天`,
         futuresTag: '合约',
         listingTip: '上新：',
         langBtn: 'EN',
         themeBtn: '切换深色/浅色模式',
         backTop: '回到顶部',
         author: '作者',
-        hourlyQuery: '小时交易量',
+        hourlyQuery: '小时量',
         hourlyHoursPh: '小时数',
         hourlyTpl: (sym,h) => `<strong>${sym}</strong> 近 ${h} 小时每小时交易量：`,
         cacheTitle: '📋 查询记录',
@@ -502,21 +528,36 @@
         tradeStats: (trades, avg) => `共 ${trades} 笔 | 约 ${avg} USD/笔`,
         avgPerTrade: (avg) => `约$${avg}/笔`,
         hourlyType: 'hourly',
-        onlyComp: '仅看交易赛',
-        thCompVol: '交易赛交易量',
+        onlyComp: '交易赛',
+        thCompVol: '交易赛量',
         compTag: '交易赛',
-        compActive: (d,unit) => `🏆 交易赛 剩${d}${unit==='m'?'分钟':unit==='h'?'小时':'天'}`,
-        compEnded: '🏆 已结束',
-        compUpcoming: '🏆 未开始',
-        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`
+        compActive: (d,unit) => `赛${d}${unit==='m'?'分':unit==='h'?'时':'天'}`,
+        compEnded: '已结束',
+        compUpcoming: '未开始',
+        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
+        // New i18n keys
+        dataNote: '数据说明',
+        dataNoteTip: '24H 交易量来自币安 API；限价单成交额基于 K 线数据按 UTC+8 每日 08:00 切割',
+        autoRefresh: '5分钟自动刷新',
+        resetFilters: '重置筛选',
+        resultCount: (n,total) => `显示 ${n} / ${total} 个代币`,
+        sortLabel: (key,dir) => `排序：${key} ${dir==='desc'?'↓':'↑'}`,
+        sortKeyName: {vol24h:'24H量', todayQV:'当日限价单', prevQV:'前日限价单', compVol:'交易赛量'},
+        cardTotal: '总代币数',
+        cardComp: '交易赛代币',
+        cardTopGain: '今日最大涨幅',
+        cardActive: '异常活跃币',
+        cardCompActive: (n) => `${n} 个进行中`,
+        cardActiveDesc: '今日限价单额>前日2倍',
+        noActiveToken: '暂无'
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
         searchPh: '🔍 Filter by token name / symbol…',
         refresh: 'Refresh',
-        onlyNew: 'New (30d) only',
-        onlyFutures: 'Futures only',
-        onlySec: 'Tokenized Securities only',
+        onlyNew: 'New (30d)',
+        onlyFutures: 'Futures',
+        onlySec: 'Tokenized Sec.',
         tokenPh: 'Token name',
         rangeQuery: 'Range Query',
         adBadge: 'Ad',
@@ -528,11 +569,11 @@
         thName: 'Token',
         thPrice: 'Price',
         thVol24h: '24H Volume',
-        thChg: '24H Change',
-        thTodayLabel: 'Today Limit Order Volume',
-        thPrevLabel: 'Prev Day Limit Order Volume',
+        thChg: '24H Chg',
+        thTodayLabel: 'Today Limit Vol',
+        thPrevLabel: 'Prev Day Limit Vol',
         loading: 'Loading…',
-        lastUp: 'Last updated: ',
+        lastUp: 'Updated: ',
         failLoad: 'Load failed: ',
         unknownErr: 'Unknown error',
         favAdd: 'Added to favorites',
@@ -542,14 +583,14 @@
         badRange: 'Invalid time range',
         querying: 'Querying…',
         rangeTpl: (sym,s,e,vol) => `<strong>${sym}</strong> limit order volume from\u00a0<span>${s}</span> to <span>${e}</span>: <strong>${vol}</strong>`,
-        newTag: (d) => `🆕 ${d}d left`,
-        futuresTag: 'Futures',
+        newTag: (d) => `${d}d`,
+        futuresTag: 'Fut',
         listingTip: 'Listed: ',
         langBtn: '中',
         themeBtn: 'Toggle dark/light mode',
         backTop: 'Back to top',
         author: 'Author',
-        hourlyQuery: 'Hourly Volume',
+        hourlyQuery: 'Hourly',
         hourlyHoursPh: 'Hours',
         hourlyTpl: (sym,h) => `<strong>${sym}</strong> hourly volume (last ${h}h):`,
         cacheTitle: '📋 Query History',
@@ -563,13 +604,28 @@
         tradeStats: (trades, avg) => `${trades} trades | ~${avg} USD/trade`,
         avgPerTrade: (avg) => `~$${avg}/trade`,
         hourlyType: 'hourly',
-        onlyComp: 'Competition only',
-        thCompVol: 'Competition Volume',
+        onlyComp: 'Competition',
+        thCompVol: 'Comp Volume',
         compTag: 'Comp',
-        compActive: (d,unit) => `🏆 Comp ${d}${unit==='m'?'m':unit==='h'?'h':'d'} left`,
-        compEnded: '🏆 Ended',
-        compUpcoming: '🏆 Upcoming',
-        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`
+        compActive: (d,unit) => `${d}${unit==='m'?'m':unit==='h'?'h':'d'}`,
+        compEnded: 'Ended',
+        compUpcoming: 'Soon',
+        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
+        // New i18n keys
+        dataNote: 'Data Info',
+        dataNoteTip: '24H volume from Binance API; limit order vol from K-line data, daily cut at 08:00 UTC+8',
+        autoRefresh: 'Auto-refresh 5min',
+        resetFilters: 'Reset',
+        resultCount: (n,total) => `${n} / ${total} tokens`,
+        sortLabel: (key,dir) => `Sort: ${key} ${dir==='desc'?'↓':'↑'}`,
+        sortKeyName: {vol24h:'24H Vol', todayQV:'Today Limit', prevQV:'Prev Limit', compVol:'Comp Vol'},
+        cardTotal: 'Total Tokens',
+        cardComp: 'Competition',
+        cardTopGain: 'Top Gainer',
+        cardActive: 'Abnormally Active',
+        cardCompActive: (n) => `${n} active`,
+        cardActiveDesc: 'Today limit vol > 2x prev',
+        noActiveToken: 'None'
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -606,6 +662,15 @@
       document.getElementById('backTop').title = t('backTop');
       const authorEl = document.getElementById('author');
       authorEl.innerHTML = `${t('author')}&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank">@0xXIAOc</a>`;
+      // New elements
+      document.getElementById('dataNote').textContent = t('dataNote');
+      document.getElementById('dataNote').title = t('dataNoteTip');
+      document.getElementById('autoRefreshLabel').textContent = t('autoRefresh');
+      document.getElementById('resetFilters').textContent = t('resetFilters');
+      document.getElementById('cardTotalLabel').textContent = t('cardTotal');
+      document.getElementById('cardCompLabel').textContent = t('cardComp');
+      document.getElementById('cardTopGainLabel').textContent = t('cardTopGain');
+      document.getElementById('cardActiveLabel').textContent = t('cardActive');
       // update initial loading text if still present
       const initEl = document.getElementById('initLoading');
       if(initEl) initEl.textContent = t('loading');
@@ -879,6 +944,57 @@
       });
     }
 
+    /* ---------- 摘要卡片渲染 ---------- */
+    function renderSummaryCards(){
+      if(!rows.length) return;
+      const total = rows.length;
+      const compTokens = rows.filter(r=>r.comp);
+      const activeComps = compTokens.filter(r=>{ const now=Date.now(); return r.comp && now>=r.comp.start && now<=r.comp.end; });
+
+      // 今日最大涨幅
+      let topGain = rows[0];
+      rows.forEach(r=>{ if(r.chg > topGain.chg) topGain = r; });
+
+      // 异常活跃币：当日限价单 > 前日 2 倍
+      const activeTokens = rows.filter(r=> r.todayQV!=null && r.prevQV!=null && r.prevQV>0 && r.todayQV > r.prevQV*2);
+
+      document.getElementById('cardTotalValue').textContent = total;
+      document.getElementById('cardTotalSub').textContent = `${rows.filter(r=>r.isNew).length} ${curLang==='zh'?'个新币':'new'}`;
+
+      document.getElementById('cardCompValue').textContent = compTokens.length;
+      document.getElementById('cardCompSub').textContent = t('cardCompActive')(activeComps.length);
+
+      const gainEl = document.getElementById('cardTopGainValue');
+      gainEl.textContent = topGain ? `${topGain.chg>=0?'+':''}${topGain.chg.toFixed(2)}%` : '-';
+      gainEl.className = 'card-value ' + (topGain && topGain.chg>=0 ? 'up' : 'down');
+      document.getElementById('cardTopGainSub').textContent = topGain ? topGain.symbol : '';
+
+      document.getElementById('cardActiveValue').textContent = activeTokens.length || t('noActiveToken');
+      if(activeTokens.length>0){
+        const topActive = activeTokens.sort((a,b)=>(b.todayQV/b.prevQV)-(a.todayQV/a.prevQV))[0];
+        document.getElementById('cardActiveSub').textContent = topActive.symbol + ` (${(topActive.todayQV/topActive.prevQV).toFixed(1)}x)`;
+      } else {
+        document.getElementById('cardActiveSub').textContent = t('cardActiveDesc');
+      }
+    }
+
+    /* ---------- 筛选反馈更新 ---------- */
+    function updateFilterFeedback(filteredCount){
+      const hasAny = showNewOnly||showFuturesOnly||showSecOnly||showCompOnly||filter;
+      document.getElementById('resetFilters').style.display = hasAny ? 'inline-block' : 'none';
+      // Chip active states
+      document.getElementById('chipNew').classList.toggle('active', showNewOnly);
+      document.getElementById('chipFutures').classList.toggle('active', showFuturesOnly);
+      document.getElementById('chipSec').classList.toggle('active', showSecOnly);
+      document.getElementById('chipComp').classList.toggle('active', showCompOnly);
+      // Result count
+      document.getElementById('resultCount').textContent = t('resultCount')(filteredCount, rows.length);
+      // Sort indicator
+      const keyNames = t('sortKeyName');
+      const keyLabel = keyNames[sortKey] || sortKey;
+      document.getElementById('sortIndicator').textContent = t('sortLabel')(keyLabel, sortDir);
+    }
+
     function render(){
       const favSet=new Set(favs());
       const filtered=rows.filter(r=>{
@@ -899,11 +1015,16 @@
       const sorted=sortRows(filtered);
       const display=[...sorted.filter(x=>favSet.has(x.sym)),...sorted.filter(x=>!favSet.has(x.sym))];
 
+      // Update filter feedback
+      updateFilterFeedback(display.length);
+      // Update summary cards
+      renderSummaryCards();
+
       tbody.innerHTML=display.map((r,i)=>{
         const left = r.isNew && r.listingTime ? daysLeft(r.listingTime) : 0;
         const tipPrefix = t('listingTip');
 
-        // ✅ 交易赛标记
+        // 交易赛标记
         let compTag='';
         if(r.comp){
           const now=Date.now(), c=r.comp;
@@ -920,7 +1041,7 @@
           }
         }
 
-        // ✅ 交易赛交易量列
+        // 交易赛交易量列
         let compCell='-';
         if(r.comp){
           if(r.compVol==null) compCell='…';
@@ -945,9 +1066,9 @@
             ${compTag}
           </td>
           <td>${fmtPrice(r.price)}</td>
-          <td>${nf0.format(r.vol24h)}</td>
-          <td class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</td>
-          <td>${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
+          <td style="font-weight:600">${nf0.format(r.vol24h)}</td>
+          <td class="${r.chg>=0?'up':'down'}" style="font-weight:600">${r.chg.toFixed(2)}%</td>
+          <td style="font-weight:600">${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
           <td>${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
           ${showCompOnly?`<td>${compCell}</td>`:''}
         </tr>
@@ -1234,6 +1355,16 @@
     onlyCompEl.addEventListener('change', (e)=>{
       showCompOnly = e.target.checked;
       thCompVol.style.display = showCompOnly ? '' : 'none';
+      render();
+    });
+
+    /* ---------- 重置筛选 ---------- */
+    document.getElementById('resetFilters').addEventListener('click', ()=>{
+      showNewOnly=false; showFuturesOnly=false; showSecOnly=false; showCompOnly=false;
+      filter='';
+      onlyNewEl.checked=false; onlyFuturesEl.checked=false; onlySecEl.checked=false; onlyCompEl.checked=false;
+      document.getElementById('search').value='';
+      thCompVol.style.display='none';
       render();
     });
 
