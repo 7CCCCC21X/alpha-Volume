@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=0.5,maximum-scale=3,user-scalable=yes">
   <title>Alpha Token Volume Board</title>
 
   <script defer src="/_vercel/insights/script.js"></script>
@@ -384,7 +384,7 @@
         <th id="thCompVol" class="sortable" data-key="compVol" style="display:none">交易赛交易量</th>
       </tr>
     </thead>
-    <tbody><tr><td colspan="8">加载中…</td></tr></tbody>
+    <tbody><tr><td colspan="8" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
   </table>
   </div>
 
@@ -431,6 +431,7 @@
         futuresTag: '合约',
         listingTip: '上新：',
         langBtn: 'EN',
+        themeBtn: '切换深色/浅色模式',
         backTop: '回到顶部',
         author: '作者',
         hourlyQuery: '小时交易量',
@@ -491,6 +492,7 @@
         futuresTag: 'Futures',
         listingTip: 'Listed: ',
         langBtn: '中',
+        themeBtn: 'Toggle dark/light mode',
         backTop: 'Back to top',
         author: 'Author',
         hourlyQuery: 'Hourly Volume',
@@ -520,6 +522,8 @@
     function t(key){ return I18N[curLang][key] || I18N.zh[key] || key; }
 
     function applyI18n(){
+      document.title = curLang==='zh' ? 'Alpha 代币交易量看板' : 'Alpha Token Volume Board';
+      document.documentElement.lang = curLang==='zh' ? 'zh' : 'en';
       document.getElementById('title').innerHTML = t('title');
       document.getElementById('search').placeholder = t('searchPh');
       document.querySelector('[data-i18n="refresh"]').textContent = t('refresh');
@@ -544,9 +548,13 @@
       document.getElementById('thVol24h').childNodes[0].textContent = t('thVol24h');
       document.getElementById('thChg').textContent = t('thChg');
       document.getElementById('langBtn').textContent = t('langBtn');
+      document.getElementById('themeBtn').title = t('themeBtn');
       document.getElementById('backTop').title = t('backTop');
       const authorEl = document.getElementById('author');
       authorEl.innerHTML = `${t('author')}&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank">@0xXIAOc</a>`;
+      // update initial loading text if still present
+      const initEl = document.getElementById('initLoading');
+      if(initEl) initEl.textContent = t('loading');
     }
 
     /* ---------- 常量 & 工具 ---------- */
@@ -578,11 +586,12 @@
     /* ✅ 严格 30 天（毫秒） */
     const THIRTY_DAYS = 29*24*60*60*1000;
 
-    const fmtShort=ts=>new Intl.DateTimeFormat('zh-CN', {
+    function dateLoc(){ return curLang==='zh'?'zh-CN':'en-GB'; }
+    const fmtShort=ts=>new Intl.DateTimeFormat(dateLoc(), {
       timeZone:'Asia/Shanghai',hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'
     }).format(new Date(ts)).replace(/\//g,'-');
 
-    const fmtFull=ts=>new Intl.DateTimeFormat('zh-CN', {
+    const fmtFull=ts=>new Intl.DateTimeFormat(dateLoc(), {
       timeZone:'Asia/Shanghai',hour12:false,year:'numeric',month:'2-digit',day:'2-digit',
       hour:'2-digit',minute:'2-digit',second:'2-digit'
     }).format(new Date(ts)).replace(/\//g,'-');
@@ -896,7 +905,7 @@
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const isFirstLoad=!rows||rows.length===0;
-      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px">加载中…</td></tr>`;
+      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
 
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
@@ -962,6 +971,9 @@
       const res=await qvAuto(row,st,et-1);
       rangeBtn.disabled=false;progressEl.style.display='none';
       const avgPerTrade=res.trades>0?(res.vol/res.trades):0;
+      // store for lang-switch re-render
+      customVolEl.dataset.sym=row.symbol||sym; customVolEl.dataset.st=st; customVolEl.dataset.et=et;
+      customVolEl.dataset.vol=res.vol; customVolEl.dataset.trades=res.trades;
       customVolEl.innerHTML=t('rangeTpl')(row.symbol||sym, fmtFull(st), fmtFull(et), nf0.format(res.vol))
         + `<br>${t('tradeStats')(nf0.format(res.trades), nf0.format(Math.round(avgPerTrade)))}`;
 
@@ -1010,7 +1022,19 @@
 
       hourlyBtn.disabled=false;progressEl.style.display='none';
 
-      // 渲染柱状图
+      const totalVol=hourlyData.reduce((s,d)=>s+d.vol,0);
+      const totalTrades=hourlyData.reduce((s,d)=>s+d.trades,0);
+      // store for lang-switch re-render
+      window._lastHourlyData={symbol:row.symbol||sym, hours, data:hourlyData};
+      renderHourly(window._lastHourlyData);
+
+      // 保存小时查询到缓存
+      saveCache({symbol:row.symbol||sym, start:startTs, end:endTs, vol:totalVol, trades:totalTrades, time:Date.now(), type:'hourly', hours});
+    });
+
+    /* ---------- 小时图渲染（可复用） ---------- */
+    function renderHourly(info){
+      const {symbol, hours, data:hourlyData}=info;
       const maxVol=Math.max(...hourlyData.map(d=>d.vol),1);
       const minVol=Math.min(...hourlyData.map(d=>d.vol));
       const totalVol=hourlyData.reduce((s,d)=>s+d.vol,0);
@@ -1028,7 +1052,7 @@
         const hh=String(d.getHours()).padStart(2,'0');
         return `${hh}:00`;
       };
-      hourlyWrap.innerHTML=`<div class="hourly-header"><span class="hourly-title">${t('hourlyTpl')(row.symbol||sym,hours)}</span><span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}<br><small style="font-weight:normal;color:#888">${t('tradeStats')(nf0.format(totalTrades), nf0.format(totalAvg))}</small></span></div>
+      hourlyWrap.innerHTML=`<div class="hourly-header"><span class="hourly-title">${t('hourlyTpl')(symbol,hours)}</span><span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}<br><small style="font-weight:normal;color:#888">${t('tradeStats')(nf0.format(totalTrades), nf0.format(totalAvg))}</small></span></div>
         <div class="hourly-scroll"><div class="hourly-bar">${hourlyData.map((d,i)=>{
           const h=Math.max(4,Math.round(d.vol/maxVol*maxBarH));
           const cls=hours>1&&d.vol===maxVol?'h-col h-max':hours>1&&d.vol===minVol?'h-col h-min':'h-col';
@@ -1039,10 +1063,7 @@
             <div class="h-lbl">${fmtHour(d.start,false)}-${d.partial?fmtHour(d.end,true):fmtHourEnd(d.end)}${d.partial?'*':''}</div>
           </div>`;
         }).join('')}</div></div>`;
-
-      // 保存小时查询到缓存
-      saveCache({symbol:row.symbol||sym, start:startTs, end:endTs, vol:totalVol, trades:totalTrades, time:Date.now(), type:'hourly', hours});
-    });
+    }
 
     /* ---------- 区间查询缓存记录 ---------- */
     function getCache(){try{return JSON.parse(localStorage.getItem(CACHE_KEY)||'[]');}catch{return [];}}
@@ -1063,6 +1084,8 @@
       const cache=getCache();
       const item=cache[idx];
       if(!item)return;
+      customVolEl.dataset.sym=item.symbol; customVolEl.dataset.st=item.start; customVolEl.dataset.et=item.end;
+      customVolEl.dataset.vol=item.vol; customVolEl.dataset.trades=item.trades||0;
       customVolEl.innerHTML=t('rangeTpl')(item.symbol, fmtFull(item.start), fmtFull(item.end), nf0.format(item.vol))
         + (item.trades ? `<br>${t('tradeStats')(nf0.format(item.trades), nf0.format(Math.round(item.vol/item.trades)))}` : '');
       // 回填输入框，方便微调再查
@@ -1192,6 +1215,23 @@
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
       thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
       thCompVol.textContent=t('thCompVol');
+      // 刷新 lastUp 时间文案
+      if(lastUpEl.textContent) lastUpEl.textContent=`${t('lastUp')} ${fmtFull(Date.now())}`;
+      // 刷新缓存区文案
+      renderCache();
+      const cacheOpen=cacheListEl.style.display==='block';
+      cacheToggleBtn.textContent=cacheOpen?t('cacheHide'):t('cacheTitle');
+      cacheClearAllBtn.textContent=t('cacheClearAll');
+      // 刷新区间查询结果（如果有内容）
+      if(customVolEl.dataset.sym){
+        const d=customVolEl.dataset;
+        customVolEl.innerHTML=t('rangeTpl')(d.sym, fmtFull(+d.st), fmtFull(+d.et), nf0.format(+d.vol))
+          + (d.trades>0 ? `<br>${t('tradeStats')(nf0.format(+d.trades), nf0.format(Math.round(+d.vol/+d.trades)))}` : '');
+      }
+      // 刷新小时图（如果有内容）
+      if(window._lastHourlyData){
+        renderHourly(window._lastHourlyData);
+      }
       render();
     });
 
