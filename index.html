@@ -244,59 +244,6 @@
     #cacheList .cache-item .ci-del:hover{border-color:var(--red);background:rgba(220,38,38,.06)}
     #cacheList .cache-empty{padding:10px;text-align:center;font-size:.8rem;color:var(--sub)}
 
-    /* ---------- ✅ 交易赛卡片视图（仅在"仅看交易赛"时显示） ---------- */
-    #compCards{max-width:1200px;margin:0 auto;padding:0 6px;display:none}
-    #compCards.active{display:block}
-    .comp-cards-title{
-      font-size:1rem;font-weight:700;color:var(--text);padding:8px 4px 10px;
-      display:flex;align-items:center;gap:8px
-    }
-    .comp-card-list{display:flex;flex-direction:column;gap:14px}
-    .comp-card{
-      border-bottom:1px solid var(--border);padding:12px 4px;cursor:pointer;
-      transition:background .15s
-    }
-    .comp-card:hover{background:rgba(37,99,235,.05)}
-    .comp-card .cc-top{
-      display:flex;align-items:center;gap:8px;margin-bottom:6px
-    }
-    .comp-card .cc-sym{
-      font-size:.85rem;font-weight:700;color:var(--primary);display:inline-flex;align-items:center;gap:4px
-    }
-    .comp-card .cc-sym img{width:16px;height:16px;border-radius:50%}
-    .comp-card .cc-vol{
-      font-size:1.4rem;font-weight:700;color:var(--text);line-height:1.2
-    }
-    .comp-card .cc-vol.loading{color:var(--sub);font-size:1rem}
-    .comp-card .cc-bar-wrap{
-      position:relative;height:6px;background:var(--border);border-radius:3px;
-      margin:8px 0 6px;overflow:hidden
-    }
-    .comp-card .cc-bar{
-      position:absolute;left:0;top:0;bottom:0;
-      background:linear-gradient(90deg,#fbbf24,#f59e0b);
-      border-radius:3px;transition:width .4s
-    }
-    .comp-card.ended .cc-bar{background:linear-gradient(90deg,#9ca3af,#6b7280)}
-    .comp-card.upcoming .cc-bar{background:linear-gradient(90deg,#60a5fa,#2563eb)}
-    .comp-card .cc-meta{
-      display:flex;align-items:center;justify-content:space-between;gap:8px;
-      font-size:.76rem;color:var(--sub)
-    }
-    .comp-card .cc-pct{font-weight:700;color:var(--text)}
-    .comp-card .cc-reward{
-      display:inline-flex;align-items:center;gap:4px;margin-top:8px;
-      padding:4px 10px;border-radius:14px;
-      background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);
-      font-size:.78rem;color:#b45309;font-weight:600
-    }
-    :root.dark .comp-card .cc-reward{color:#fbbf24}
-    @media(max-width:860px){
-      .comp-card .cc-vol{font-size:1.2rem}
-      .comp-card .cc-reward{font-size:.72rem;padding:3px 8px}
-      .comp-card .cc-meta{font-size:.7rem}
-    }
-
     footer{height:16px;margin-bottom:12px}
 
     /* ---------- 回到顶部按钮 ---------- */
@@ -489,23 +436,22 @@
     <div id="cacheList"></div>
   </div>
 
-  <div id="compCards"></div>
-
   <div class="table-wrap">
   <table id="tokenTable">
     <thead>
       <tr>
         <th style="width:26px"></th><th>#</th><th id="thName">代币名字</th>
         <th id="thPrice">价格</th>
-        <th id="thFdv" class="sortable" data-key="fdv">FDV</th>
         <th id="thVol24h" class="sortable" data-key="vol24h">24H 交易量</th>
         <th id="thChg">24H 变化</th>
+        <th id="thMcap" class="sortable" data-key="mcap">流通市值</th>
+        <th id="thFdv" class="sortable" data-key="fdv">FDV</th>
         <th id="thToday" class="sortable" data-key="todayQV">当天限价单成交额</th>
         <th id="thPrev" class="sortable" data-key="prevQV">前一天限价单成交额</th>
         <th id="thCompVol" class="sortable" data-key="compVol" style="display:none">交易赛交易量</th>
       </tr>
     </thead>
-    <tbody><tr><td colspan="9" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
+    <tbody><tr><td colspan="10" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
   </table>
   </div>
 
@@ -572,8 +518,7 @@
         hourlyType: 'hourly',
         onlyComp: '仅看交易赛',
         thCompVol: '交易赛交易量',
-        compViewTitle: '交易赛交易量',
-        compEmpty: '暂无进行中的交易赛',
+        thMcap: '流通市值',
         hourlyMinimize: '收起',
         hourlyExpand: '展开',
         compTag: '交易赛',
@@ -638,8 +583,7 @@
         hourlyType: 'hourly',
         onlyComp: 'Competition only',
         thCompVol: 'Competition Volume',
-        compViewTitle: 'Competition Volume',
-        compEmpty: 'No active competitions',
+        thMcap: 'Market Cap',
         hourlyMinimize: 'Minimize',
         hourlyExpand: 'Expand',
         compTag: 'Comp',
@@ -676,6 +620,7 @@
       document.querySelector('.ad-links').setAttribute('data-hint', t('adHint'));
       document.getElementById('thName').textContent = t('thName');
       document.getElementById('thPrice').textContent = t('thPrice');
+      document.getElementById('thMcap').childNodes[0].textContent = t('thMcap');
       document.getElementById('thFdv').childNodes[0].textContent = t('thFdv');
       document.getElementById('thVol24h').childNodes[0].textContent = t('thVol24h');
       document.getElementById('thChg').textContent = t('thChg');
@@ -799,8 +744,6 @@
     const onlySecEl=document.getElementById('onlySec');
     const onlyCompEl=document.getElementById('onlyComp');
     const thCompVol=document.getElementById('thCompVol');
-    const compCardsEl=document.getElementById('compCards');
-    const tableWrapEl=document.querySelector('.table-wrap');
 
     function showToast(msg){
       toast.textContent=msg;toast.style.opacity='1';
@@ -928,15 +871,20 @@
           // ✅ 代币化证券不计入"30天内上新"
           const isNew = !isTokenizedSecurity && ltMs ? (Date.now() - ltMs) < THIRTY_DAYS : false;
 
-          // ✅ FDV：优先使用 API 返回字段，否则用 price × totalSupply
+          // ✅ 流通市值 & FDV：优先使用 API 返回字段，否则用 price × 对应供应量
           const priceN = +t.price || 0;
-          const totalSupplyN = +t.totalSupply || +t.circulatingSupply || 0;
+          const totalSupplyN = +t.totalSupply || 0;
+          const circSupplyN = +t.circulatingSupply || 0;
+          const mcap =
+            +t.marketCap ||
+            +t.circulatingMarketCap ||
+            (priceN && circSupplyN ? priceN * circSupplyN : 0);
           const fdv =
             +t.fdv ||
             +t.fullyDilutedMarketCap ||
             +t.fullyDilutedValuation ||
-            +t.marketCap ||
-            (priceN && totalSupplyN ? priceN * totalSupplyN : 0);
+            (priceN && totalSupplyN ? priceN * totalSupplyN : 0) ||
+            mcap;
 
           return {
             price:priceN,
@@ -960,7 +908,8 @@
             listingTimeFmt: ltMs ? fmtFull(ltMs) : '',
             isNew,
 
-            // ✅ FDV
+            // ✅ 流通市值 & FDV
+            mcap,
             fdv,
 
             // 代币化证券：按上面的答案，用 stockState + rwaInfo 判断
@@ -1008,17 +957,6 @@
       const sorted=sortRows(filtered);
       const display=[...sorted.filter(x=>favSet.has(x.sym)),...sorted.filter(x=>!favSet.has(x.sym))];
 
-      // ✅ 仅看交易赛：渲染卡片视图，隐藏表格
-      if(showCompOnly){
-        tableWrapEl.style.display='none';
-        compCardsEl.classList.add('active');
-        renderCompCards(display);
-        return;
-      } else {
-        tableWrapEl.style.display='';
-        compCardsEl.classList.remove('active');
-      }
-
       tbody.innerHTML=display.map((r,i)=>{
         const left = r.isNew && r.listingTime ? daysLeft(r.listingTime) : 0;
         const tipPrefix = t('listingTip');
@@ -1065,9 +1003,10 @@
             ${compTag}
           </td>
           <td>${fmtPrice(r.price)}</td>
-          <td>${fmtFdv(r.fdv)}</td>
           <td>${nf0.format(r.vol24h)}</td>
           <td class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</td>
+          <td>${fmtFdv(r.mcap)}</td>
+          <td>${fmtFdv(r.fdv)}</td>
           <td>${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
           <td>${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
           ${showCompOnly?`<td>${compCell}</td>`:''}
@@ -1077,52 +1016,10 @@
       updateSortIcons();
     }
 
-    /* ✅ 交易赛卡片视图渲染（对应图1样式） */
-    function renderCompCards(list){
-      if(!list.length){
-        compCardsEl.innerHTML = `<div class="comp-cards-title">${t('compViewTitle')}</div><div style="padding:24px;text-align:center;color:var(--sub);font-size:.85rem">${t('compEmpty')}</div>`;
-        return;
-      }
-      // 卡片视图固定按交易赛交易量降序展示
-      const sorted = [...list].sort((a,b)=>(b.compVol||0)-(a.compVol||0));
-      const now=Date.now();
-      const cards = sorted.map(r=>{
-        const c = r.comp;
-        if(!c) return '';
-        let stateCls='', pct=0;
-        if(now<c.start){ stateCls='upcoming'; pct=0; }
-        else if(now<=c.end){ stateCls='active'; pct=Math.min(100, Math.round((now-c.start)/(c.end-c.start)*100)); }
-        else { stateCls='ended'; pct=100; }
-
-        const volDisplay = r.compVol==null
-          ? `<span class="cc-vol loading">…</span>`
-          : `<span class="cc-vol">${nf0.format(r.compVol)}</span>`;
-
-        const rewardAmt=parseFloat((c.perWinner||'').replace(/,/g,''))||0;
-        const rewardUsd=rewardAmt*r.price;
-        const rewardText = `🎁 ${c.perWinner}${r.price? ' ≈ $'+nf2.format(rewardUsd):''}`;
-
-        return `
-          <div class="comp-card ${stateCls}" data-sym="${r.sym}">
-            <div class="cc-top">
-              <span class="cc-sym"><img src="${r.icon}" referrerpolicy="no-referrer" onerror="this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">${r.symbol}</span>
-            </div>
-            ${volDisplay}
-            <div class="cc-bar-wrap"><div class="cc-bar" style="width:${pct}%"></div></div>
-            <div class="cc-meta">
-              <span>${fmtShort(c.start)} ~ ${fmtShort(Math.min(now,c.end))}</span>
-              <span class="cc-pct">${pct}%</span>
-            </div>
-            <div><span class="cc-reward">${rewardText}</span></div>
-          </div>`;
-      }).join('');
-      compCardsEl.innerHTML = `<div class="comp-cards-title">🏆 ${t('compViewTitle')}</div><div class="comp-card-list">${cards}</div>`;
-    }
-
     async function reloadAll(){
       refreshBtn.disabled=true;progressEl.textContent='0%';
       const isFirstLoad=!rows||rows.length===0;
-      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
+      if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="10" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
 
       thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
@@ -1160,7 +1057,7 @@
       }catch(e){
         console.error(e);
         const msg=e.message||t('unknownErr');
-        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9">${t('failLoad')}${msg}</td></tr>`;
+        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="10">${t('failLoad')}${msg}</td></tr>`;
         showToast(`${t('failLoad')}${msg}`);
       }finally{
         refreshBtn.disabled=false;
@@ -1386,16 +1283,7 @@
       btn.title = label;
     });
 
-    /* ✅ 交易赛卡片点击：回填输入框 */
-    compCardsEl.addEventListener('click',e=>{
-      const card=e.target.closest('.comp-card');
-      if(card&&card.dataset.sym){
-        const row=rows.find(r=>r.sym===card.dataset.sym);
-        if(row){tokenEl.value=row.symbol;showToast(row.symbol);}
-      }
-    });
-
-    document.querySelectorAll('th.sortable').forEach(th=>{
+document.querySelectorAll('th.sortable').forEach(th=>{
       th.addEventListener('click',()=>{
         const key=th.dataset.key;
         sortDir=(sortKey===key&&sortDir==='desc')?'asc':'desc';sortKey=key;render();
