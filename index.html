@@ -1,9 +1,23 @@
+
 <!DOCTYPE html>
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=0.5,maximum-scale=3,user-scalable=yes">
+  <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=0.25,maximum-scale=5,user-scalable=yes">
   <title>Alpha Token Volume Board</title>
+
+  <!-- 手机端自动缩小视口，让页面显示更完整 -->
+  <script>
+  (function(){
+    if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
+      var w=screen.width||window.innerWidth;
+      if(w<800){
+        document.querySelector('meta[name="viewport"]')
+          .setAttribute('content','width=860,initial-scale='+(w/860).toFixed(3)+',minimum-scale=0.25,maximum-scale=5,user-scalable=yes');
+      }
+    }
+  })();
+  </script>
 
   <script defer src="/_vercel/insights/script.js"></script>
 
@@ -90,7 +104,7 @@
     }
     tbody tr:hover{background:rgba(0,0,0,.04);cursor:pointer}
 
-    /* 手机端固定前3列（星标 + 序号 + 代币名） */
+    /* 窄屏固定前3列（星标 + 序号 + 代币名）—— 仅在未启用宽视口时生效 */
     @media(max-width:760px){
       th:nth-child(-n+3),td:nth-child(-n+3){position:sticky;background:var(--bg);z-index:1}
       th:nth-child(1),td:nth-child(1){left:0;min-width:26px}
@@ -230,7 +244,7 @@
     }
     #backTop:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
 
-    @media(max-width:760px){
+    @media(max-width:860px){
       #bar-row2 input[type="datetime-local"]{flex:1;min-width:140px}
       .ad-links{width:100%;justify-content:flex-start;margin-left:0}
     }
@@ -300,7 +314,7 @@
     }
 
     /* 手机端：提示改为正常占位，避免绝对定位挤压布局 */
-    @media(max-width:760px){
+    @media(max-width:860px){
       .ad-links{ padding-bottom:0; }
       .ad-links::after{
         position:static;
@@ -312,41 +326,44 @@
       }
     }
 
-    /* ========== 手机端全局优化 ========== */
-    @media(max-width:760px){
+    /* ========== 手机端全局优化（视口已被 JS 拉宽到 860px） ========== */
+    @media(max-width:860px){
       h1{font-size:1.1rem;padding:10px 8px 6px}
       .last-up{font-size:.72rem;margin-bottom:6px}
-      #bar{gap:5px;padding:0 4px;margin-bottom:8px}
+      #bar{gap:5px;padding:0 6px;margin-bottom:8px}
       #bar-row1{gap:5px}
-      #bar-row1 input[type="search"]{min-width:120px;font-size:.78rem;padding:5px 6px}
-      .btn{padding:5px 8px;font-size:.78rem}
-      .chk{font-size:.76rem;gap:3px}
+      #bar-row1 input[type="search"]{min-width:120px;font-size:.8rem;padding:5px 6px}
+      .btn{padding:5px 10px;font-size:.8rem}
+      .chk{font-size:.78rem;gap:3px}
       #bar-right{gap:5px}
-      #author{font-size:.72rem}
-      #bar-row2{gap:4px}
-      #bar-row2 input[type="text"]{width:80px;font-size:.78rem;padding:5px 6px}
-      #bar-row2 input[type="datetime-local"]{font-size:.72rem;padding:4px 4px}
-      #bar-row2 input[type="number"]{font-size:.78rem;padding:4px}
+      #author{font-size:.74rem}
+      #bar-row2{gap:5px}
+      #bar-row2 input[type="text"]{width:90px;font-size:.8rem;padding:5px 6px}
+      #bar-row2 input[type="datetime-local"]{font-size:.75rem;padding:4px 5px}
+      #bar-row2 input[type="number"]{font-size:.8rem;padding:4px}
       /* 广告区紧凑 */
       .ad{padding:6px 8px;gap:6px;margin-bottom:6px}
-      .ad-badge{font-size:.62rem}
-      .tg-badge{font-size:.68rem;padding:1px 6px}
-      .ad-links .btn{padding:6px 8px;font-size:.72rem;border-radius:8px}
-      /* 表格紧凑 */
-      table{min-width:560px}
-      th,td{padding:7px 4px;font-size:.76rem}
-      .tag-new,.tag-futures,.tag-comp{font-size:.6rem;padding:0 4px;margin-left:2px}
+      .ad-badge{font-size:.64rem}
+      .tg-badge{font-size:.7rem;padding:1px 6px}
+      .ad-links .btn{padding:6px 10px;font-size:.74rem;border-radius:8px}
+      .ad-links{gap:8px}
+      /* 表格 —— 不再需要水平滚动 */
+      table{min-width:auto;width:100%}
+      th,td{padding:8px 4px;font-size:.78rem}
+      .tag-new,.tag-futures,.tag-comp{font-size:.62rem;padding:0 4px;margin-left:2px}
       .logo{width:16px;height:16px;margin-right:2px}
-      .subl{font-size:.64rem}
+      .subl{font-size:.66rem}
+      /* 手机端不再需要 sticky 列（整个表格已可见） */
+      th:nth-child(-n+3),td:nth-child(-n+3){position:static;box-shadow:none}
       /* 小时图紧凑 */
       #hourlyWrap{margin-top:6px}
       .hourly-header{padding:6px 8px}
-      .hourly-header .hourly-title{font-size:.78rem}
-      .hourly-header .hourly-total{font-size:.72rem}
+      .hourly-header .hourly-title{font-size:.8rem}
+      .hourly-header .hourly-total{font-size:.74rem}
       /* 缓存区紧凑 */
       #cacheWrap{margin-top:4px}
-      #cacheToggle{font-size:.74rem}
-      #cacheList .cache-item{padding:4px 8px;font-size:.74rem}
+      #cacheToggle{font-size:.76rem}
+      #cacheList .cache-item{padding:4px 8px;font-size:.76rem}
     }
   </style>
 </head>
