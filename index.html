@@ -143,10 +143,12 @@
       color:#f59e0b;background:rgba(245,158,11,.08);font-weight:700
     }
 
-    /* ✅ 交易赛总交易量：主数字加深加粗 */
+    /* ✅ 交易赛总交易量：主数字加深加粗 + 点击复制 */
     .comp-vol-main{
-      display:inline-block;font-weight:800;color:#111827;font-size:.92rem
+      display:inline-block;font-weight:800;color:#111827;font-size:.92rem;
+      cursor:copy;padding:0 2px;border-radius:3px;transition:background .15s
     }
+    .comp-vol-main:hover{background:rgba(37,99,235,.12)}
     :root.dark .comp-vol-main{color:#f9fafb}
     @media(prefers-color-scheme:dark){
       :root:not(.light) .comp-vol-main{color:#f9fafb}
@@ -526,6 +528,8 @@
         hourlyType: 'hourly',
         onlyComp: '仅看交易赛',
         thCompVol: '交易赛总交易量',
+        copied: '已复制',
+        copyFail: '复制失败',
         hourlyMinimize: '收起',
         hourlyExpand: '展开',
         compTag: '交易赛',
@@ -590,6 +594,8 @@
         hourlyType: 'hourly',
         onlyComp: 'Competition only',
         thCompVol: 'Total Competition Volume',
+        copied: 'Copied',
+        copyFail: 'Copy failed',
         hourlyMinimize: 'Minimize',
         hourlyExpand: 'Expand',
         compTag: 'Comp',
@@ -753,6 +759,23 @@
     function showToast(msg){
       toast.textContent=msg;toast.style.opacity='1';
       setTimeout(()=>toast.style.opacity='0',3000);
+    }
+
+    /* ✅ 复制到剪贴板（带 execCommand 回退） */
+    function copyText(text){
+      const done = ok => showToast(ok ? `${t('copied')}：${text}` : t('copyFail'));
+      if(navigator.clipboard && window.isSecureContext){
+        navigator.clipboard.writeText(text).then(()=>done(true)).catch(()=>done(false));
+        return;
+      }
+      try{
+        const ta=document.createElement('textarea');
+        ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select();
+        const ok=document.execCommand('copy');
+        document.body.removeChild(ta);
+        done(ok);
+      }catch{ done(false); }
     }
 
     let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false,showFuturesOnly=false,showSecOnly=false,showCompOnly=false;
@@ -984,7 +1007,7 @@
           else {
             const rewardAmt=parseFloat(r.comp.perWinner.replace(/,/g,''))||0;
             const rewardUsd=rewardAmt*r.price;
-            compCell=`<span class="comp-vol-main">${nf0.format(r.compVol)}</span><span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
+            compCell=`<span class="comp-vol-main" data-vol="${r.compVol}" title="点击复制">${nf0.format(r.compVol)}</span><span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
               +`<span class="subl">🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardUsd)}</span>`;
           }
         }
@@ -1262,6 +1285,13 @@
     tbody.addEventListener('click',e=>{
       const s=e.target.closest('.star');
       if(s){s.classList.add('bounce');setTimeout(()=>s.classList.remove('bounce'),150);toggleFav(s.closest('tr').dataset.sym);return;}
+      // ✅ 点击交易赛总交易量 → 复制原始数字
+      const cv=e.target.closest('.comp-vol-main');
+      if(cv&&cv.dataset.vol){
+        e.stopPropagation();
+        copyText(cv.dataset.vol);
+        return;
+      }
       // 点击表格行自动填充代币名到输入框
       const tr=e.target.closest('tr');
       if(tr&&tr.dataset.sym){
