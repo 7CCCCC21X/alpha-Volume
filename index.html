@@ -444,7 +444,7 @@
           <span class="card-value" id="cardActiveValue" style="font-size:.95rem">-</span>
         </div>
         <div class="summary-card">
-          <span class="card-label" id="cardActiveDetailLabel">笔数 · 均额明细</span>
+          <span class="card-label" id="cardActiveDetailLabel">今日交易笔数，平均单笔金额</span>
           <div id="cardActiveSub" style="margin-top:2px"></div>
         </div>
       </div>
@@ -584,7 +584,7 @@
         cardTotal: '总代币数',
         cardComp: '交易赛代币',
         cardActive: '今日交易笔数 Top 3',
-        cardActiveDetail: '笔数 · 均额明细',
+        cardActiveDetail: '今日交易笔数，平均单笔金额',
         cardCompActive: (n) => `${n} 个进行中`,
         sectionSummary: '数据概览',
         sectionQuery: '查询结果'
@@ -660,7 +660,7 @@
         cardTotal: 'Total Tokens',
         cardComp: 'Competition',
         cardActive: 'Top 3 by Trades Today',
-        cardActiveDetail: 'Trades · Avg Detail',
+        cardActiveDetail: 'Trades Today · Avg per Trade',
         cardCompActive: (n) => `${n} active`,
         sectionSummary: 'Overview',
         sectionQuery: 'Query Result'
@@ -945,7 +945,8 @@
         .map(t=>{
           const raw = Number(t.listingTime || 0);
           const ltMs = raw ? (raw < 1e12 ? raw*1000 : raw) : 0;
-          const isNew = ltMs ? (Date.now() - ltMs) < THIRTY_DAYS : false;
+          const isTokenizedSec = t.stockState === true && t.rwaInfo != null;
+          const isNew = !isTokenizedSec && ltMs ? (Date.now() - ltMs) < THIRTY_DAYS : false;
 
           return {
             price:+t.price,
@@ -973,7 +974,7 @@
             isNew,
 
             // 代币化证券：按上面的答案，用 stockState + rwaInfo 判断
-            isTokenizedSecurity: t.stockState === true && t.rwaInfo != null,
+            isTokenizedSecurity: isTokenizedSec,
 
             // ✅ 是否上了币安合约
             hasFutures: futuresSet.has(t.symbol.toUpperCase()),
