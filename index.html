@@ -987,13 +987,13 @@
 
       if(top3Trades.length>0){
         document.getElementById('cardActiveValue').textContent = top3Trades.map(r=>r.symbol).join(' / ');
-        document.getElementById('cardActiveSub').textContent = top3Trades.map(r=>{
+        document.getElementById('cardActiveSub').innerHTML = top3Trades.map(r=>{
           const avg = r.todayTrades>0 ? Math.round(r.todayQV/r.todayTrades) : 0;
           return `${r.symbol}: ${nf0.format(r.todayTrades)}${curLang==='zh'?'笔':'tx'} ~$${nf0.format(avg)}`;
-        }).join('  |  ');
+        }).join('<br>');
       } else {
         document.getElementById('cardActiveValue').textContent = '-';
-        document.getElementById('cardActiveSub').textContent = '';
+        document.getElementById('cardActiveSub').innerHTML = '';
       }
     }
 
