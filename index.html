@@ -145,17 +145,102 @@
 
     /* ✅ 交易赛标记 */
     .tag-comp{
-      display:inline-block;margin-left:4px;padding:0 5px;border-radius:10px;
-      font-size:.68rem;line-height:1.4;font-weight:700;cursor:help
+      display:inline-flex;align-items:center;gap:2px;
+      margin-left:4px;padding:1px 6px;border-radius:10px;
+      font-size:.68rem;line-height:1.5;font-weight:700;cursor:help;
+      vertical-align:middle;transition:transform .15s
     }
+    .tag-comp:hover{transform:translateY(-1px)}
     .tag-comp.comp-active{
-      border:1px solid #16a34a;color:#16a34a;background:rgba(22,163,74,.08)
+      border:1px solid #16a34a;color:#16a34a;background:rgba(22,163,74,.1);
+      animation:compPulse 2.4s ease-in-out infinite
+    }
+    @keyframes compPulse{
+      0%,100%{ box-shadow:0 0 0 0 rgba(22,163,74,0) }
+      50%{ box-shadow:0 0 0 3px rgba(22,163,74,.14) }
     }
     .tag-comp.comp-ended{
-      border:1px solid #9ca3af;color:#9ca3af;background:rgba(156,163,175,.08)
+      border:1px solid #9ca3af;color:#9ca3af;background:rgba(156,163,175,.08);
+      opacity:.75
     }
     .tag-comp.comp-upcoming{
-      border:1px solid #2563eb;color:#2563eb;background:rgba(37,99,235,.08)
+      border:1px solid #2563eb;color:#2563eb;background:rgba(37,99,235,.1)
+    }
+
+    /* ✅ 仅看交易赛：checkbox 金色强调 */
+    #onlyComp{accent-color:#f59e0b}
+    .chk:has(#onlyComp:checked) span{color:#b45309;font-weight:700}
+    :root.dark .chk:has(#onlyComp:checked) span{color:#fbbf24}
+
+    /* ✅ 交易赛单元格：增强显示 */
+    .comp-cell{
+      display:flex;flex-direction:column;gap:3px;min-width:170px
+    }
+    .comp-cell .cc-vol{
+      font-weight:800;font-size:.92rem;color:var(--text);letter-spacing:.2px
+    }
+    .comp-cell .cc-progress{
+      position:relative;height:5px;background:rgba(156,163,175,.22);
+      border-radius:3px;overflow:hidden
+    }
+    .comp-cell .cc-progress .cc-bar{
+      position:absolute;left:0;top:0;bottom:0;
+      background:linear-gradient(90deg,#fbbf24,#f59e0b);
+      border-radius:3px;transition:width .5s ease
+    }
+    .comp-cell .cc-progress.cc-ended .cc-bar{
+      background:linear-gradient(90deg,#9ca3af,#6b7280)
+    }
+    .comp-cell .cc-progress.cc-upcoming .cc-bar{
+      background:linear-gradient(90deg,#93c5fd,#3b82f6)
+    }
+    .comp-cell .cc-time{
+      display:flex;align-items:center;justify-content:space-between;gap:6px;
+      font-size:.7rem;color:var(--sub);line-height:1.3
+    }
+    .comp-cell .cc-time .cc-pct{
+      color:#f59e0b;font-weight:700;flex-shrink:0
+    }
+    .comp-cell .cc-progress.cc-ended + .cc-time .cc-pct{color:#9ca3af}
+    .comp-cell .cc-progress.cc-upcoming + .cc-time .cc-pct{color:#2563eb}
+    .comp-cell .cc-reward{
+      display:inline-flex;align-items:center;gap:4px;
+      font-size:.7rem;padding:2px 7px;border-radius:8px;
+      background:linear-gradient(135deg,rgba(251,191,36,.16),rgba(245,158,11,.06));
+      color:#b45309;border:1px solid rgba(245,158,11,.32);
+      align-self:flex-start;font-weight:700;line-height:1.5
+    }
+    :root.dark .comp-cell .cc-reward{color:#fbbf24;border-color:rgba(251,191,36,.4)}
+
+    /* ✅ 交易赛汇总面板 */
+    #compSummary{max-width:1200px;margin:8px auto 0;padding:0 6px;display:none}
+    #compSummary.show{display:block}
+    #compSummary .cs-wrap{
+      display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+      padding:10px 14px;border-radius:10px;
+      background:linear-gradient(135deg,rgba(251,191,36,.14),rgba(245,158,11,.04));
+      border:1px solid rgba(245,158,11,.32)
+    }
+    #compSummary .cs-title{
+      display:inline-flex;align-items:center;gap:6px;
+      font-weight:800;font-size:.92rem;color:#b45309
+    }
+    :root.dark #compSummary .cs-title{color:#fbbf24}
+    #compSummary .cs-stat{
+      display:inline-flex;align-items:center;gap:5px;font-size:.8rem;
+      padding:3px 10px;border-radius:14px;background:rgba(255,255,255,.55);
+      color:var(--text);border:1px solid rgba(245,158,11,.22)
+    }
+    :root.dark #compSummary .cs-stat{background:rgba(0,0,0,.22)}
+    #compSummary .cs-stat strong{font-weight:800}
+    #compSummary .cs-stat.cs-active strong{color:#16a34a}
+    #compSummary .cs-stat.cs-upcoming strong{color:#2563eb}
+    #compSummary .cs-stat.cs-ended strong{color:#9ca3af}
+    #compSummary .cs-stat.cs-total strong{color:#b45309}
+    :root.dark #compSummary .cs-stat.cs-total strong{color:#fbbf24}
+    #compSummary .cs-dot{
+      display:inline-block;width:6px;height:6px;border-radius:50%;
+      background:currentColor;margin-right:1px
     }
 
     /* Toast */
@@ -364,6 +449,15 @@
       #cacheWrap{margin-top:4px}
       #cacheToggle{font-size:.76rem}
       #cacheList .cache-item{padding:4px 8px;font-size:.76rem}
+      /* 交易赛紧凑 */
+      .comp-cell{min-width:130px;gap:2px}
+      .comp-cell .cc-vol{font-size:.8rem}
+      .comp-cell .cc-time{font-size:.62rem}
+      .comp-cell .cc-reward{font-size:.64rem;padding:1px 5px;border-radius:6px}
+      #compSummary{margin-top:4px}
+      #compSummary .cs-wrap{padding:7px 9px;gap:6px}
+      #compSummary .cs-title{font-size:.8rem}
+      #compSummary .cs-stat{font-size:.7rem;padding:2px 7px}
     }
   </style>
 </head>
@@ -415,6 +509,7 @@
     </div>
   </div>
 
+  <div id="compSummary"></div>
   <div id="customVol"></div>
   <div id="hourlyWrap"></div>
   <div id="cacheWrap">
@@ -508,7 +603,12 @@
         compActive: (d,unit) => `🏆 交易赛 剩${d}${unit==='m'?'分钟':unit==='h'?'小时':'天'}`,
         compEnded: '🏆 已结束',
         compUpcoming: '🏆 未开始',
-        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
+        compSummaryTitle: '交易赛概览',
+        compActiveLabel: '进行中',
+        compUpcomingLabel: '未开始',
+        compEndedLabel: '已结束',
+        compTotalVol: '合计交易量'
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -569,7 +669,12 @@
         compActive: (d,unit) => `🏆 Comp ${d}${unit==='m'?'m':unit==='h'?'h':'d'} left`,
         compEnded: '🏆 Ended',
         compUpcoming: '🏆 Upcoming',
-        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
+        compSummaryTitle: 'Competition Overview',
+        compActiveLabel: 'Active',
+        compUpcomingLabel: 'Upcoming',
+        compEndedLabel: 'Ended',
+        compTotalVol: 'Total Volume'
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -925,10 +1030,21 @@
         if(r.comp){
           if(r.compVol==null) compCell='…';
           else {
-            const rewardAmt=parseFloat(r.comp.perWinner.replace(/,/g,''))||0;
+            const c=r.comp;
+            const now=Date.now();
+            const total=c.end-c.start;
+            let pct=0, statusCls='';
+            if(now<c.start){ pct=0; statusCls='cc-upcoming'; }
+            else if(now<=c.end){ pct=Math.max(0,Math.min(100,((now-c.start)/total)*100)); }
+            else{ pct=100; statusCls='cc-ended'; }
+            const rewardAmt=parseFloat(c.perWinner.replace(/,/g,''))||0;
             const rewardUsd=rewardAmt*r.price;
-            compCell=`${nf0.format(r.compVol)}<span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
-              +`<span class="subl">🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardUsd)}</span>`;
+            compCell=`<div class="comp-cell">`
+              +`<div class="cc-vol">${nf0.format(r.compVol)}</div>`
+              +`<div class="cc-progress ${statusCls}"><div class="cc-bar" style="width:${pct.toFixed(1)}%"></div></div>`
+              +`<div class="cc-time"><span>${fmtShort(c.start)} ~ ${fmtShort(Math.min(now,c.end))}</span><span class="cc-pct">${pct.toFixed(0)}%</span></div>`
+              +`<div class="cc-reward">🎁 ${c.perWinner} ≈ $${nf2.format(rewardUsd)}</div>`
+              +`</div>`;
           }
         }
 
@@ -954,6 +1070,29 @@
       `;
       }).join('');
       updateSortIcons();
+      renderCompSummary();
+    }
+
+    /* ---------- 交易赛汇总面板 ---------- */
+    function renderCompSummary(){
+      const el=document.getElementById('compSummary');
+      if(!showCompOnly){ el.classList.remove('show'); el.innerHTML=''; return; }
+      const now=Date.now();
+      let active=0, upcoming=0, ended=0, totalVol=0;
+      rows.forEach(r=>{
+        if(!r.comp) return;
+        if(now<r.comp.start) upcoming++;
+        else if(now<=r.comp.end){ active++; if(r.compVol) totalVol+=r.compVol; }
+        else ended++;
+      });
+      el.innerHTML=`<div class="cs-wrap">
+        <span class="cs-title">🏆 ${t('compSummaryTitle')}</span>
+        <span class="cs-stat cs-active"><span class="cs-dot"></span>${t('compActiveLabel')}&nbsp;<strong>${active}</strong></span>
+        <span class="cs-stat cs-upcoming"><span class="cs-dot"></span>${t('compUpcomingLabel')}&nbsp;<strong>${upcoming}</strong></span>
+        <span class="cs-stat cs-ended"><span class="cs-dot"></span>${t('compEndedLabel')}&nbsp;<strong>${ended}</strong></span>
+        <span class="cs-stat cs-total">${t('compTotalVol')}&nbsp;<strong>${nf0.format(totalVol)}</strong></span>
+      </div>`;
+      el.classList.add('show');
     }
 
     async function reloadAll(){
