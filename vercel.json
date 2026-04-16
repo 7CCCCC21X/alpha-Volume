@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/proxy/bapi/:path*",
+      "destination": "https://www.binance.com/bapi/:path*"
+    },
+    {
+      "source": "/proxy/fapi/:path*",
+      "destination": "https://fapi.binance.com/fapi/:path*"
+    }
+  ]
+}

@@ -704,11 +704,52 @@
       return Math.max(0, Math.ceil(delta / 86400000));
     };
 
-    /* ---------- fetch with 10s timeout ---------- */
-    function fetchWithTimeout(url, ms=10000){
+    /* ---------- fetch with 10s timeout ----------
+       ✅ 解决中国大陆用户必须开梯子才能打开的问题：
+       直接请求 binance.com / fapi.binance.com 失败时，
+       自动回退到部署在 Vercel 上的同源反代路径（见 vercel.json）。
+       一旦代理可用，后续请求会优先走代理，避免反复等待直连超时。 */
+    const PROXY_MAP = [
+      ['https://www.binance.com/bapi/', '/proxy/bapi/'],
+      ['https://fapi.binance.com/fapi/', '/proxy/fapi/']
+    ];
+    function toProxyUrl(url){
+      for(const [origin, proxy] of PROXY_MAP){
+        if(typeof url === 'string' && url.startsWith(origin)){
+          return proxy + url.slice(origin.length);
+        }
+      }
+      return null;
+    }
+    let __preferProxy = false;
+    function rawFetchWithTimeout(url, ms){
       const ctrl=new AbortController();
       const tid=setTimeout(()=>ctrl.abort(),ms);
       return fetch(url,{signal:ctrl.signal}).finally(()=>clearTimeout(tid));
+    }
+    async function fetchWithTimeout(url, ms=10000){
+      const proxied = toProxyUrl(url);
+      // 已确认直连不可用，直接走代理
+      if(__preferProxy && proxied){
+        return rawFetchWithTimeout(proxied, ms);
+      }
+      try{
+        const resp = await rawFetchWithTimeout(url, ms);
+        // 某些被 GFW 干扰的场景会返回非 2xx/空响应，也触发一次代理重试
+        if(!resp.ok && proxied){
+          throw new Error('HTTP '+resp.status);
+        }
+        return resp;
+      }catch(e){
+        if(!proxied) throw e;
+        try{
+          const resp = await rawFetchWithTimeout(proxied, ms);
+          __preferProxy = true; // 代理成功，记住偏好
+          return resp;
+        }catch(e2){
+          throw e; // 代理也挂了，抛原错误
+        }
+      }
     }
 
     /* ---------- 币安合约列表 ---------- */
