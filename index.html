@@ -815,18 +815,27 @@
 
     async function qvAuto(row, start, end){
       const primary = row.qSym || row.sym; // row.sym 默认是 `${alphaId}USDT`
-      let res = await qvOk(primary, start, end);
-      if(res.ok) return { vol:res.vol, trades:res.trades };
-
       const alt = row.symUSDC || (row.sym && row.sym.endsWith('USDT') ? row.sym.replace(/USDT$/,'USDC') : '');
-      if(!alt || alt===primary) return { vol:0, trades:0 };
 
-      res = await qvOk(alt, start, end);
-      if(res.ok){
-        row.qSym = alt; // 缓存实际可用交易对
-        return { vol:res.vol, trades:res.trades };
-      }
-      return { vol:0, trades:0 };
+      // ✅ 并行查询 USDT / USDC 两个交易对，成交额与笔数相加
+      // 避免只取其中一种、漏算另一种交易对的情况（例如同一代币同时存在 USDT 与 USDC Alpha 对时）
+      const tasks = [qvOk(primary, start, end)];
+      if(alt && alt !== primary) tasks.push(qvOk(alt, start, end));
+      const results = await Promise.all(tasks);
+
+      let vol = 0, trades = 0;
+      let firstOkSym = null;
+      results.forEach((res, idx) => {
+        if(!res.ok) return;
+        vol += res.vol;
+        trades += res.trades;
+        if(!firstOkSym && res.vol > 0) firstOkSym = idx === 0 ? primary : alt;
+      });
+
+      // 缓存一个实际有成交的交易对（供 findRow/filter 等使用）
+      if(firstOkSym && !row.qSym) row.qSym = firstOkSym;
+
+      return { vol, trades };
     }
 
     /* 公共：按名称/交易对查找代币行 */
