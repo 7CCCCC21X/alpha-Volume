@@ -885,10 +885,9 @@
 
       return data
         .filter(t => {
-          // ✅ 过滤：已上 CEX 现货的代币不显示
-          if (t.listingCex === true) return false;
-          // ✅ 过滤：下线/非活跃代币不显示
+          // ✅ 过滤：下线/全下架代币不显示（listingCex 不等于"已上现货"，仅表示 CEX 侧有登记，不能用来过滤）
           if (t.offline === true) return false;
+          if (t.fullyDelisted === true) return false;
           return +t.volume24h > 0 || (t.stockState === true && t.rwaInfo != null);
         })
         .map(t=>{
