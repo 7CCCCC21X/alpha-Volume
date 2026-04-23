@@ -567,9 +567,11 @@
         compUpcoming: '🏆 未开始',
         compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
         secCompTitle: '代币化证券总交易大赛',
-        secCompTotalVol: '累计交易量：',
+        secCompTotalVol: '有效交易量：',
         secCompTokens: (n) => `共 ${n} 个代币化证券`,
-        secCompPrize: (pool, topN, perWinner) => `奖池：${pool} ｜ 前${topN}名 → ${perWinner}/人`
+        secCompPrize: (pool, topN, perWinner) => `奖池：${pool} ｜ 前${topN}名 → ${perWinner}/人`,
+        compRawLabel: '原始：',
+        compNowBonus: '当前倍数：'
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -637,9 +639,11 @@
         compUpcoming: '🏆 Upcoming',
         compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
         secCompTitle: 'Tokenized Securities Total Trading Comp',
-        secCompTotalVol: 'Total volume: ',
+        secCompTotalVol: 'Effective volume: ',
         secCompTokens: (n) => `${n} tokenized securities`,
-        secCompPrize: (pool, topN, perWinner) => `Prize: ${pool} | Top ${topN} → ${perWinner}/winner`
+        secCompPrize: (pool, topN, perWinner) => `Prize: ${pool} | Top ${topN} → ${perWinner}/winner`,
+        compRawLabel: 'Raw: ',
+        compNowBonus: 'Current bonus: '
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -688,17 +692,26 @@
     const FUTURES_API='https://fapi.binance.com/fapi/v1/exchangeInfo';
 
     /* ---------- 交易赛配置（手动维护） ---------- */
+    /* 早鸟乘数构造助手：从起始时间起按 24h 一段累加 */
+    function buildDailyMultipliers(startIso, mults){
+      const startMs=Date.parse(startIso);
+      const day=86400000;
+      return mults.map((m,i)=>({ start:startMs+i*day, end:startMs+(i+1)*day, mult:m }));
+    }
+    const JCT_MULTIPLIERS = buildDailyMultipliers('2026-04-22T21:00:00+08:00', [1.4,1.3,1.2,1.2,1.1,1.1,1.0]);
+    const TOKENIZED_SEC_MULTIPLIERS = buildDailyMultipliers('2026-04-23T18:00:00+08:00', [1.4,1.3,1.2,1.2,1.1,1.1,1.0]);
+
     const COMPETITIONS = [
       {symbol:'RTX',   start:Date.parse('2026-04-16T21:00:00+08:00'), end:Date.parse('2026-04-23T21:00:00+08:00'), topN:2040, pool:'61,200 RTX',       perWinner:'30 RTX' },
       { symbol:'TRIA',  start:Date.parse('2026-04-22T21:00:00+08:00'), end:Date.parse('2026-04-29T21:00:00+08:00'), topN:2000, pool:'3,600,000 TRIA',     perWinner:'1800 TRIA' },
       { symbol:'GENIUS',  start:Date.parse('2026-04-16T21:00:00+08:00'), end:Date.parse('2026-04-23T21:00:00+08:00'), topN:2520, pool:'176,400 GENIUS',     perWinner:'70 GENIUS' },
       { symbol:'SOON',  start:Date.parse('2026-04-17T21:00:00+08:00'), end:Date.parse('2026-04-24T21:00:00+08:00'), topN:2000, pool:'688,000 SOON',     perWinner:'200 SOON' },
       { symbol:'PIEVERSE',  start:Date.parse('2026-04-21T21:00:00+08:00'), end:Date.parse('2026-04-28T21:00:00+08:00'), topN:2000, pool:'101,800 PIEVERSE',     perWinner:'30 PIEVERSE' },
-      { symbol:'JCT',  start:Date.parse('2026-04-22T21:00:00+08:00'), end:Date.parse('2026-04-29T21:00:00+08:00'), topN:2000, pool:'36,877,500 JCT',     perWinner:'16,390 JCT' },
+      { symbol:'JCT',  start:Date.parse('2026-04-22T21:00:00+08:00'), end:Date.parse('2026-04-29T21:00:00+08:00'), topN:2000, pool:'36,877,500 JCT',     perWinner:'16,390 JCT', multipliers: JCT_MULTIPLIERS },
     ];
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
 
-    /* ---------- 代币化证券总交易大赛（所有代币化证券共享一场赛事） ---------- */
+    /* ---------- 代币化证券总交易大赛（所有代币化证券共享一场赛事，汇总展示） ---------- */
     const TOKENIZED_SEC_COMP = {
       symbol: '__TOKENIZED_SEC__',
       start: Date.parse('2026-04-23T18:00:00+08:00'),
@@ -706,7 +719,8 @@
       topN: 3000,
       pool: '375 TSLAon',
       perWinner: '0.125 TSLAon',
-      isTokenizedSec: true
+      isTokenizedSec: true,
+      multipliers: TOKENIZED_SEC_MULTIPLIERS
     };
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -840,9 +854,10 @@
 
     // ------------------------------
     // ✅ K线成交额：优先 USDT，失败自动 fallback 到 USDC
+    //   返回 hours 数组以支持早鸟乘数计算
     // ------------------------------
     async function qvOk(sym, start, end){
-      if(start>=end) return { ok:true, vol:0, trades:0 };
+      if(start>=end) return { ok:true, vol:0, trades:0, hours:[] };
       const url=`${K_API}?symbol=${encodeURIComponent(sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
       try{
         const json=await fetchWithTimeout(url).then(r=>r.json());
@@ -851,33 +866,54 @@
           (json?.success !== false) &&
           (json?.code == null || ['000000','0'].includes(String(json.code)));
 
-        if(!ok) return { ok:false, vol:0, trades:0 };
+        if(!ok) return { ok:false, vol:0, trades:0, hours:[] };
 
         const data=json?.data;
-        if(!Array.isArray(data)) return { ok:false, vol:0, trades:0 };
+        if(!Array.isArray(data)) return { ok:false, vol:0, trades:0, hours:[] };
 
-        const vol=data.reduce((s,k)=>s+parseFloat(k?.[7]||0),0);
-        const trades=data.reduce((s,k)=>s+parseInt(k?.[8]||0),0);
-        return { ok:true, vol, trades };
+        const hours = data.map(k => ({
+          t: +k[0],
+          vol: parseFloat(k?.[7]||0),
+          trades: parseInt(k?.[8]||0)
+        }));
+        const vol = hours.reduce((s,h)=>s+h.vol, 0);
+        const trades = hours.reduce((s,h)=>s+h.trades, 0);
+        return { ok:true, vol, trades, hours };
       }catch{
-        return { ok:false, vol:0, trades:0 };
+        return { ok:false, vol:0, trades:0, hours:[] };
       }
     }
 
     async function qvAuto(row, start, end){
       const primary = row.qSym || row.sym; // row.sym 默认是 `${alphaId}USDT`
       let res = await qvOk(primary, start, end);
-      if(res.ok) return { vol:res.vol, trades:res.trades };
+      if(res.ok) return { vol:res.vol, trades:res.trades, hours:res.hours };
 
       const alt = row.symUSDC || (row.sym && row.sym.endsWith('USDT') ? row.sym.replace(/USDT$/,'USDC') : '');
-      if(!alt || alt===primary) return { vol:0, trades:0 };
+      if(!alt || alt===primary) return { vol:0, trades:0, hours:[] };
 
       res = await qvOk(alt, start, end);
       if(res.ok){
         row.qSym = alt; // 缓存实际可用交易对
-        return { vol:res.vol, trades:res.trades };
+        return { vol:res.vol, trades:res.trades, hours:res.hours };
       }
-      return { vol:0, trades:0 };
+      return { vol:0, trades:0, hours:[] };
+    }
+
+    /* ✅ 按早鸟时段乘数计算有效交易量 */
+    function applyMultipliers(hours, multipliers){
+      if(!Array.isArray(hours) || !multipliers) return 0;
+      let eff=0;
+      for(const h of hours){
+        const b = multipliers.find(m => h.t >= m.start && h.t < m.end);
+        eff += h.vol * (b ? b.mult : 1);
+      }
+      return eff;
+    }
+    /* ✅ 取当前所处的乘数（用于显示当前倍数） */
+    function currentMultiplier(multipliers, ts=Date.now()){
+      if(!multipliers) return null;
+      return multipliers.find(m => ts >= m.start && ts < m.end) || null;
     }
 
     /* 公共：按名称/交易对查找代币行 */
@@ -910,9 +946,12 @@
           const cStart=r.comp.start, cEnd=r.comp.end;
           if(now>cStart){
             const compRes=await qvAuto(r, cStart, Math.min(now, cEnd));
-            r.compVol=compRes.vol; r.compTrades=compRes.trades;
+            r.compRawVol=compRes.vol; r.compTrades=compRes.trades;
+            r.compVol = r.comp.multipliers
+              ? applyMultipliers(compRes.hours, r.comp.multipliers)
+              : compRes.vol;
           } else {
-            r.compVol=0; r.compTrades=0;
+            r.compVol=0; r.compRawVol=0; r.compTrades=0;
           }
         }
         progressEl.textContent=`${Math.floor(++done/total*100)}%`;
@@ -992,6 +1031,7 @@
             // ✅ 交易赛（个币交易赛优先；代币化证券默认参加"代币化证券总交易大赛"）
             comp: COMP_MAP[t.symbol.toUpperCase()] || (isTokenizedSecurity ? TOKENIZED_SEC_COMP : null),
             compVol: null,
+            compRawVol: null,
             compTrades: null
           };
         });
@@ -1011,7 +1051,8 @@
     function renderSecCompSummary(){
       const secRows=rows.filter(r=>r.comp===TOKENIZED_SEC_COMP);
       if(!secRows.length){ secCompSummaryEl.style.display='none'; secCompSummaryEl.innerHTML=''; return; }
-      const totalVol=secRows.reduce((s,r)=>s+(r.compVol||0),0);
+      const totalEff=secRows.reduce((s,r)=>s+(r.compVol||0),0);
+      const totalRaw=secRows.reduce((s,r)=>s+(r.compRawVol||0),0);
       const loadedCount=secRows.filter(r=>r.compVol!=null).length;
       const c=TOKENIZED_SEC_COMP;
       const now=Date.now();
@@ -1023,13 +1064,21 @@
         const val=unit==='m'?Math.max(1,Math.ceil(remain/60000)):unit==='h'?Math.max(1,Math.ceil(remain/3600000)):Math.ceil(remain/86400000);
         statusLabel=t('compActive')(val,unit); statusCls='scs-active';
       } else { statusLabel=t('compEnded'); statusCls='scs-ended'; }
-      const volStr=loadedCount<secRows.length ? `…(${loadedCount}/${secRows.length})` : nf0.format(totalVol);
+      const volStr=loadedCount<secRows.length ? `…(${loadedCount}/${secRows.length})` : nf0.format(totalEff);
+      const cur=currentMultiplier(c.multipliers);
+      const bonusBadge=cur ? `<span class="scs-meta">${t('compNowBonus')}<b>${cur.mult}x</b></span>` : '';
+      const fullyLoaded = loadedCount===secRows.length;
+      const rawLine = (c.multipliers && totalRaw>0 && fullyLoaded)
+        ? `<span class="scs-meta">${t('compRawLabel')}<b>${nf0.format(totalRaw)}</b></span>`
+        : '';
       secCompSummaryEl.style.display='block';
       secCompSummaryEl.innerHTML=`<div class="scs-card">
         <span class="scs-title">🏆 ${t('secCompTitle')}</span>
         <span class="scs-status ${statusCls}">${statusLabel}</span>
         <span class="scs-meta">${fmtShort(c.start)} ~ ${fmtShort(c.end)}</span>
-        <span class="scs-meta">${t('secCompTotalVol')}<b class="scs-vol" data-vol="${Math.round(totalVol)}" title="${t('copied')}">${volStr}</b></span>
+        <span class="scs-meta">${t('secCompTotalVol')}<b class="scs-vol" data-vol="${Math.round(totalEff)}" title="${t('copied')}">${volStr}</b></span>
+        ${rawLine}
+        ${bonusBadge}
         <span class="scs-meta">${t('secCompTokens')(secRows.length)}</span>
         <span class="scs-meta">${t('secCompPrize')(c.pool, c.topN, c.perWinner)}</span>
       </div>`;
@@ -1048,7 +1097,8 @@
         const newOk = !showNewOnly || r.isNew;
         const futuresOk = !showFuturesOnly || r.hasFutures;
         const secOk = !showSecOnly || r.isTokenizedSecurity;
-        const compOk = !showCompOnly || r.comp;
+        // ✅ 代币化证券作为整体在汇总卡片展示，单独行不进入"仅看交易赛"
+        const compOk = !showCompOnly || (r.comp && !r.comp.isTokenizedSec);
         return matched && newOk && futuresOk && secOk && compOk;
       });
 
@@ -1059,9 +1109,9 @@
         const left = r.isNew && r.listingTime ? daysLeft(r.listingTime) : 0;
         const tipPrefix = t('listingTip');
 
-        // ✅ 交易赛标记
+        // ✅ 交易赛标记（代币化证券聚合在卡片中展示，单独行不显示标签）
         let compTag='';
-        if(r.comp){
+        if(r.comp && !r.comp.isTokenizedSec){
           const now=Date.now(), c=r.comp;
           const compTip=t('compTip')(c.topN, c.pool, c.perWinner, fmtFull(c.start), fmtFull(c.end));
           if(now<c.start){
@@ -1076,17 +1126,23 @@
           }
         }
 
-        // ✅ 交易赛交易量列
+        // ✅ 交易赛交易量列（代币化证券不在每行展示，统一在卡片汇总）
         let compCell='-';
-        if(r.comp){
+        if(r.comp && !r.comp.isTokenizedSec){
           if(r.compVol==null) compCell='…';
           else {
             const rewardAmt=parseFloat(r.comp.perWinner.replace(/,/g,''))||0;
-            // 奖励币种与当前币种不一致时（如 TSLAon），不做美元换算
-            const rewardLine = r.comp.isTokenizedSec
-              ? `🎁 ${r.comp.perWinner}`
-              : `🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardAmt*r.price)}`;
-            compCell=`<span class="comp-vol-main" data-vol="${Math.round(r.compVol)}" title="点击复制">${nf0.format(r.compVol)}</span><span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
+            const rewardLine = `🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardAmt*r.price)}`;
+            // 有早鸟乘数时：主数字显示有效成交额，副标题显示原始成交额 + 当前倍数
+            let bonusLine='';
+            if(r.comp.multipliers && r.compRawVol!=null){
+              const cur=currentMultiplier(r.comp.multipliers);
+              const curStr=cur ? ` ｜ ${t('compNowBonus')}${cur.mult}x` : '';
+              bonusLine=`<span class="subl">${t('compRawLabel')}${nf0.format(r.compRawVol)}${curStr}</span>`;
+            }
+            compCell=`<span class="comp-vol-main" data-vol="${Math.round(r.compVol)}" title="点击复制">${nf0.format(r.compVol)}</span>`
+              +`<span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
+              +bonusLine
               +`<span class="subl">${rewardLine}</span>`;
           }
         }
@@ -1143,7 +1199,7 @@
             if(!visibleSet.has(r.symbol)&&oldMap[r.symbol]){
               const o=oldMap[r.symbol];
               r.todayQV=o.todayQV; r.prevQV=o.prevQV; r.qSym=o.qSym;
-              if(o.compVol!=null){r.compVol=o.compVol; r.compTrades=o.compTrades;}
+              if(o.compVol!=null){r.compVol=o.compVol; r.compRawVol=o.compRawVol; r.compTrades=o.compTrades;}
             }
           });
           const toRefresh=newRows.filter(r=>visibleSet.has(r.symbol));
