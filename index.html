@@ -179,6 +179,34 @@
     /* 自定义区间结果 */
     #customVol{max-width:1200px;margin:4px auto 0;font-size:.9rem;color:var(--primary)}
 
+    /* 代币化证券总交易大赛 汇总卡片 */
+    #secCompSummary{max-width:1200px;margin:8px auto 0;padding:0 6px;display:none}
+    #secCompSummary .scs-card{
+      display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;
+      padding:10px 14px;border-radius:8px;
+      background:linear-gradient(135deg,rgba(22,163,74,.10),rgba(22,163,74,.02));
+      border:1px solid rgba(22,163,74,.25)
+    }
+    #secCompSummary .scs-title{font-weight:800;color:#16a34a;font-size:.95rem}
+    #secCompSummary .scs-status{
+      font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:10px;
+      border:1px solid currentColor;background:rgba(255,255,255,.5)
+    }
+    #secCompSummary .scs-status.scs-active{color:#16a34a}
+    #secCompSummary .scs-status.scs-upcoming{color:#2563eb}
+    #secCompSummary .scs-status.scs-ended{color:#9ca3af}
+    #secCompSummary .scs-meta{font-size:.82rem;color:var(--text)}
+    #secCompSummary .scs-meta b{color:#16a34a}
+    #secCompSummary .scs-vol{
+      font-size:1rem;font-weight:800;color:#111827;
+      background:rgba(22,163,74,.12);padding:3px 10px;border-radius:8px;cursor:copy
+    }
+    :root.dark #secCompSummary .scs-vol{color:#f9fafb}
+    @media(prefers-color-scheme:dark){
+      :root:not(.light) #secCompSummary .scs-vol{color:#f9fafb}
+    }
+    #secCompSummary .scs-vol:hover{background:rgba(22,163,74,.22)}
+
     /* ---------- 小时交易量 ---------- */
     #hourlyWrap{max-width:1200px;margin:10px auto 0;padding:0 6px}
     .hourly-header{
@@ -438,6 +466,7 @@
   </div>
 
   <div id="customVol"></div>
+  <div id="secCompSummary"></div>
   <div id="hourlyWrap"></div>
   <div id="cacheWrap">
     <div class="cache-hd">
@@ -536,7 +565,11 @@
         compActive: (d,unit) => `🏆 交易赛 剩${d}${unit==='m'?'分钟':unit==='h'?'小时':'天'}`,
         compEnded: '🏆 已结束',
         compUpcoming: '🏆 未开始',
-        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
+        secCompTitle: '代币化证券总交易大赛',
+        secCompTotalVol: '累计交易量：',
+        secCompTokens: (n) => `共 ${n} 个代币化证券`,
+        secCompPrize: (pool, topN, perWinner) => `奖池：${pool} ｜ 前${topN}名 → ${perWinner}/人`
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -602,7 +635,11 @@
         compActive: (d,unit) => `🏆 Comp ${d}${unit==='m'?'m':unit==='h'?'h':'d'} left`,
         compEnded: '🏆 Ended',
         compUpcoming: '🏆 Upcoming',
-        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
+        secCompTitle: 'Tokenized Securities Total Trading Comp',
+        secCompTotalVol: 'Total volume: ',
+        secCompTokens: (n) => `${n} tokenized securities`,
+        secCompPrize: (pool, topN, perWinner) => `Prize: ${pool} | Top ${topN} → ${perWinner}/winner`
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -660,6 +697,17 @@
       { symbol:'JCT',  start:Date.parse('2026-04-22T21:00:00+08:00'), end:Date.parse('2026-04-29T21:00:00+08:00'), topN:2000, pool:'36,877,500 JCT',     perWinner:'16,390 JCT' },
     ];
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
+
+    /* ---------- 代币化证券总交易大赛（所有代币化证券共享一场赛事） ---------- */
+    const TOKENIZED_SEC_COMP = {
+      symbol: '__TOKENIZED_SEC__',
+      start: Date.parse('2026-04-23T18:00:00+08:00'),
+      end:   Date.parse('2026-04-30T18:00:00+08:00'),
+      topN: 3000,
+      pool: '375 TSLAon',
+      perWinner: '0.125 TSLAon',
+      isTokenizedSec: true
+    };
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     /* 智能价格格式化：小于 0.01 的价格自动显示更多有效位 */
@@ -756,6 +804,7 @@
     const onlySecEl=document.getElementById('onlySec');
     const onlyCompEl=document.getElementById('onlyComp');
     const thCompVol=document.getElementById('thCompVol');
+    const secCompSummaryEl=document.getElementById('secCompSummary');
 
     function showToast(msg){
       toast.textContent=msg;toast.style.opacity='1';
@@ -940,8 +989,8 @@
             // ✅ 是否上了币安合约
             hasFutures: futuresSet.has(t.symbol.toUpperCase()),
 
-            // ✅ 交易赛
-            comp: COMP_MAP[t.symbol.toUpperCase()] || null,
+            // ✅ 交易赛（个币交易赛优先；代币化证券默认参加"代币化证券总交易大赛"）
+            comp: COMP_MAP[t.symbol.toUpperCase()] || (isTokenizedSecurity ? TOKENIZED_SEC_COMP : null),
             compVol: null,
             compTrades: null
           };
@@ -957,6 +1006,33 @@
         th.classList.remove('asc','desc');
         if(th.dataset.key===sortKey)th.classList.add(sortDir);
       });
+    }
+
+    function renderSecCompSummary(){
+      const secRows=rows.filter(r=>r.comp===TOKENIZED_SEC_COMP);
+      if(!secRows.length){ secCompSummaryEl.style.display='none'; secCompSummaryEl.innerHTML=''; return; }
+      const totalVol=secRows.reduce((s,r)=>s+(r.compVol||0),0);
+      const loadedCount=secRows.filter(r=>r.compVol!=null).length;
+      const c=TOKENIZED_SEC_COMP;
+      const now=Date.now();
+      let statusLabel,statusCls;
+      if(now<c.start){ statusLabel=t('compUpcoming'); statusCls='scs-upcoming'; }
+      else if(now<=c.end){
+        const remain=c.end-now;
+        const unit=remain<3600000?'m':remain<86400000?'h':'d';
+        const val=unit==='m'?Math.max(1,Math.ceil(remain/60000)):unit==='h'?Math.max(1,Math.ceil(remain/3600000)):Math.ceil(remain/86400000);
+        statusLabel=t('compActive')(val,unit); statusCls='scs-active';
+      } else { statusLabel=t('compEnded'); statusCls='scs-ended'; }
+      const volStr=loadedCount<secRows.length ? `…(${loadedCount}/${secRows.length})` : nf0.format(totalVol);
+      secCompSummaryEl.style.display='block';
+      secCompSummaryEl.innerHTML=`<div class="scs-card">
+        <span class="scs-title">🏆 ${t('secCompTitle')}</span>
+        <span class="scs-status ${statusCls}">${statusLabel}</span>
+        <span class="scs-meta">${fmtShort(c.start)} ~ ${fmtShort(c.end)}</span>
+        <span class="scs-meta">${t('secCompTotalVol')}<b class="scs-vol" data-vol="${Math.round(totalVol)}" title="${t('copied')}">${volStr}</b></span>
+        <span class="scs-meta">${t('secCompTokens')(secRows.length)}</span>
+        <span class="scs-meta">${t('secCompPrize')(c.pool, c.topN, c.perWinner)}</span>
+      </div>`;
     }
 
     function render(){
@@ -1006,9 +1082,12 @@
           if(r.compVol==null) compCell='…';
           else {
             const rewardAmt=parseFloat(r.comp.perWinner.replace(/,/g,''))||0;
-            const rewardUsd=rewardAmt*r.price;
+            // 奖励币种与当前币种不一致时（如 TSLAon），不做美元换算
+            const rewardLine = r.comp.isTokenizedSec
+              ? `🎁 ${r.comp.perWinner}`
+              : `🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardAmt*r.price)}`;
             compCell=`<span class="comp-vol-main" data-vol="${Math.round(r.compVol)}" title="点击复制">${nf0.format(r.compVol)}</span><span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
-              +`<span class="subl">🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardUsd)}</span>`;
+              +`<span class="subl">${rewardLine}</span>`;
           }
         }
 
@@ -1035,6 +1114,7 @@
       `;
       }).join('');
       updateSortIcons();
+      renderSecCompSummary();
     }
 
     async function reloadAll(){
@@ -1298,6 +1378,12 @@
         const row=rows.find(r=>r.sym===tr.dataset.sym);
         if(row){tokenEl.value=row.symbol;showToast(row.symbol);}
       }
+    });
+
+    /* ✅ 代币化证券总交易大赛 → 点击合计交易量复制 */
+    secCompSummaryEl.addEventListener('click',e=>{
+      const v=e.target.closest('.scs-vol');
+      if(v&&v.dataset.vol) copyText(v.dataset.vol);
     });
 
     /* ✅ 小时图：缩小/展开 */
