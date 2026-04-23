@@ -536,7 +536,8 @@
         compActive: (d,unit) => `🏆 交易赛 剩${d}${unit==='m'?'分钟':unit==='h'?'小时':'天'}`,
         compEnded: '🏆 已结束',
         compUpcoming: '🏆 未开始',
-        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
+        aggSecName: '代币化证券总交易大赛'
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -602,7 +603,8 @@
         compActive: (d,unit) => `🏆 Comp ${d}${unit==='m'?'m':unit==='h'?'h':'d'} left`,
         compEnded: '🏆 Ended',
         compUpcoming: '🏆 Upcoming',
-        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
+        aggSecName: 'Tokenized Securities Total Comp'
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -658,8 +660,10 @@
       { symbol:'SOON',  start:Date.parse('2026-04-17T21:00:00+08:00'), end:Date.parse('2026-04-24T21:00:00+08:00'), topN:2000, pool:'688,000 SOON',     perWinner:'200 SOON' },
       { symbol:'PIEVERSE',  start:Date.parse('2026-04-21T21:00:00+08:00'), end:Date.parse('2026-04-28T21:00:00+08:00'), topN:2000, pool:'101,800 PIEVERSE',     perWinner:'30 PIEVERSE' },
       { symbol:'JCT',  start:Date.parse('2026-04-22T21:00:00+08:00'), end:Date.parse('2026-04-29T21:00:00+08:00'), topN:2000, pool:'36,877,500 JCT',     perWinner:'16,390 JCT' },
+      { symbol:'ALLSEC', isAggregate:true, rewardSymbol:'TSLAON', start:Date.parse('2026-04-23T18:00:00+08:00'), end:Date.parse('2026-04-30T18:00:00+08:00'), topN:3000, pool:'375 TSLAon', perWinner:'0.125 TSLAon' },
     ];
-    const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
+    const COMP_MAP = Object.fromEntries(COMPETITIONS.filter(c=>!c.isAggregate).map(c=>[c.symbol.toUpperCase(), c]));
+    const AGGREGATE_COMPS = COMPETITIONS.filter(c=>c.isAggregate);
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     /* 智能价格格式化：小于 0.01 的价格自动显示更多有效位 */
@@ -833,11 +837,21 @@
 
     /* 公共：按名称/交易对查找代币行 */
     function findRow(sym){
+      const lc = sym.toLowerCase();
+      // 聚合行匹配（支持中英文显示名）
+      const aggRow = rows.find(r => r.isAggregate && (
+        (I18N.zh[ 'aggSecName'] || '').toLowerCase() === lc ||
+        (I18N.en['aggSecName'] || '').toLowerCase() === lc ||
+        r.sym.toLowerCase() === lc
+      ));
+      if(aggRow) return aggRow;
       let row=rows.find(r=>
-        r.symbol.toLowerCase()===sym.toLowerCase() ||
-        (r.sym && r.sym.toLowerCase()===sym.toLowerCase()) ||
-        (r.symUSDC && r.symUSDC.toLowerCase()===sym.toLowerCase()) ||
-        (r.qSym && r.qSym.toLowerCase()===sym.toLowerCase())
+        !r.isAggregate && (
+          r.symbol.toLowerCase()===lc ||
+          (r.sym && r.sym.toLowerCase()===lc) ||
+          (r.symUSDC && r.symUSDC.toLowerCase()===lc) ||
+          (r.qSym && r.qSym.toLowerCase()===lc)
+        )
       );
       if(!row){
         const m=sym.match(/_(\d+)/);
@@ -846,10 +860,23 @@
       return row||null;
     }
 
-    async function fillQVAll(list,today8,yest8,endTs){
+    /* 聚合/普通统一查询：聚合行 = 所有代币化证券之和 */
+    async function qvAutoUnified(row, start, end){
+      if(row && row.isAggregate){
+        const secRows = rows.filter(x => x.isTokenizedSecurity && !x.isAggregate);
+        const results = await Promise.all(secRows.map(x => qvAuto(x, start, end)));
+        return results.reduce((a,r)=>({vol:a.vol+r.vol, trades:a.trades+r.trades}), {vol:0, trades:0});
+      }
+      return qvAuto(row, start, end);
+    }
+
+    async function fillQVAll(list,today8,yest8,endTs,allRows){
+      allRows = allRows || list;
+      const regularList = list.filter(r=>!r.isAggregate);
+      const aggList = list.filter(r=>r.isAggregate);
       let done=0,total=list.length;
       progressEl.style.display='inline-block';
-      await Promise.all(list.map(r=>limit(async()=>{
+      await Promise.all(regularList.map(r=>limit(async()=>{
         const [todayRes,prevRes]=await Promise.all([
           qvAuto(r,today8,endTs),
           qvAuto(r,yest8,today8-1)
@@ -868,6 +895,29 @@
         }
         progressEl.textContent=`${Math.floor(++done/total*100)}%`;
       })));
+
+      // ✅ 聚合交易赛：对所有代币化证券在比赛时间段内求和
+      for(const r of aggList){
+        const c = r.comp;
+        const now = Date.now();
+        const secRows = allRows.filter(x => x.isTokenizedSecurity && !x.isAggregate);
+        r.vol24h = secRows.reduce((s,x)=>s+(+x.vol24h||0),0);
+        r.todayQV = secRows.reduce((s,x)=>s+(+x.todayQV||0),0);
+        r.prevQV = secRows.reduce((s,x)=>s+(+x.prevQV||0),0);
+        if(now <= c.start){
+          r.compVol = 0; r.compTrades = 0;
+        } else {
+          let totalVol = 0, totalTrades = 0;
+          await Promise.all(secRows.map(x=>limit(async()=>{
+            const res = await qvAuto(x, c.start, Math.min(now, c.end));
+            totalVol += res.vol;
+            totalTrades += res.trades;
+          })));
+          r.compVol = totalVol;
+          r.compTrades = totalTrades;
+        }
+        progressEl.textContent=`${Math.floor(++done/total*100)}%`;
+      }
       progressEl.style.display='none';
     }
 
@@ -885,7 +935,7 @@
       if(!resp.ok)throw new Error('LIST_API Error');
       const {data=[]}=await resp.json();
 
-      return data
+      const list = data
         .filter(t => {
           // ✅ 过滤：仅当 listingCex=true 且已 cexOffDisplay=true 才视为现货下架；单独 listingCex=true 不能用来过滤
           if (t.listingCex === true && t.cexOffDisplay === true) return false;
@@ -946,6 +996,34 @@
             compTrades: null
           };
         });
+
+      // ✅ 聚合类交易赛（如：代币化证券总交易大赛）— 合成一行
+      AGGREGATE_COMPS.forEach(agg => {
+        list.push({
+          price: 0,
+          vol24h: 0,
+          chg: 0,
+          symbol: `__AGG_${agg.symbol}`,
+          icon: 'https://pbs.twimg.com/profile_images/1614113185652670466/YeihoVJk_400x400.jpg',
+          sym: `__AGG_${agg.symbol}`,
+          symUSDC: null,
+          qSym: null,
+          todayQV: null,
+          prevQV: null,
+          listingTime: 0,
+          listingTimeFmt: '',
+          isNew: false,
+          fdv: 0,
+          isTokenizedSecurity: true,
+          hasFutures: false,
+          comp: agg,
+          compVol: null,
+          compTrades: null,
+          isAggregate: true
+        });
+      });
+
+      return list;
     }
 
     function sortRows(arr){
@@ -961,10 +1039,15 @@
 
     function render(){
       const favSet=new Set(favs());
+      const priceBySym = {};
+      rows.forEach(r=>{ if(r.symbol && !r.isAggregate) priceBySym[r.symbol.toUpperCase()] = r.price; });
       const filtered=rows.filter(r=>{
+        // 聚合行仅在"仅看交易赛"时显示
+        if(r.isAggregate && !showCompOnly) return false;
         const f = filter;
+        const displayName = r.isAggregate ? t('aggSecName') : r.symbol;
         const matched =
-          r.symbol.toLowerCase().includes(f) ||
+          displayName.toLowerCase().includes(f) ||
           (r.sym||'').toLowerCase().includes(f) ||
           (r.symUSDC||'').toLowerCase().includes(f) ||
           (r.qSym||'').toLowerCase().includes(f);
@@ -1006,28 +1089,38 @@
           if(r.compVol==null) compCell='…';
           else {
             const rewardAmt=parseFloat(r.comp.perWinner.replace(/,/g,''))||0;
-            const rewardUsd=rewardAmt*r.price;
+            const rewardPrice = r.comp.rewardSymbol
+              ? (priceBySym[r.comp.rewardSymbol.toUpperCase()]||0)
+              : r.price;
+            const rewardUsd=rewardAmt*rewardPrice;
             compCell=`<span class="comp-vol-main" data-vol="${Math.round(r.compVol)}" title="点击复制">${nf0.format(r.compVol)}</span><span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
               +`<span class="subl">🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardUsd)}</span>`;
           }
         }
 
+        const displayName = r.isAggregate ? t('aggSecName') : r.symbol;
+        const iconHtml = r.icon
+          ? `<img class="logo" loading="lazy" src="${r.icon}" referrerpolicy="no-referrer" onerror="this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">`
+          : '';
+        const priceCell = r.isAggregate ? '-' : fmtPrice(r.price);
+        const chgCell = r.isAggregate ? '-' : `<span class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</span>`;
+        const fdvCell = r.isAggregate ? '-' : fmtFdv(r.fdv);
+
         return `
         <tr data-sym="${r.sym}">
-          <td class="star ${favSet.has(r.sym)?'fav':''}">${favSet.has(r.sym)?'★':'☆'}</td>
+          <td class="star ${favSet.has(r.sym)?'fav':''}">${r.isAggregate?'':(favSet.has(r.sym)?'★':'☆')}</td>
           <td>${i+1}</td>
           <td title="${r.listingTimeFmt ? (tipPrefix+r.listingTimeFmt) : ''}">
-            <img class="logo" loading="lazy" src="${r.icon}" referrerpolicy="no-referrer"
-                 onerror="this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">
-            ${r.symbol}
+            ${iconHtml}
+            ${displayName}
             ${r.hasFutures ? `<span class="tag-futures">${t('futuresTag')}</span>` : ''}
             ${r.isNew ? `<span class="tag-new" title="${tipPrefix}${r.listingTimeFmt}">${t('newTag')(left)}</span>` : ''}
             ${compTag}
           </td>
-          <td>${fmtPrice(r.price)}</td>
+          <td>${priceCell}</td>
           <td>${nf0.format(r.vol24h)}</td>
-          <td class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</td>
-          <td>${fmtFdv(r.fdv)}</td>
+          <td>${chgCell}</td>
+          <td>${fdvCell}</td>
           <td>${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
           <td>${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
           ${showCompOnly?`<td>${compCell}</td>`:''}
@@ -1067,7 +1160,7 @@
             }
           });
           const toRefresh=newRows.filter(r=>visibleSet.has(r.symbol));
-          await fillQVAll(toRefresh,today8,yest8,endTs);
+          await fillQVAll(toRefresh,today8,yest8,endTs,newRows);
         }else{
           await fillQVAll(newRows,today8,yest8,endTs);
         }
@@ -1103,17 +1196,18 @@
       if(!st||!et||st>=et){showToast(t('badRange'));return;}
 
       rangeBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
-      const res=await qvAuto(row,st,et-1);
+      const res=await qvAutoUnified(row,st,et-1);
       rangeBtn.disabled=false;progressEl.style.display='none';
       const avgPerTrade=res.trades>0?(res.vol/res.trades):0;
+      const displayLabel = row.isAggregate ? t('aggSecName') : (row.symbol||sym);
       // store for lang-switch re-render
-      customVolEl.dataset.sym=row.symbol||sym; customVolEl.dataset.st=st; customVolEl.dataset.et=et;
+      customVolEl.dataset.sym=displayLabel; customVolEl.dataset.st=st; customVolEl.dataset.et=et;
       customVolEl.dataset.vol=res.vol; customVolEl.dataset.trades=res.trades;
-      customVolEl.innerHTML=t('rangeTpl')(row.symbol||sym, fmtFull(st), fmtFull(et), nf0.format(res.vol))
+      customVolEl.innerHTML=t('rangeTpl')(displayLabel, fmtFull(st), fmtFull(et), nf0.format(res.vol))
         + `<br>${t('tradeStats')(nf0.format(res.trades), nf0.format(Math.round(avgPerTrade)))}`;
 
       // 保存到缓存
-      saveCache({symbol:row.symbol||sym, start:st, end:et, vol:res.vol, trades:res.trades, time:Date.now()});
+      saveCache({symbol:displayLabel, start:st, end:et, vol:res.vol, trades:res.trades, time:Date.now()});
     });
 
     /* ---------- 近N小时每小时交易量 ---------- */
@@ -1136,11 +1230,12 @@
       const totalSlots=hours+(hasPartial?1:0);
       let done=0;
       const tasks=[];
+      const queryRow = row.isAggregate ? row : {...row};
       for(let i=0;i<hours;i++){
         const hStart=startTs+i*3600000;
         const hEnd=hStart+3600000-1;
         tasks.push(limit(async()=>{
-          const res=await qvAuto({...row},hStart,hEnd);
+          const res=await qvAutoUnified(queryRow,hStart,hEnd);
           hourlyData[i]={start:hStart,end:hEnd,vol:res.vol,trades:res.trades};
           progressEl.textContent=`${Math.floor(++done/totalSlots*100)}%`;
         }));
@@ -1148,7 +1243,7 @@
       // 当前不完整小时
       if(hasPartial){
         tasks.push(limit(async()=>{
-          const res=await qvAuto({...row},endTs,now);
+          const res=await qvAutoUnified(queryRow,endTs,now);
           hourlyData[hours]={start:endTs,end:now,vol:res.vol,trades:res.trades,partial:true};
           progressEl.textContent=`${Math.floor(++done/totalSlots*100)}%`;
         }));
@@ -1159,12 +1254,13 @@
 
       const totalVol=hourlyData.reduce((s,d)=>s+d.vol,0);
       const totalTrades=hourlyData.reduce((s,d)=>s+d.trades,0);
+      const displayLabel = row.isAggregate ? t('aggSecName') : (row.symbol||sym);
       // store for lang-switch re-render
-      window._lastHourlyData={symbol:row.symbol||sym, hours, data:hourlyData};
+      window._lastHourlyData={symbol:displayLabel, hours, data:hourlyData};
       renderHourly(window._lastHourlyData);
 
       // 保存小时查询到缓存
-      saveCache({symbol:row.symbol||sym, start:startTs, end:endTs, vol:totalVol, trades:totalTrades, time:Date.now(), type:'hourly', hours});
+      saveCache({symbol:displayLabel, start:startTs, end:endTs, vol:totalVol, trades:totalTrades, time:Date.now(), type:'hourly', hours});
     });
 
     /* ---------- 小时图渲染（可复用） ---------- */
@@ -1284,7 +1380,12 @@
 
     tbody.addEventListener('click',e=>{
       const s=e.target.closest('.star');
-      if(s){s.classList.add('bounce');setTimeout(()=>s.classList.remove('bounce'),150);toggleFav(s.closest('tr').dataset.sym);return;}
+      if(s){
+        const trSym=s.closest('tr').dataset.sym;
+        const row=rows.find(r=>r.sym===trSym);
+        if(row&&row.isAggregate) return;
+        s.classList.add('bounce');setTimeout(()=>s.classList.remove('bounce'),150);toggleFav(trSym);return;
+      }
       // ✅ 点击交易赛总交易量 → 复制原始数字
       const cv=e.target.closest('.comp-vol-main');
       if(cv&&cv.dataset.vol){
@@ -1296,7 +1397,11 @@
       const tr=e.target.closest('tr');
       if(tr&&tr.dataset.sym){
         const row=rows.find(r=>r.sym===tr.dataset.sym);
-        if(row){tokenEl.value=row.symbol;showToast(row.symbol);}
+        if(row){
+          const label = row.isAggregate ? t('aggSecName') : row.symbol;
+          tokenEl.value=label;
+          showToast(label);
+        }
       }
     });
 
