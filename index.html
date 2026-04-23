@@ -1022,6 +1022,8 @@
       const priceBySym = {};
       rows.forEach(r=>{ if(r.symbol && !r.isAggregate) priceBySym[r.symbol.toUpperCase()] = r.price; });
       const filtered=rows.filter(r=>{
+        // 聚合行仅在"仅看交易赛"时显示
+        if(r.isAggregate && !showCompOnly) return false;
         const f = filter;
         const displayName = r.isAggregate ? t('aggSecName') : r.symbol;
         const matched =
