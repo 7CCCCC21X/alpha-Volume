@@ -835,6 +835,29 @@
       return { vol:0, trades:0 };
     }
 
+    /* 一次性拉取区间内所有 1h K 线（USDT→USDC fallback），本地切片避免多次请求 */
+    async function qvKlinesAuto(row, start, end){
+      if(start>=end) return [];
+      const fetchSym = async (sym) => {
+        const url=`${K_API}?symbol=${encodeURIComponent(sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
+        try{
+          const json=await fetchWithTimeout(url).then(r=>r.json());
+          const ok = (json?.success !== false) && (json?.code == null || ['000000','0'].includes(String(json.code)));
+          if(!ok) return null;
+          const data=json?.data;
+          return Array.isArray(data) ? data : null;
+        }catch{ return null; }
+      };
+      const primary = row.qSym || row.sym;
+      let data = await fetchSym(primary);
+      if(data) return data;
+      const alt = row.symUSDC || (row.sym && row.sym.endsWith('USDT') ? row.sym.replace(/USDT$/,'USDC') : '');
+      if(!alt || alt===primary) return [];
+      data = await fetchSym(alt);
+      if(data){ row.qSym = alt; return data; }
+      return [];
+    }
+
     /* 公共：按名称/交易对查找代币行 */
     function findRow(sym){
       const lc = sym.toLowerCase();
@@ -1027,8 +1050,19 @@
     }
 
     function sortRows(arr){
-      const gv = o => (o[sortKey]==null ? (sortKey==='compVol'&&!o.comp ? -1 : 0) : o[sortKey]);
-      return [...arr].sort((a,b)=>sortDir==='desc'?gv(b)-gv(a):gv(a)-gv(b));
+      // null 值统一放到末尾（无论升序/降序）；compVol 列对无 comp 的行视为 null
+      const val = o => {
+        const v = o[sortKey];
+        if(sortKey==='compVol' && !o.comp) return null;
+        return v==null ? null : v;
+      };
+      return [...arr].sort((a,b)=>{
+        const va=val(a), vb=val(b);
+        if(va==null && vb==null) return 0;
+        if(va==null) return 1;
+        if(vb==null) return -1;
+        return sortDir==='desc' ? vb-va : va-vb;
+      });
     }
     function updateSortIcons(){
       document.querySelectorAll('th.sortable').forEach(th=>{
@@ -1226,29 +1260,47 @@
 
       hourlyBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
 
+      // ✅ 一次性拉取整段区间的 K 线，本地切片分桶，避免 hours×N 次请求
+      const targetRows = row.isAggregate
+        ? rows.filter(x => x.isTokenizedSecurity && !x.isAggregate)
+        : [row];
+      const rangeEnd = hasPartial ? now : (endTs - 1);
+      let fetched=0;
+      const allKlines = await Promise.all(targetRows.map(r => limit(async () => {
+        const data = await qvKlinesAuto(r, startTs, rangeEnd);
+        progressEl.textContent=`${Math.floor(++fetched/targetRows.length*100)}%`;
+        return data;
+      })));
+
       const hourlyData=[];
-      const totalSlots=hours+(hasPartial?1:0);
-      let done=0;
-      const tasks=[];
-      const queryRow = row.isAggregate ? row : {...row};
       for(let i=0;i<hours;i++){
         const hStart=startTs+i*3600000;
         const hEnd=hStart+3600000-1;
-        tasks.push(limit(async()=>{
-          const res=await qvAutoUnified(queryRow,hStart,hEnd);
-          hourlyData[i]={start:hStart,end:hEnd,vol:res.vol,trades:res.trades};
-          progressEl.textContent=`${Math.floor(++done/totalSlots*100)}%`;
-        }));
+        let vol=0, trades=0;
+        for(const klines of allKlines){
+          for(const k of klines){
+            const ot=+k[0];
+            if(ot>=hStart && ot<=hEnd){
+              vol += parseFloat(k?.[7]||0);
+              trades += parseInt(k?.[8]||0);
+            }
+          }
+        }
+        hourlyData[i]={start:hStart,end:hEnd,vol,trades};
       }
-      // 当前不完整小时
       if(hasPartial){
-        tasks.push(limit(async()=>{
-          const res=await qvAutoUnified(queryRow,endTs,now);
-          hourlyData[hours]={start:endTs,end:now,vol:res.vol,trades:res.trades,partial:true};
-          progressEl.textContent=`${Math.floor(++done/totalSlots*100)}%`;
-        }));
+        let vol=0, trades=0;
+        for(const klines of allKlines){
+          for(const k of klines){
+            const ot=+k[0];
+            if(ot>=endTs){
+              vol += parseFloat(k?.[7]||0);
+              trades += parseInt(k?.[8]||0);
+            }
+          }
+        }
+        hourlyData[hours]={start:endTs,end:now,vol,trades,partial:true};
       }
-      await Promise.all(tasks);
 
       hourlyBtn.disabled=false;progressEl.style.display='none';
 
