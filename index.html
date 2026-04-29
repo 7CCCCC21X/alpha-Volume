@@ -961,7 +961,7 @@
         .filter(t => {
           // ✅ 过滤：仅当 listingCex=true 且已 cexOffDisplay=true 才视为现货下架；单独 listingCex=true 不能用来过滤
           if (t.listingCex === true && t.cexOffDisplay === true) return false;
-          if (t.offline === true) return false;
+          if (t.offline === true && !(+t.volume24h > 0)) return false;
           return +t.volume24h > 0 || (t.stockState === true && t.rwaInfo != null);
         })
         .map(t=>{
