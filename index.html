@@ -387,6 +387,33 @@
       #cacheToggle{font-size:.76rem}
       #cacheList .cache-item{padding:4px 8px;font-size:.76rem}
     }
+
+    /* ✅ 数字右对齐：可自定义列 */
+    .ra-wrap{position:relative;display:inline-flex;align-items:center;gap:4px}
+    .ra-wrap .btn-mini{
+      background:transparent;border:1px solid var(--border);color:var(--sub);
+      border-radius:4px;padding:1px 6px;cursor:pointer;font-size:.78rem;line-height:1.4
+    }
+    .ra-wrap .btn-mini:hover{color:var(--primary);border-color:var(--primary)}
+    .ra-panel{
+      display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:20;
+      background:var(--bg);border:1px solid var(--border);border-radius:6px;
+      padding:8px 10px;box-shadow:0 4px 12px rgba(0,0,0,.15);
+      min-width:200px;font-size:.82rem
+    }
+    .ra-panel.show{display:block}
+    .ra-panel .ra-title{
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
+      font-weight:700;margin-bottom:6px;font-size:.78rem;color:var(--sub)
+    }
+    .ra-panel .ra-title .ra-actions{display:inline-flex;gap:6px}
+    .ra-panel .ra-title button{
+      background:transparent;border:1px solid var(--border);color:var(--sub);
+      border-radius:4px;padding:1px 6px;cursor:pointer;font-size:.72rem;line-height:1.3
+    }
+    .ra-panel .ra-title button:hover{color:var(--primary);border-color:var(--primary)}
+    .ra-panel label{display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;color:var(--text);user-select:none}
+    .ra-panel label input{margin:0}
   </style>
 </head>
 <body>
@@ -401,6 +428,26 @@
       <label class="chk"><input id="onlyFutures" type="checkbox"> <span data-i18n="onlyFutures">仅看有合约</span></label>
       <label class="chk"><input id="onlySec" type="checkbox"> <span data-i18n="onlySec">仅看代币化证券</span></label>
       <label class="chk"><input id="onlyComp" type="checkbox"> <span data-i18n="onlyComp">仅看交易赛</span></label>
+      <div class="ra-wrap">
+        <label class="chk"><input id="rightAlign" type="checkbox"> <span data-i18n="rightAlign">数字右对齐</span></label>
+        <button id="raCustomBtn" class="btn-mini" type="button" title="自定义对齐列">⚙</button>
+        <div id="raPanel" class="ra-panel">
+          <div class="ra-title">
+            <span data-i18n="raTitle">自定义右对齐列</span>
+            <span class="ra-actions">
+              <button id="raAllBtn" type="button" data-i18n="raAll">全选</button>
+              <button id="raNoneBtn" type="button" data-i18n="raNone">清空</button>
+            </span>
+          </div>
+          <label><input type="checkbox" data-col="price"> <span class="ra-lbl" data-key="thPrice">价格</span></label>
+          <label><input type="checkbox" data-col="vol24h"> <span class="ra-lbl" data-key="thVol24h">24H 交易量</span></label>
+          <label><input type="checkbox" data-col="chg"> <span class="ra-lbl" data-key="thChg">24H 变化</span></label>
+          <label><input type="checkbox" data-col="fdv"> <span class="ra-lbl" data-key="thFdv">FDV</span></label>
+          <label><input type="checkbox" data-col="todayQV"> <span class="ra-lbl" data-key="thTodayLabel">当天限价单成交额</span></label>
+          <label><input type="checkbox" data-col="prevQV"> <span class="ra-lbl" data-key="thPrevLabel">前一天限价单成交额</span></label>
+          <label><input type="checkbox" data-col="compVol"> <span class="ra-lbl" data-key="thCompVol">交易赛总交易量</span></label>
+        </div>
+      </div>
       <div id="bar-right">
         <button id="langBtn" title="Switch Language">EN</button>
         <button id="themeBtn" title="切换深色/浅色模式">🌓</button>
@@ -452,13 +499,13 @@
     <thead>
       <tr>
         <th style="width:26px"></th><th>#</th><th id="thName">代币名字</th>
-        <th id="thPrice">价格</th>
-        <th id="thVol24h" class="sortable" data-key="vol24h">24H 交易量</th>
-        <th id="thChg">24H 变化</th>
-        <th id="thFdv" class="sortable" data-key="fdv">FDV</th>
-        <th id="thToday" class="sortable" data-key="todayQV">当天限价单成交额</th>
-        <th id="thPrev" class="sortable" data-key="prevQV">前一天限价单成交额</th>
-        <th id="thCompVol" class="sortable" data-key="compVol" style="display:none">交易赛总交易量</th>
+        <th id="thPrice" data-col="price">价格</th>
+        <th id="thVol24h" class="sortable" data-key="vol24h" data-col="vol24h">24H 交易量</th>
+        <th id="thChg" data-col="chg">24H 变化</th>
+        <th id="thFdv" class="sortable" data-key="fdv" data-col="fdv">FDV</th>
+        <th id="thToday" class="sortable" data-key="todayQV" data-col="todayQV">当天限价单成交额</th>
+        <th id="thPrev" class="sortable" data-key="prevQV" data-col="prevQV">前一天限价单成交额</th>
+        <th id="thCompVol" class="sortable" data-key="compVol" data-col="compVol" style="display:none">交易赛总交易量</th>
       </tr>
     </thead>
     <tbody><tr><td colspan="9" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
@@ -536,7 +583,12 @@
         compActive: (d,unit) => `🏆 交易赛 剩${d}${unit==='m'?'分钟':unit==='h'?'小时':'天'}`,
         compEnded: '🏆 已结束',
         compUpcoming: '🏆 未开始',
-        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
+        rightAlign: '数字右对齐',
+        raTitle: '自定义右对齐列',
+        raCustom: '自定义对齐列',
+        raAll: '全选',
+        raNone: '清空'
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -602,7 +654,12 @@
         compActive: (d,unit) => `🏆 Comp ${d}${unit==='m'?'m':unit==='h'?'h':'d'} left`,
         compEnded: '🏆 Ended',
         compUpcoming: '🏆 Upcoming',
-        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`
+        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
+        rightAlign: 'Right-align',
+        raTitle: 'Customize Right-align',
+        raCustom: 'Customize columns',
+        raAll: 'All',
+        raNone: 'None'
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -638,6 +695,14 @@
       document.getElementById('langBtn').textContent = t('langBtn');
       document.getElementById('themeBtn').title = t('themeBtn');
       document.getElementById('backTop').title = t('backTop');
+      document.querySelector('[data-i18n="rightAlign"]').textContent = t('rightAlign');
+      document.querySelector('[data-i18n="raTitle"]').textContent = t('raTitle');
+      document.querySelector('[data-i18n="raAll"]').textContent = t('raAll');
+      document.querySelector('[data-i18n="raNone"]').textContent = t('raNone');
+      document.getElementById('raCustomBtn').title = t('raCustom');
+      document.querySelectorAll('#raPanel .ra-lbl').forEach(el=>{
+        el.textContent = t(el.dataset.key);
+      });
       const authorEl = document.getElementById('author');
       authorEl.innerHTML = `${t('author')}&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank">@0xXIAOc</a>`;
       // update initial loading text if still present
@@ -1067,13 +1132,13 @@
             ${r.isNew ? `<span class="tag-new" title="${tipPrefix}${r.listingTimeFmt}">${t('newTag')(left)}</span>` : ''}
             ${compTag}
           </td>
-          <td>${fmtPrice(r.price)}</td>
-          <td>${nf0.format(r.vol24h)}</td>
-          <td><span class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</span></td>
-          <td>${fmtFdv(r.fdv)}</td>
-          <td>${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
-          <td>${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
-          ${showCompOnly?`<td>${compCell}</td>`:''}
+          <td data-col="price">${fmtPrice(r.price)}</td>
+          <td data-col="vol24h">${nf0.format(r.vol24h)}</td>
+          <td data-col="chg"><span class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</span></td>
+          <td data-col="fdv">${fmtFdv(r.fdv)}</td>
+          <td data-col="todayQV">${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
+          <td data-col="prevQV">${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
+          ${showCompOnly?`<td data-col="compVol">${compCell}</td>`:''}
         </tr>
       `;
       }).join('');
@@ -1400,6 +1465,80 @@ document.querySelectorAll('th.sortable').forEach(th=>{
       showCompOnly = e.target.checked;
       thCompVol.style.display = showCompOnly ? '' : 'none';
       render();
+    });
+
+    /* ---------- 数字右对齐（可自定义列） ---------- */
+    const RA_NUM_COLS = ['price','vol24h','chg','fdv','todayQV','prevQV','compVol'];
+    const RA_KEY = 'alphaRightAlign';
+    const RA_COLS_KEY = 'alphaRightAlignCols';
+    const rightAlignEl = document.getElementById('rightAlign');
+    const raCustomBtn = document.getElementById('raCustomBtn');
+    const raPanel = document.getElementById('raPanel');
+    const raAllBtn = document.getElementById('raAllBtn');
+    const raNoneBtn = document.getElementById('raNoneBtn');
+    let raEnabled = localStorage.getItem(RA_KEY)==='1';
+    let raCols = (()=>{
+      try{
+        const v = JSON.parse(localStorage.getItem(RA_COLS_KEY)||'null');
+        if(Array.isArray(v)) return new Set(v.filter(c=>RA_NUM_COLS.includes(c)));
+      }catch{}
+      return new Set(RA_NUM_COLS);
+    })();
+    const raStyleEl = document.createElement('style');
+    raStyleEl.id = 'raDynamicStyle';
+    document.head.appendChild(raStyleEl);
+
+    function applyRA(){
+      if(!raEnabled || raCols.size===0){ raStyleEl.textContent=''; return; }
+      const sels = [...raCols].map(c=>
+        `#tokenTable th[data-col="${c}"], #tokenTable td[data-col="${c}"]`
+      ).join(',');
+      raStyleEl.textContent = `${sels}{text-align:right}`;
+    }
+    function saveRA(){
+      localStorage.setItem(RA_KEY, raEnabled?'1':'0');
+      localStorage.setItem(RA_COLS_KEY, JSON.stringify([...raCols]));
+    }
+    function syncRAUI(){
+      rightAlignEl.checked = raEnabled;
+      raPanel.querySelectorAll('input[type="checkbox"][data-col]').forEach(cb=>{
+        cb.checked = raCols.has(cb.dataset.col);
+      });
+    }
+
+    syncRAUI();
+    applyRA();
+
+    rightAlignEl.addEventListener('change', e=>{
+      raEnabled = e.target.checked;
+      saveRA();
+      applyRA();
+    });
+    raCustomBtn.addEventListener('click', e=>{
+      e.stopPropagation();
+      raPanel.classList.toggle('show');
+    });
+    raPanel.addEventListener('click', e=>{ e.stopPropagation(); });
+    document.addEventListener('click', ()=>{ raPanel.classList.remove('show'); });
+    raPanel.querySelectorAll('input[type="checkbox"][data-col]').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        if(cb.checked) raCols.add(cb.dataset.col);
+        else raCols.delete(cb.dataset.col);
+        saveRA();
+        applyRA();
+      });
+    });
+    raAllBtn.addEventListener('click', ()=>{
+      raCols = new Set(RA_NUM_COLS);
+      syncRAUI();
+      saveRA();
+      applyRA();
+    });
+    raNoneBtn.addEventListener('click', ()=>{
+      raCols.clear();
+      syncRAUI();
+      saveRA();
+      applyRA();
     });
 
     refreshBtn.addEventListener('click', reloadAll);
