@@ -427,6 +427,7 @@
       <label class="chk"><input id="onlyNew" type="checkbox"> <span data-i18n="onlyNew">仅看30天内上新</span></label>
       <label class="chk"><input id="onlyFutures" type="checkbox"> <span data-i18n="onlyFutures">仅看有合约</span></label>
       <label class="chk"><input id="onlySec" type="checkbox"> <span data-i18n="onlySec">仅看代币化证券</span></label>
+      <label class="chk"><input id="hideSec" type="checkbox"> <span data-i18n="hideSec">不显示代币化证券</span></label>
       <label class="chk"><input id="onlyComp" type="checkbox"> <span data-i18n="onlyComp">仅看交易赛</span></label>
       <div class="ra-wrap">
         <label class="chk"><input id="rightAlign" type="checkbox"> <span data-i18n="rightAlign">数字右对齐</span></label>
@@ -526,6 +527,7 @@
         onlyNew: '仅看30天内上新',
         onlyFutures: '仅看有合约',
         onlySec: '仅看代币化证券',
+        hideSec: '不显示代币化证券',
         tokenPh: '输入代币名称',
         rangeQuery: '区间查询',
         adBadge: '广告',
@@ -597,6 +599,7 @@
         onlyNew: 'New (30d) only',
         onlyFutures: 'Futures only',
         onlySec: 'Tokenized Securities only',
+        hideSec: 'Hide Tokenized Securities',
         tokenPh: 'Token name',
         rangeQuery: 'Range Query',
         adBadge: 'Ad',
@@ -674,6 +677,7 @@
       document.querySelector('[data-i18n="onlyNew"]').textContent = t('onlyNew');
       document.querySelector('[data-i18n="onlyFutures"]').textContent = t('onlyFutures');
       document.querySelector('[data-i18n="onlySec"]').textContent = t('onlySec');
+      document.querySelector('[data-i18n="hideSec"]').textContent = t('hideSec');
       document.querySelector('[data-i18n="onlyComp"]').textContent = t('onlyComp');
       document.getElementById('tokenInput').placeholder = t('tokenPh');
       document.getElementById('rangeBtn').textContent = t('rangeQuery');
@@ -817,6 +821,7 @@
     const onlyNewEl=document.getElementById('onlyNew');
     const onlyFuturesEl=document.getElementById('onlyFutures');
     const onlySecEl=document.getElementById('onlySec');
+    const hideSecEl=document.getElementById('hideSec');
     const onlyCompEl=document.getElementById('onlyComp');
     const thCompVol=document.getElementById('thCompVol');
 
@@ -842,7 +847,7 @@
       }catch{ done(false); }
     }
 
-    let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false,showFuturesOnly=false,showSecOnly=false,showCompOnly=false;
+    let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false,showFuturesOnly=false,showSecOnly=false,hideSecOnly=false,showCompOnly=false;
     window._boundary=nearest8UTC();
 
     function pLimit(n){
@@ -1074,8 +1079,9 @@
         const newOk = !showNewOnly || r.isNew;
         const futuresOk = !showFuturesOnly || r.hasFutures;
         const secOk = !showSecOnly || r.isTokenizedSecurity;
+        const hideSecOk = !hideSecOnly || !r.isTokenizedSecurity;
         const compOk = !showCompOnly || r.comp;
-        return matched && newOk && futuresOk && secOk && compOk;
+        return matched && newOk && futuresOk && secOk && hideSecOk && compOk;
       });
 
       const sorted=sortRows(filtered);
@@ -1156,15 +1162,16 @@
 
       try{
         const newRows=await fetchList();
-        const hasFilter=showCompOnly||showNewOnly||showFuturesOnly||showSecOnly;
+        const hasFilter=showCompOnly||showNewOnly||showFuturesOnly||showSecOnly||hideSecOnly;
         if(hasFilter && rows.length>0){
           // 有筛选时只刷新符合条件的币种，其余复用旧数据
           const visibleSet=new Set(newRows.filter(r=>{
             const newOk=!showNewOnly||r.isNew;
             const futuresOk=!showFuturesOnly||r.hasFutures;
             const secOk=!showSecOnly||r.isTokenizedSecurity;
+            const hideSecOk=!hideSecOnly||!r.isTokenizedSecurity;
             const compOk=!showCompOnly||r.comp;
-            return newOk&&futuresOk&&secOk&&compOk;
+            return newOk&&futuresOk&&secOk&&hideSecOk&&compOk;
           }).map(r=>r.symbol));
           const oldMap=Object.fromEntries(rows.map(r=>[r.symbol,r]));
           newRows.forEach(r=>{
@@ -1458,6 +1465,19 @@ document.querySelectorAll('th.sortable').forEach(th=>{
 
     onlySecEl.addEventListener('change', (e)=>{
       showSecOnly = e.target.checked;
+      if(showSecOnly && hideSecEl.checked){
+        hideSecEl.checked = false;
+        hideSecOnly = false;
+      }
+      render();
+    });
+
+    hideSecEl.addEventListener('change', (e)=>{
+      hideSecOnly = e.target.checked;
+      if(hideSecOnly && onlySecEl.checked){
+        onlySecEl.checked = false;
+        showSecOnly = false;
+      }
       render();
     });
 
