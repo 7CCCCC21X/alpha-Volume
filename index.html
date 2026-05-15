@@ -718,11 +718,15 @@
     const LIST_API='https://www.binance.com/bapi/defi/v1/public/wallet-direct/buw/wallet/cex/alpha/all/token/list';
     const K_API ='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines';
     const FUTURES_API='https://fapi.binance.com/fapi/v1/exchangeInfo';
+    const ASTER_BASE='https://fapi.asterdex.com';
 
     /* ---------- 交易赛配置（手动维护） ---------- */
     const COMPETITIONS = [
       { symbol:'BILL',  start:Date.parse('2026-05-11T21:00:00+08:00'), end:Date.parse('2026-05-18T21:00:00+08:00'), topN:2530, pool:'910,800 BILL',     perWinner:'360 BILL' },
       { symbol:'EDGE',  start:Date.parse('2026-05-12T21:00:00+08:00'), end:Date.parse('2026-05-19T21:00:00+08:00'), topN:2530, pool:'76,800 EDGE',     perWinner:'30 EDGE' },
+      // ✅ BTW 合约交易赛（数据源 Aster）
+      { symbol:'BTW',   start:Date.parse('2026-05-14T21:00:00+08:00'), end:Date.parse('2026-05-24T21:00:00+08:00'), topN:2500, pool:'3,575,000 BTW',   perWinner:'1,430 BTW',
+        api:'aster', asterBase:ASTER_BASE, asterSymbol:'BTWUSDT', isFutures:true, syntheticToken:true },
     ];
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
@@ -856,6 +860,36 @@
     const limit=pLimit(CONCURRENCY);
 
     // ------------------------------
+    // ✅ Aster 合约 API（BTW 合约交易赛专用）
+    // ------------------------------
+    async function asterQv(base, sym, start, end){
+      if(start>=end) return { ok:true, vol:0, trades:0 };
+      const url=`${base}/fapi/v3/klines?symbol=${encodeURIComponent(sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
+      try{
+        const data=await fetchWithTimeout(url).then(r=>r.json());
+        if(!Array.isArray(data)) return { ok:false, vol:0, trades:0 };
+        const vol=data.reduce((s,k)=>s+parseFloat(k?.[7]||0),0);
+        const trades=data.reduce((s,k)=>s+parseInt(k?.[8]||0),0);
+        return { ok:true, vol, trades };
+      }catch{
+        return { ok:false, vol:0, trades:0 };
+      }
+    }
+    async function asterTicker24h(base, sym){
+      try{
+        const url=`${base}/fapi/v3/ticker/24hr?symbol=${encodeURIComponent(sym)}`;
+        const json=await fetchWithTimeout(url).then(r=>r.json());
+        return {
+          price:parseFloat(json?.lastPrice||0),
+          vol24h:parseFloat(json?.quoteVolume||0),
+          chg:parseFloat(json?.priceChangePercent||0)
+        };
+      }catch{
+        return { price:0, vol24h:0, chg:0 };
+      }
+    }
+
+    // ------------------------------
     // ✅ K线成交额：优先 USDT，失败自动 fallback 到 USDC
     // ------------------------------
     async function qvOk(sym, start, end){
@@ -882,6 +916,11 @@
     }
 
     async function qvAuto(row, start, end){
+      // ✅ Aster 数据源（如 BTW 合约交易赛）
+      if(row.useAsterApi){
+        const res = await asterQv(row.asterBase||ASTER_BASE, row.asterSymbol||row.sym, start, end);
+        return { vol:res.vol, trades:res.trades };
+      }
       const primary = row.qSym || row.sym; // row.sym 默认是 `${alphaId}USDT`
       let res = await qvOk(primary, start, end);
       if(res.ok) return { vol:res.vol, trades:res.trades };
@@ -900,6 +939,14 @@
     /* 一次性拉取区间内所有 1h K 线（USDT→USDC fallback），本地切片避免多次请求 */
     async function qvKlinesAuto(row, start, end){
       if(start>=end) return [];
+      // ✅ Aster 数据源（如 BTW 合约交易赛）
+      if(row.useAsterApi){
+        const url=`${row.asterBase||ASTER_BASE}/fapi/v3/klines?symbol=${encodeURIComponent(row.asterSymbol||row.sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
+        try{
+          const json=await fetchWithTimeout(url).then(r=>r.json());
+          return Array.isArray(json) ? json : [];
+        }catch{ return []; }
+      }
       const fetchSym = async (sym) => {
         const url=`${K_API}?symbol=${encodeURIComponent(sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
         try{
@@ -940,10 +987,20 @@
       let done=0,total=list.length;
       progressEl.style.display='inline-block';
       await Promise.all(list.map(r=>limit(async()=>{
-        const [todayRes,prevRes]=await Promise.all([
+        // ✅ Aster 行额外刷新 24h 行情（synthetic 行没有现成 price/vol24h/chg）
+        const tickerPromise = r.useAsterApi
+          ? asterTicker24h(r.asterBase||ASTER_BASE, r.asterSymbol||r.sym)
+          : Promise.resolve(null);
+        const [todayRes,prevRes,tickerRes]=await Promise.all([
           qvAuto(r,today8,endTs),
-          qvAuto(r,yest8,today8-1)
+          qvAuto(r,yest8,today8-1),
+          tickerPromise
         ]);
+        if(tickerRes){
+          if(tickerRes.price) r.price=tickerRes.price;
+          if(tickerRes.vol24h) r.vol24h=tickerRes.vol24h;
+          if(!isNaN(tickerRes.chg)) r.chg=tickerRes.chg;
+        }
         r.todayQV=todayRes.vol; r.prevQV=prevRes.vol;
         // ✅ 交易赛交易量（qSym 已在上面的请求中解析）
         if(r.comp){
@@ -1036,6 +1093,38 @@
             compTrades: null
           };
         });
+
+      // ✅ 注入合约交易赛专用代币（如 BTW，行情来自 Aster API）
+      const existingSyms = new Set(list.map(r=>r.symbol.toUpperCase()));
+      for(const comp of COMPETITIONS){
+        const key=comp.symbol.toUpperCase();
+        if(comp.syntheticToken && !existingSyms.has(key)){
+          list.push({
+            price:0,
+            vol24h:0,
+            chg:0,
+            symbol:comp.symbol,
+            icon:'',
+            sym:comp.asterSymbol||`${comp.symbol}USDT`,
+            symUSDC:'',
+            qSym:null,
+            todayQV:null,
+            prevQV:null,
+            listingTime:0,
+            listingTimeFmt:'',
+            isNew:false,
+            fdv:0,
+            isTokenizedSecurity:false,
+            hasFutures:!!comp.isFutures,
+            comp,
+            compVol:null,
+            compTrades:null,
+            useAsterApi:comp.api==='aster',
+            asterBase:comp.asterBase||ASTER_BASE,
+            asterSymbol:comp.asterSymbol||`${comp.symbol}USDT`
+          });
+        }
+      }
 
       return list;
     }
