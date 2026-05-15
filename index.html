@@ -724,9 +724,9 @@
     const COMPETITIONS = [
       { symbol:'BILL',  start:Date.parse('2026-05-11T21:00:00+08:00'), end:Date.parse('2026-05-18T21:00:00+08:00'), topN:2530, pool:'910,800 BILL',     perWinner:'360 BILL' },
       { symbol:'EDGE',  start:Date.parse('2026-05-12T21:00:00+08:00'), end:Date.parse('2026-05-19T21:00:00+08:00'), topN:2530, pool:'76,800 EDGE',     perWinner:'30 EDGE' },
-      // ✅ BTW 合约交易赛：作为独立条目（symbol=BTW合约交易赛），所有数据均来自 Aster
+      // ✅ BTW 合约交易赛：作为独立条目（symbol=BTW合约交易赛），所有数据均来自 Aster；Logo/FDV 复用 BTW
       { symbol:'BTW合约交易赛', start:Date.parse('2026-05-14T21:00:00+08:00'), end:Date.parse('2026-05-24T21:00:00+08:00'), topN:2500, pool:'3,575,000 BTW',   perWinner:'1,430 BTW',
-        api:'aster', asterBase:ASTER_BASE, asterSymbol:'BTWUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'BTW' },
+        api:'aster', asterBase:ASTER_BASE, asterSymbol:'BTWUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'BTW', baseSymbol:'BTW' },
     ];
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
@@ -1094,17 +1094,20 @@
           };
         });
 
-      // ✅ 注入合成代币条目（如 BTW合约交易赛，数据全部来自 Aster）
+      // ✅ 注入合成代币条目（如 BTW合约交易赛，数据全部来自 Aster；Logo/FDV 复用基础代币）
       const existingSyms = new Set(list.map(r=>r.symbol.toUpperCase()));
       for(const comp of COMPETITIONS){
         const key=comp.symbol.toUpperCase();
         if(comp.syntheticToken && !existingSyms.has(key)){
+          const baseRow = comp.baseSymbol
+            ? list.find(r=>r.symbol.toUpperCase()===comp.baseSymbol.toUpperCase())
+            : null;
           list.push({
             price:0,
             vol24h:0,
             chg:0,
             symbol:comp.symbol,
-            icon:'',
+            icon: baseRow ? baseRow.icon : '',
             sym:comp.symbol,
             symUSDC:'',
             qSym:null,
@@ -1113,7 +1116,7 @@
             listingTime:0,
             listingTimeFmt:'',
             isNew:false,
-            fdv:0,
+            fdv: baseRow ? baseRow.fdv : 0,
             isTokenizedSecurity:false,
             hasFutures:!!comp.isFutures,
             comp,
