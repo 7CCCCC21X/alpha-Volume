@@ -176,7 +176,7 @@
       text-decoration:none;color:#fff
     }
     .comp-ref-link::after{
-      content:'👉';font-size:.78rem;
+      content:'👈';font-size:.78rem;
       animation:refArrow 1s ease-in-out infinite
     }
     @keyframes refPulse{
@@ -185,7 +185,7 @@
     }
     @keyframes refArrow{
       0%,100%{transform:translateX(0)}
-      50%{transform:translateX(3px)}
+      50%{transform:translateX(-3px)}
     }
     .tag-comp.comp-active{
       border:1px solid #16a34a;color:#16a34a;background:rgba(22,163,74,.08)
