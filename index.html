@@ -159,33 +159,17 @@
       display:inline-block;margin-left:4px;padding:0 5px;border-radius:10px;
       font-size:.68rem;line-height:1.4;font-weight:700;cursor:help
     }
-    /* ✅ 交易赛邀请码链接（醒目可点击按钮） */
+    /* ✅ 名称单元辅助行（弱化的活动 / 推广信息） */
+    .name-sub{
+      display:block;margin-top:2px;font-size:.7rem;line-height:1.4;color:var(--sub)
+    }
+    /* ✅ 邀请码：弱链接样式，hover 才高亮 */
     .comp-ref-link{
-      display:inline-flex;align-items:center;gap:4px;margin-top:6px;
-      padding:4px 10px;border-radius:14px;font-size:.74rem;line-height:1.3;
-      font-weight:700;text-decoration:none;cursor:pointer;
-      border:1px solid #f59e0b;color:#fff;
-      background:linear-gradient(90deg,#f59e0b,#ef4444);
-      box-shadow:0 1px 4px rgba(245,158,11,.35);
-      animation:refPulse 1.6s ease-in-out infinite;
-      transition:transform .15s, box-shadow .15s
+      color:#ea580c;text-decoration:none;font-weight:500;
+      transition:color .15s, text-decoration-color .15s
     }
     .comp-ref-link:hover{
-      transform:translateY(-1px);
-      box-shadow:0 3px 10px rgba(239,68,68,.45);
-      text-decoration:none;color:#fff
-    }
-    .comp-ref-link::after{
-      content:'👈';font-size:.78rem;
-      animation:refArrow 1s ease-in-out infinite
-    }
-    @keyframes refPulse{
-      0%,100%{box-shadow:0 1px 4px rgba(245,158,11,.35)}
-      50%{box-shadow:0 2px 12px rgba(239,68,68,.55)}
-    }
-    @keyframes refArrow{
-      0%,100%{transform:translateX(0)}
-      50%{transform:translateX(-3px)}
+      color:#dc2626;text-decoration:underline;text-decoration-thickness:1px
     }
     .tag-comp.comp-active{
       border:1px solid #16a34a;color:#16a34a;background:rgba(22,163,74,.08)
@@ -610,11 +594,11 @@
         hourlyMinimize: '收起',
         hourlyExpand: '展开',
         compTag: '交易赛',
-        compActive: (d,unit) => `🏆 交易赛 剩${d}${unit==='m'?'分钟':unit==='h'?'小时':'天'}`,
-        compEnded: '🏆 已结束',
-        compUpcoming: '🏆 未开始',
-        compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
-        asterRef: '🎁 点击一键绑定邀请码 · 减免17%手续费',
+        compActive: (d,unit) => `剩${d}${unit==='m'?'分钟':unit==='h'?'小时':'天'}`,
+        compEnded: '已结束',
+        compUpcoming: '未开始',
+        compTip: (topN, pool, perWinner, start, end) => `交易赛｜参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
+        asterRef: '🎁 手续费减免17% · 立即绑定',
         rightAlign: '数字右对齐',
         raTitle: '自定义右对齐列',
         raCustom: '自定义对齐列',
@@ -683,11 +667,11 @@
         hourlyMinimize: 'Minimize',
         hourlyExpand: 'Expand',
         compTag: 'Comp',
-        compActive: (d,unit) => `🏆 Comp ${d}${unit==='m'?'m':unit==='h'?'h':'d'} left`,
-        compEnded: '🏆 Ended',
-        compUpcoming: '🏆 Upcoming',
-        compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
-        asterRef: '🎁 Click to Bind Referral · 17% Fee Off',
+        compActive: (d,unit) => `${d}${unit==='m'?'m':unit==='h'?'h':'d'} left`,
+        compEnded: 'Ended',
+        compUpcoming: 'Upcoming',
+        compTip: (topN, pool, perWinner, start, end) => `Competition｜Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
+        asterRef: '🎁 17% Fee Off · Bind Now',
         rightAlign: 'Right-align',
         raTitle: 'Customize Right-align',
         raCustom: 'Customize columns',
@@ -1263,7 +1247,7 @@
             ${r.hasFutures ? `<span class="tag-futures">${t('futuresTag')}</span>` : ''}
             ${r.isNew ? `<span class="tag-new" title="${tipPrefix}${r.listingTimeFmt}">${t('newTag')(left)}</span>` : ''}
             ${compTag}
-            ${refLink ? `<div>${refLink}</div>` : ''}
+            ${refLink ? `<span class="name-sub">${refLink}</span>` : ''}
           </td>
           <td data-col="price">${fmtPrice(r.price)}</td>
           <td data-col="vol24h">${nf0.format(r.vol24h)}</td>
