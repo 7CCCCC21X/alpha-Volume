@@ -169,6 +169,13 @@
       border:1px solid #2563eb;color:#2563eb;background:rgba(37,99,235,.08)
     }
 
+    /* ✅ 交易赛返佣链接（手续费减免） */
+    .referral-link{
+      display:block;margin-top:2px;font-size:.72rem;font-weight:600;
+      color:#ef4444;text-decoration:none;line-height:1.4
+    }
+    .referral-link:hover{text-decoration:underline}
+
     /* Toast */
     #toast{
       position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
@@ -586,6 +593,7 @@
         compEnded: '🏆 已结束',
         compUpcoming: '🏆 未开始',
         compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
+        asterFee17: '🎁 手续费减免17% · 立即绑定',
         rightAlign: '数字右对齐',
         raTitle: '自定义右对齐列',
         raCustom: '自定义对齐列',
@@ -658,6 +666,7 @@
         compEnded: '🏆 Ended',
         compUpcoming: '🏆 Upcoming',
         compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
+        asterFee17: '🎁 17% Fee Off · Bind now',
         rightAlign: 'Right-align',
         raTitle: 'Customize Right-align',
         raCustom: 'Customize columns',
@@ -727,7 +736,8 @@
       { symbol:'IRYS',  start:Date.parse('2026-05-15T19:00:00+08:00'), end:Date.parse('2026-05-22T19:00:00+08:00'), topN:2000, pool:'1,540,000 IRYS',     perWinner:'770 IRYS' },
       // ✅ BTW 合约交易赛：作为独立条目（symbol=BTW合约交易赛），所有数据均来自 Aster；Logo/FDV 复用 BTW
       { symbol:'BTW合约交易赛', start:Date.parse('2026-05-14T21:00:00+08:00'), end:Date.parse('2026-05-24T21:00:00+08:00'), topN:2500, pool:'3,575,000 BTW',   perWinner:'1,430 BTW',
-        api:'aster', asterBase:ASTER_BASE, asterSymbol:'BTWUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'BTW', baseSymbol:'BTW' },
+        api:'aster', asterBase:ASTER_BASE, asterSymbol:'BTWUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'BTW', baseSymbol:'BTW',
+        referralUrl:'https://www.aster.finance/zh-CN/referral/XIAOCC', referralKey:'asterFee17' },
     ];
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
@@ -1228,6 +1238,7 @@
             ${r.hasFutures ? `<span class="tag-futures">${t('futuresTag')}</span>` : ''}
             ${r.isNew ? `<span class="tag-new" title="${tipPrefix}${r.listingTimeFmt}">${t('newTag')(left)}</span>` : ''}
             ${compTag}
+            ${r.comp && r.comp.referralUrl ? `<a class="referral-link" href="${r.comp.referralUrl}" target="_blank" rel="noopener noreferrer">${t(r.comp.referralKey||'')||'🎁 手续费减免 · 立即绑定'}</a>` : ''}
           </td>
           <td data-col="price">${fmtPrice(r.price)}</td>
           <td data-col="vol24h">${nf0.format(r.vol24h)}</td>
@@ -1519,6 +1530,11 @@
       if(cv&&cv.dataset.vol){
         e.stopPropagation();
         copyText(cv.dataset.vol);
+        return;
+      }
+      // ✅ 点击返佣链接 → 仅跳转，不触发整行点击（避免回填代币名）
+      if(e.target.closest('.referral-link')){
+        e.stopPropagation();
         return;
       }
       // 点击表格行自动填充代币名到输入框
