@@ -736,10 +736,10 @@
       { symbol:'BSB',  start:Date.parse('2026-05-19T19:00:00+08:00'), end:Date.parse('2026-05-26T19:00:00+08:00'), topN:2070, pool:'144,900 BSB',     perWinner:'70 BSB' },
       { symbol:'Pharos',  start:Date.parse('2026-05-20T21:00:00+08:00'), end:Date.parse('2026-05-27T21:00:00+08:00'), topN:2460, pool:'172,200 Pharos',     perWinner:'70 Pharos' },
       { symbol:'B2',  start:Date.parse('2026-05-22T21:00:00+08:00'), end:Date.parse('2026-05-29T21:00:00+08:00'), topN:2340, pool:'163,800 B2',     perWinner:'70 B2' },
-      // ✅ BTW 合约交易赛：作为独立条目（symbol=BTW合约交易赛），所有数据均来自 Aster；Logo/FDV 复用 BTW
-      { symbol:'BTW合约交易赛', start:Date.parse('2026-05-14T21:00:00+08:00'), end:Date.parse('2026-05-24T21:00:00+08:00'), topN:2500, pool:'3,575,000 BTW',   perWinner:'1,430 BTW',
-        api:'aster', asterBase:ASTER_BASE, asterSymbol:'BTWUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'BTW', baseSymbol:'BTW',
-        referralUrl:'https://www.aster.finance/zh-CN/referral/XIAOCC', referralKey:'asterFee17' },
+      // ✅ Aster 合约交易赛模板：独立合成条目，数据全部来自 Aster；Logo/FDV 复用 baseSymbol 现货。下次有新合约赛时取消注释并按此格式填写即可
+      // { symbol:'XXX合约交易赛', start:Date.parse('2026-XX-XXT21:00:00+08:00'), end:Date.parse('2026-XX-XXT21:00:00+08:00'), topN:0, pool:'0 XXX', perWinner:'0 XXX',
+      //   api:'aster', asterBase:ASTER_BASE, asterSymbol:'XXXUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'XXX', baseSymbol:'XXX',
+      //   referralUrl:'https://www.aster.finance/zh-CN/referral/XIAOCC', referralKey:'asterFee17' },
     ];
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
@@ -873,7 +873,7 @@
     const limit=pLimit(CONCURRENCY);
 
     // ------------------------------
-    // ✅ Aster 合约 API（专用于 BTW 合约交易赛合成行）
+    // ✅ Aster 合约 API（用于 Aster 合约交易赛合成行）
     // ------------------------------
     async function asterQv(base, sym, start, end){
       if(start>=end) return { vol:0, trades:0 };
@@ -929,7 +929,7 @@
     }
 
     async function qvAuto(row, start, end){
-      // ✅ Aster 合成行（BTW 合约交易赛）
+      // ✅ Aster 合成行（合约交易赛）
       if(row.useAsterApi){
         const res = await asterQv(row.asterBase||ASTER_BASE, row.asterSymbol||row.sym, start, end);
         return { vol:res.vol, trades:res.trades };
@@ -952,7 +952,7 @@
     /* 一次性拉取区间内所有 1h K 线（USDT→USDC fallback），本地切片避免多次请求 */
     async function qvKlinesAuto(row, start, end){
       if(start>=end) return [];
-      // ✅ Aster 合成行（BTW 合约交易赛）
+      // ✅ Aster 合成行（合约交易赛）
       if(row.useAsterApi){
         const url=`${row.asterBase||ASTER_BASE}/fapi/v3/klines?symbol=${encodeURIComponent(row.asterSymbol||row.sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
         try{
@@ -1107,7 +1107,7 @@
           };
         });
 
-      // ✅ 注入合成代币条目（如 BTW合约交易赛，数据全部来自 Aster；Logo/FDV 复用基础代币）
+      // ✅ 注入合成代币条目（Aster 合约交易赛，数据全部来自 Aster；Logo/FDV 复用基础代币）
       const existingSyms = new Set(list.map(r=>r.symbol.toUpperCase()));
       for(const comp of COMPETITIONS){
         const key=comp.symbol.toUpperCase();
