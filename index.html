@@ -875,9 +875,9 @@
     // ------------------------------
     // ✅ Aster 合约 API（用于 Aster 合约交易赛合成行）
     // ------------------------------
-    async function asterQv(base, sym, start, end){
+    async function asterQv(base, sym, start, end, interval='1h'){
       if(start>=end) return { vol:0, trades:0 };
-      const url=`${base}/fapi/v3/klines?symbol=${encodeURIComponent(sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
+      const url=`${base}/fapi/v3/klines?symbol=${encodeURIComponent(sym)}&interval=${interval}&startTime=${start}&endTime=${end}&limit=1500`;
       try{
         const data=await fetchWithTimeout(url).then(r=>r.json());
         if(!Array.isArray(data)) return { vol:0, trades:0 };
@@ -905,9 +905,9 @@
     // ------------------------------
     // ✅ K线成交额：优先 USDT，失败自动 fallback 到 USDC
     // ------------------------------
-    async function qvOk(sym, start, end){
+    async function qvOk(sym, start, end, interval='1h'){
       if(start>=end) return { ok:true, vol:0, trades:0 };
-      const url=`${K_API}?symbol=${encodeURIComponent(sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
+      const url=`${K_API}?symbol=${encodeURIComponent(sym)}&interval=${interval}&startTime=${start}&endTime=${end}&limit=1500`;
       try{
         const json=await fetchWithTimeout(url).then(r=>r.json());
 
@@ -928,20 +928,29 @@
       }
     }
 
-    async function qvAuto(row, start, end){
+    /* ✅ 根据区间长度自动选最细的 K 线粒度，保证单次请求内 K 线数 ≤ 1500（避免被截断）。
+       短区间用 1m（支持半小时这种亚小时查询），长区间自动放粗。 */
+    function pickKlineInterval(start, end){
+      const mins=(end-start)/60000;
+      const opts=[['1m',1],['5m',5],['15m',15],['30m',30],['1h',60],['2h',120],['4h',240],['6h',360],['12h',720],['1d',1440]];
+      for(const [name,m] of opts){ if(mins/m<=1450) return name; }
+      return '1d';
+    }
+
+    async function qvAuto(row, start, end, interval='1h'){
       // ✅ Aster 合成行（合约交易赛）
       if(row.useAsterApi){
-        const res = await asterQv(row.asterBase||ASTER_BASE, row.asterSymbol||row.sym, start, end);
+        const res = await asterQv(row.asterBase||ASTER_BASE, row.asterSymbol||row.sym, start, end, interval);
         return { vol:res.vol, trades:res.trades };
       }
       const primary = row.qSym || row.sym; // row.sym 默认是 `${alphaId}USDT`
-      let res = await qvOk(primary, start, end);
+      let res = await qvOk(primary, start, end, interval);
       if(res.ok) return { vol:res.vol, trades:res.trades };
 
       const alt = row.symUSDC || (row.sym && row.sym.endsWith('USDT') ? row.sym.replace(/USDT$/,'USDC') : '');
       if(!alt || alt===primary) return { vol:0, trades:0 };
 
-      res = await qvOk(alt, start, end);
+      res = await qvOk(alt, start, end, interval);
       if(res.ok){
         row.qSym = alt; // 缓存实际可用交易对
         return { vol:res.vol, trades:res.trades };
@@ -1020,7 +1029,10 @@
           const now=Date.now();
           const cStart=r.comp.start, cEnd=r.comp.end;
           if(now>cStart){
-            const compRes=await qvAuto(r, cStart, Math.min(now, cEnd));
+            // ✅ 自适应粒度：交易赛开始时间可能不是整点（如 SLX 12:30），
+            //    用 1h 会因首根整点 K 线 openTime 早于开始时间而被漏掉导致显示 0。
+            const cEndTs=Math.min(now, cEnd);
+            const compRes=await qvAuto(r, cStart, cEndTs, pickKlineInterval(cStart, cEndTs));
             r.compVol=compRes.vol; r.compTrades=compRes.trades;
           } else {
             r.compVol=0; r.compTrades=0;
@@ -1045,7 +1057,7 @@
       if(!resp.ok)throw new Error('LIST_API Error');
       const {data=[]}=await resp.json();
 
-      const list = data
+      const rawList = data
         .filter(t => {
           // ✅ 过滤：仅当 listingCex=true 且已 cexOffDisplay=true 才视为现货下架；单独 listingCex=true 不能用来过滤
           if (t.listingCex === true && t.cexOffDisplay === true) return false;
@@ -1075,6 +1087,9 @@
             chg:+t.percentChange24h,
             symbol:t.symbol,
             icon:t.iconUrl,
+
+            // ✅ 唯一标识（同 ticker 撞名时用它区分不同代币）
+            alphaId:t.alphaId,
 
             // ✅ 默认仍用 USDT 作为"身份 key"（收藏等不受影响）
             sym:`${t.alphaId}USDT`,
@@ -1106,6 +1121,29 @@
             compTrades: null
           };
         });
+
+      // ✅ 同 ticker 撞名去重：当多个代币共用同一个交易赛 symbol 时（例如两个都叫 SLX），
+      //    只保留 24h 交易量最高（其次 FDV 最高）的"真实"代币，撞名的山寨小币自动隐藏。
+      //    去重后，24H 交易量列、区间查询、交易赛累计成交额都会自动指向这个真实代币。
+      //    非交易赛代币不受影响，全部保留。
+      const compSyms = new Set(COMPETITIONS.map(c=>c.symbol.toUpperCase()));
+      const best = new Map(); // symbol(大写) -> 当前最优行
+      const isBetter = (a,b)=>{               // a 是否比 b 更优？
+        const va=a.vol24h||0, vb=b.vol24h||0;
+        if(va!==vb) return va>vb;             // 24h 交易量优先（保留交易量第一的那个）
+        return (a.fdv||0)>(b.fdv||0);         // 交易量相同则比 FDV
+      };
+      for(const r of rawList){
+        const key=r.symbol.toUpperCase();
+        if(!compSyms.has(key)) continue;      // 只对交易赛 ticker 去重
+        const cur=best.get(key);
+        if(!cur || isBetter(r,cur)) best.set(key,r);
+      }
+      const list = rawList.filter(r=>{
+        const key=r.symbol.toUpperCase();
+        if(!compSyms.has(key)) return true;   // 非交易赛代币：原样保留
+        return best.get(key)===r;             // 交易赛代币：只保留最优那个
+      });
 
       // ✅ 注入合成代币条目（Aster 合约交易赛，数据全部来自 Aster；Logo/FDV 复用基础代币）
       const existingSyms = new Set(list.map(r=>r.symbol.toUpperCase()));
@@ -1328,7 +1366,7 @@
       if(!st||!et||st>=et){showToast(t('badRange'));return;}
 
       rangeBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
-      const res=await qvAuto(row,st,et-1);
+      const res=await qvAuto(row,st,et-1,pickKlineInterval(st,et));
       rangeBtn.disabled=false;progressEl.style.display='none';
       const avgPerTrade=res.trades>0?(res.vol/res.trades):0;
       const displayLabel = row.symbol||sym;
