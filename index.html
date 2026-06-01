@@ -1111,14 +1111,15 @@
         });
 
       // ✅ 同 ticker 撞名去重：当多个代币共用同一个交易赛 symbol 时（例如两个都叫 SLX），
-      //    只保留 FDV 最高、其次 24h 交易量最高的"真实"代币，撞名的山寨小币自动隐藏。
+      //    只保留 24h 交易量最高（其次 FDV 最高）的"真实"代币，撞名的山寨小币自动隐藏。
+      //    去重后，24H 交易量列、区间查询、交易赛累计成交额都会自动指向这个真实代币。
       //    非交易赛代币不受影响，全部保留。
       const compSyms = new Set(COMPETITIONS.map(c=>c.symbol.toUpperCase()));
       const best = new Map(); // symbol(大写) -> 当前最优行
       const isBetter = (a,b)=>{               // a 是否比 b 更优？
-        const fa=a.fdv||0, fb=b.fdv||0;
-        if(fa!==fb) return fa>fb;             // FDV 优先
-        return (a.vol24h||0)>(b.vol24h||0);   // FDV 相同则比 24h 交易量
+        const va=a.vol24h||0, vb=b.vol24h||0;
+        if(va!==vb) return va>vb;             // 24h 交易量优先（保留交易量第一的那个）
+        return (a.fdv||0)>(b.fdv||0);         // 交易量相同则比 FDV
       };
       for(const r of rawList){
         const key=r.symbol.toUpperCase();
