@@ -1029,7 +1029,10 @@
           const now=Date.now();
           const cStart=r.comp.start, cEnd=r.comp.end;
           if(now>cStart){
-            const compRes=await qvAuto(r, cStart, Math.min(now, cEnd));
+            // ✅ 自适应粒度：交易赛开始时间可能不是整点（如 SLX 12:30），
+            //    用 1h 会因首根整点 K 线 openTime 早于开始时间而被漏掉导致显示 0。
+            const cEndTs=Math.min(now, cEnd);
+            const compRes=await qvAuto(r, cStart, cEndTs, pickKlineInterval(cStart, cEndTs));
             r.compVol=compRes.vol; r.compTrades=compRes.trades;
           } else {
             r.compVol=0; r.compTrades=0;
