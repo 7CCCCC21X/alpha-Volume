@@ -1045,7 +1045,7 @@
       if(!resp.ok)throw new Error('LIST_API Error');
       const {data=[]}=await resp.json();
 
-      const list = data
+      const rawList = data
         .filter(t => {
           // ✅ 过滤：仅当 listingCex=true 且已 cexOffDisplay=true 才视为现货下架；单独 listingCex=true 不能用来过滤
           if (t.listingCex === true && t.cexOffDisplay === true) return false;
@@ -1075,6 +1075,9 @@
             chg:+t.percentChange24h,
             symbol:t.symbol,
             icon:t.iconUrl,
+
+            // ✅ 唯一标识（同 ticker 撞名时用它区分不同代币）
+            alphaId:t.alphaId,
 
             // ✅ 默认仍用 USDT 作为"身份 key"（收藏等不受影响）
             sym:`${t.alphaId}USDT`,
@@ -1106,6 +1109,28 @@
             compTrades: null
           };
         });
+
+      // ✅ 同 ticker 撞名去重：当多个代币共用同一个交易赛 symbol 时（例如两个都叫 SLX），
+      //    只保留 FDV 最高、其次 24h 交易量最高的"真实"代币，撞名的山寨小币自动隐藏。
+      //    非交易赛代币不受影响，全部保留。
+      const compSyms = new Set(COMPETITIONS.map(c=>c.symbol.toUpperCase()));
+      const best = new Map(); // symbol(大写) -> 当前最优行
+      const isBetter = (a,b)=>{               // a 是否比 b 更优？
+        const fa=a.fdv||0, fb=b.fdv||0;
+        if(fa!==fb) return fa>fb;             // FDV 优先
+        return (a.vol24h||0)>(b.vol24h||0);   // FDV 相同则比 24h 交易量
+      };
+      for(const r of rawList){
+        const key=r.symbol.toUpperCase();
+        if(!compSyms.has(key)) continue;      // 只对交易赛 ticker 去重
+        const cur=best.get(key);
+        if(!cur || isBetter(r,cur)) best.set(key,r);
+      }
+      const list = rawList.filter(r=>{
+        const key=r.symbol.toUpperCase();
+        if(!compSyms.has(key)) return true;   // 非交易赛代币：原样保留
+        return best.get(key)===r;             // 交易赛代币：只保留最优那个
+      });
 
       // ✅ 注入合成代币条目（Aster 合约交易赛，数据全部来自 Aster；Logo/FDV 复用基础代币）
       const existingSyms = new Set(list.map(r=>r.symbol.toUpperCase()));
