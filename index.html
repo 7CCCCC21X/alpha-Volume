@@ -143,7 +143,7 @@
       color:#f59e0b;background:rgba(245,158,11,.08);font-weight:700
     }
 
-    /* ✅ 交易量加成倍数标记（mulPoint，如 4× 交易量加成） */
+    /* ✅ 交易量加成活动倒计时标记（🔥 剩X天） */
     .tag-mul{
       display:inline-block;margin-left:4px;padding:0 5px;border-radius:10px;
       font-size:.68rem;line-height:1.4;border:1px solid #ef4444;
@@ -570,10 +570,8 @@
         rangeTpl: (sym,s,e,vol) => `<strong>${sym}</strong> 在\u00a0<span>${s}</span> ~ <span>${e}</span> 的限价单成交额：<strong>${vol}</strong>`,
         newTag: (d) => `🆕 剩${d}天`,
         futuresTag: '合约',
-        mulTag: (m) => `🔥 ${m}× 交易量`,
-        mulTagLeft: (m, d) => `🔥 ${m}× 剩${d}天`,
-        mulTip: (m, end) => `交易量加成 ${m} 倍\n截止 ${end}`,
-        mulTipNoEnd: (m) => `交易量加成 ${m} 倍`,
+        mulTag: (d) => `🔥 剩${d}天`,
+        mulTip: (end) => `交易量加成活动\n截止 ${end}`,
         listingTip: '上新：',
         langBtn: 'EN',
         themeBtn: '切换深色/浅色模式',
@@ -647,10 +645,8 @@
         rangeTpl: (sym,s,e,vol) => `<strong>${sym}</strong> limit order volume from\u00a0<span>${s}</span> to <span>${e}</span>: <strong>${vol}</strong>`,
         newTag: (d) => `🆕 ${d}d left`,
         futuresTag: 'Futures',
-        mulTag: (m) => `🔥 ${m}× Volume`,
-        mulTagLeft: (m, d) => `🔥 ${m}× ${d}d left`,
-        mulTip: (m, end) => `${m}× volume boost\nEnds ${end}`,
-        mulTipNoEnd: (m) => `${m}× volume boost`,
+        mulTag: (d) => `🔥 ${d}d left`,
+        mulTip: (end) => `Volume boost\nEnds ${end}`,
         listingTip: 'Listed: ',
         langBtn: '中',
         themeBtn: 'Toggle dark/light mode',
@@ -758,12 +754,11 @@
     ];
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
 
-    /* ---------- 交易量加成倍数活动截止时间（手动维护，按合约地址小写） ----------
-       说明：代币的交易量加成倍数实时取自 API 的 mulPoint 字段（>1 即有加成），
-       倍数大小无需在此登记；这里只额外记录已知活动的截止时间，用于在标记上显示
-       倒计时、并在到期后自动隐藏标记。未登记截止时间的代币只要 mulPoint>1 也会显示标记。 */
+    /* ---------- 交易量加成活动截止时间（手动维护，按合约地址小写） ----------
+       说明：仅对这里登记了截止时间的代币显示倒计时标记（🔥 剩X天，原理同"30天内上新"，
+       到期自动消失），不显示具体倍数。以后有新的加成活动，在此加一行"合约地址: 截止时间"即可。 */
     const MUL_END = {
-      '0x783c3f003f172c6ac5ac700218a357d2d66ee2a2': Date.parse('2026-06-14T21:00:00+08:00'), // B2 4× 交易量加成
+      '0x783c3f003f172c6ac5ac700218a357d2d66ee2a2': Date.parse('2026-06-14T21:00:00+08:00'), // B2 交易量加成活动
     };
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1098,8 +1093,7 @@
           const priceN = +t.price || 0;
           const totalSupplyN = +t.totalSupply || +t.circulatingSupply || 0;
 
-          // ✅ 交易量加成倍数：取自 API mulPoint（>1 表示有加成，如 B2=4）
-          const mulPoint = Number(t.mulPoint) || 1;
+          // ✅ 交易量加成活动截止时间（按合约地址查 MUL_END，未登记则为 0）
           const mulEnd = MUL_END[(t.contractAddress || '').toLowerCase()] || 0;
           const fdv =
             +t.fdv ||
@@ -1142,8 +1136,7 @@
             // ✅ 是否上了币安合约
             hasFutures: futuresSet.has(t.symbol.toUpperCase()),
 
-            // ✅ 交易量加成倍数 & 活动截止时间
-            mulPoint,
+            // ✅ 交易量加成活动截止时间
             mulEnd,
 
             // ✅ 交易赛
@@ -1201,7 +1194,6 @@
             fdv: baseRow ? baseRow.fdv : 0,
             isTokenizedSecurity:false,
             hasFutures:!!comp.isFutures,
-            mulPoint:1,
             mulEnd:0,
             comp,
             compVol:null,
@@ -1282,14 +1274,11 @@
           }
         }
 
-        // ✅ 交易量加成倍数标记（原理同"30天内上新"：剩X天倒计时，到期自动消失）
+        // ✅ 交易量加成活动倒计时标记（原理同"30天内上新"：剩X天，到期自动消失；仅对 MUL_END 登记的代币显示，不显示倍数）
         let mulTag='';
-        if(r.mulPoint > 1 && (!r.mulEnd || Date.now() <= r.mulEnd)){
-          const mulTip = r.mulEnd ? t('mulTip')(r.mulPoint, fmtFull(r.mulEnd)) : t('mulTipNoEnd')(r.mulPoint);
-          const label = r.mulEnd
-            ? t('mulTagLeft')(r.mulPoint, Math.max(0, Math.ceil((r.mulEnd - Date.now()) / 86400000)))
-            : t('mulTag')(r.mulPoint);
-          mulTag = `<span class="tag-mul" title="${mulTip}">${label}</span>`;
+        if(r.mulEnd && Date.now() <= r.mulEnd){
+          const d = Math.max(0, Math.ceil((r.mulEnd - Date.now()) / 86400000));
+          mulTag = `<span class="tag-mul" title="${t('mulTip')(fmtFull(r.mulEnd))}">${t('mulTag')(d)}</span>`;
         }
 
         // ✅ 交易赛交易量列
