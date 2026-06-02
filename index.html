@@ -571,6 +571,7 @@
         newTag: (d) => `🆕 剩${d}天`,
         futuresTag: '合约',
         mulTag: (m) => `🔥 ${m}× 交易量`,
+        mulTagLeft: (m, d) => `🔥 ${m}× 剩${d}天`,
         mulTip: (m, end) => `交易量加成 ${m} 倍\n截止 ${end}`,
         mulTipNoEnd: (m) => `交易量加成 ${m} 倍`,
         listingTip: '上新：',
@@ -647,6 +648,7 @@
         newTag: (d) => `🆕 ${d}d left`,
         futuresTag: 'Futures',
         mulTag: (m) => `🔥 ${m}× Volume`,
+        mulTagLeft: (m, d) => `🔥 ${m}× ${d}d left`,
         mulTip: (m, end) => `${m}× volume boost\nEnds ${end}`,
         mulTipNoEnd: (m) => `${m}× volume boost`,
         listingTip: 'Listed: ',
@@ -1280,11 +1282,14 @@
           }
         }
 
-        // ✅ 交易量加成倍数标记（mulPoint>1 且活动未到期时显示）
+        // ✅ 交易量加成倍数标记（原理同"30天内上新"：剩X天倒计时，到期自动消失）
         let mulTag='';
         if(r.mulPoint > 1 && (!r.mulEnd || Date.now() <= r.mulEnd)){
           const mulTip = r.mulEnd ? t('mulTip')(r.mulPoint, fmtFull(r.mulEnd)) : t('mulTipNoEnd')(r.mulPoint);
-          mulTag = `<span class="tag-mul" title="${mulTip}">${t('mulTag')(r.mulPoint)}</span>`;
+          const label = r.mulEnd
+            ? t('mulTagLeft')(r.mulPoint, Math.max(0, Math.ceil((r.mulEnd - Date.now()) / 86400000)))
+            : t('mulTag')(r.mulPoint);
+          mulTag = `<span class="tag-mul" title="${mulTip}">${label}</span>`;
         }
 
         // ✅ 交易赛交易量列
