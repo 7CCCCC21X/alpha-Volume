@@ -739,6 +739,8 @@
     const K_API ='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines';
     const FUTURES_API='https://fapi.binance.com/fapi/v1/exchangeInfo';
     const ASTER_BASE='https://fapi.asterdex.com';
+    /* ✅ 代币化证券总交易大赛 Logo（Ondo） */
+    const ONDO_ICON='https://pbs.twimg.com/profile_images/1614113185652670466/YeihoVJk_400x400.jpg';
 
     /* ---------- 交易赛配置（手动维护） ---------- */
     const COMPETITIONS = [
@@ -747,7 +749,9 @@
       { symbol:'ZEST',  start:Date.parse('2026-06-02T21:00:00+08:00'), end:Date.parse('2026-06-09T21:00:00+08:00'), topN:2540, pool:'588,000 ZEST',     perWinner:'240 ZEST' },
       { symbol:'NEX',  start:Date.parse('2026-05-28T21:00:00+08:00'), end:Date.parse('2026-06-04T21:00:00+08:00'), topN:2000, pool:'28,089,880,000 NEX',     perWinner:'14,044,940 NEX' },
       { symbol:'SLX',  start:Date.parse('2026-06-01T12:30:00+08:00'), end:Date.parse('2026-06-08T12:30:00+08:00'), topN:2550, pool:'357,000 SLX',     perWinner:'140 SLX' },
-      { symbol:'MUon',  start:Date.parse('2026-06-03T18:00:00+08:00'), end:Date.parse('2026-06-10T18:00:00+08:00'), topN:6000, pool:'300 MUon',     perWinner:'0.05 MUon' },
+      // ✅ 代币化证券总交易大赛：交易量统计所有代币化证券的累计成交额（奖励沿用原 MUon 交易赛，Logo 用 Ondo）
+      { symbol:'代币化证券总交易大赛',  start:Date.parse('2026-06-03T18:00:00+08:00'), end:Date.parse('2026-06-10T18:00:00+08:00'), topN:6000, pool:'300 MUon',     perWinner:'0.05 MUon',
+        syntheticToken:true, aggregateSec:true, rewardSymbol:'MUon', icon:ONDO_ICON },
       // ✅ Aster 合约交易赛模板：独立合成条目，数据全部来自 Aster；Logo/FDV 复用 baseSymbol 现货。下次有新合约赛时取消注释并按此格式填写即可
       // { symbol:'XXX合约交易赛', start:Date.parse('2026-XX-XXT21:00:00+08:00'), end:Date.parse('2026-XX-XXT21:00:00+08:00'), topN:0, pool:'0 XXX', perWinner:'0 XXX',
       //   api:'aster', asterBase:ASTER_BASE, asterSymbol:'XXXUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'XXX', baseSymbol:'XXX',
@@ -1024,7 +1028,8 @@
       return row||null;
     }
 
-    async function fillQVAll(list,today8,yest8,endTs){
+    async function fillQVAll(list,today8,yest8,endTs,allRows){
+      allRows=allRows||list; // ✅ 代币化证券总交易大赛需对全量代币化证券求和，即使当前只刷新可见子集
       let done=0,total=list.length;
       progressEl.style.display='inline-block';
       await Promise.all(list.map(r=>limit(async()=>{
@@ -1044,7 +1049,21 @@
         }
         r.todayQV=todayRes.vol; r.prevQV=prevRes.vol;
         // ✅ 交易赛累计成交额：合成行通过 useAsterApi 自动走 Aster，其它走 Binance Alpha
-        if(r.comp){
+        if(r.comp && r.comp.aggregateSec){
+          // ✅ 代币化证券总交易大赛：交易量 = 区间内所有代币化证券成交额之和
+          const now=Date.now();
+          const cStart=r.comp.start, cEnd=r.comp.end;
+          if(now>cStart){
+            const cEndTs=Math.min(now, cEnd);
+            const interval=pickKlineInterval(cStart, cEndTs);
+            const secRows=allRows.filter(x=>x.isTokenizedSecurity);
+            const parts=await Promise.all(secRows.map(sr=>qvAuto(sr, cStart, cEndTs, interval)));
+            r.compVol=parts.reduce((a,p)=>a+(p.vol||0),0);
+            r.compTrades=parts.reduce((a,p)=>a+(p.trades||0),0);
+          } else {
+            r.compVol=0; r.compTrades=0;
+          }
+        } else if(r.comp){
           const now=Date.now();
           const cStart=r.comp.start, cEnd=r.comp.end;
           if(now>cStart){
@@ -1183,7 +1202,7 @@
             vol24h:0,
             chg:0,
             symbol:comp.symbol,
-            icon: baseRow ? baseRow.icon : '',
+            icon: comp.icon || (baseRow ? baseRow.icon : ''),
             sym:comp.symbol,
             symUSDC:'',
             qSym:null,
@@ -1364,9 +1383,9 @@
             }
           });
           const toRefresh=newRows.filter(r=>visibleSet.has(r.symbol));
-          await fillQVAll(toRefresh,today8,yest8,endTs);
+          await fillQVAll(toRefresh,today8,yest8,endTs,newRows);
         }else{
-          await fillQVAll(newRows,today8,yest8,endTs);
+          await fillQVAll(newRows,today8,yest8,endTs,newRows);
         }
         rows=newRows;
         render();
