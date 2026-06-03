@@ -769,6 +769,7 @@
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
     /* 智能价格格式化：小于 0.01 的价格自动显示更多有效位 */
     function fmtPrice(p){
+      if(!p||p<=0) return '-';
       if(p>=1) return nf2.format(p);
       if(p>=0.01) return new Intl.NumberFormat('en-US',{minimumFractionDigits:4,maximumFractionDigits:4}).format(p);
       const s=p.toFixed(20);const m=s.match(/^0\.(0+)/);
