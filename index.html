@@ -961,7 +961,21 @@
       return '1d';
     }
 
+    /* ✅ 代币化证券总交易大赛：交易量 = 区间内所有代币化证券成交额之和 */
+    async function qvAggSec(start, end, interval, secRows){
+      if(start>=end || !secRows || !secRows.length) return { vol:0, trades:0 };
+      const parts=await Promise.all(secRows.map(sr=>qvAuto(sr, start, end, interval)));
+      return {
+        vol:parts.reduce((a,p)=>a+(p.vol||0),0),
+        trades:parts.reduce((a,p)=>a+(p.trades||0),0)
+      };
+    }
+
     async function qvAuto(row, start, end, interval='1h'){
+      // ✅ 代币化证券总交易大赛聚合行：汇总所有代币化证券（用于区间查询/列表列）
+      if(row.aggregateSec){
+        return qvAggSec(start, end, interval, (rows||[]).filter(x=>x.isTokenizedSecurity));
+      }
       // ✅ Aster 合成行（合约交易赛）
       if(row.useAsterApi){
         const res = await asterQv(row.asterBase||ASTER_BASE, row.asterSymbol||row.sym, start, end, interval);
@@ -1034,6 +1048,26 @@
       let done=0,total=list.length;
       progressEl.style.display='inline-block';
       await Promise.all(list.map(r=>limit(async()=>{
+        // ✅ 代币化证券总交易大赛聚合行：当天/前一天/交易赛区间均为全部代币化证券成交额之和。
+        //    这里用 allRows（全量），不依赖全局 rows（首次加载时尚未赋值），且不受当前筛选影响。
+        if(r.aggregateSec){
+          const secRows=allRows.filter(x=>x.isTokenizedSecurity);
+          const [todayRes,prevRes]=await Promise.all([
+            qvAggSec(today8, endTs, '1h', secRows),
+            qvAggSec(yest8, today8-1, '1h', secRows)
+          ]);
+          r.todayQV=todayRes.vol; r.prevQV=prevRes.vol;
+          const now=Date.now(), cStart=r.comp.start, cEnd=r.comp.end;
+          if(now>cStart){
+            const cEndTs=Math.min(now, cEnd);
+            const compRes=await qvAggSec(cStart, cEndTs, pickKlineInterval(cStart, cEndTs), secRows);
+            r.compVol=compRes.vol; r.compTrades=compRes.trades;
+          } else {
+            r.compVol=0; r.compTrades=0;
+          }
+          progressEl.textContent=`${Math.floor(++done/total*100)}%`;
+          return;
+        }
         // ✅ Aster 合成行额外刷新 24h 行情（用于填充 price/vol24h/chg）
         const tickerPromise = r.useAsterApi
           ? asterTicker24h(r.asterBase||ASTER_BASE, r.asterSymbol||r.sym)
@@ -1050,21 +1084,7 @@
         }
         r.todayQV=todayRes.vol; r.prevQV=prevRes.vol;
         // ✅ 交易赛累计成交额：合成行通过 useAsterApi 自动走 Aster，其它走 Binance Alpha
-        if(r.comp && r.comp.aggregateSec){
-          // ✅ 代币化证券总交易大赛：交易量 = 区间内所有代币化证券成交额之和
-          const now=Date.now();
-          const cStart=r.comp.start, cEnd=r.comp.end;
-          if(now>cStart){
-            const cEndTs=Math.min(now, cEnd);
-            const interval=pickKlineInterval(cStart, cEndTs);
-            const secRows=allRows.filter(x=>x.isTokenizedSecurity);
-            const parts=await Promise.all(secRows.map(sr=>qvAuto(sr, cStart, cEndTs, interval)));
-            r.compVol=parts.reduce((a,p)=>a+(p.vol||0),0);
-            r.compTrades=parts.reduce((a,p)=>a+(p.trades||0),0);
-          } else {
-            r.compVol=0; r.compTrades=0;
-          }
-        } else if(r.comp){
+        if(r.comp){
           const now=Date.now();
           const cStart=r.comp.start, cEnd=r.comp.end;
           if(now>cStart){
@@ -1220,6 +1240,7 @@
             compVol:null,
             compTrades:null,
             useAsterApi:comp.api==='aster',
+            aggregateSec:!!comp.aggregateSec,
             asterBase:comp.asterBase||ASTER_BASE,
             asterSymbol:comp.asterSymbol||`${comp.symbol}USDT`
           });
@@ -1452,7 +1473,10 @@
 
       // ✅ 一次性拉取整段区间的 K 线，本地切片分桶
       const rangeEnd = hasPartial ? now : (endTs - 1);
-      const allKlines = [await qvKlinesAuto(row, startTs, rangeEnd)];
+      // ✅ 代币化证券总交易大赛：取全部代币化证券的 K 线，按小时分桶时自动求和
+      const allKlines = row.aggregateSec
+        ? await Promise.all((rows||[]).filter(x=>x.isTokenizedSecurity).map(sr=>qvKlinesAuto(sr, startTs, rangeEnd)))
+        : [await qvKlinesAuto(row, startTs, rangeEnd)];
       progressEl.textContent='100%';
 
       const hourlyData=[];
