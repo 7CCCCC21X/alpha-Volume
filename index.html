@@ -1473,7 +1473,10 @@
 
       // ✅ 一次性拉取整段区间的 K 线，本地切片分桶
       const rangeEnd = hasPartial ? now : (endTs - 1);
-      const allKlines = [await qvKlinesAuto(row, startTs, rangeEnd)];
+      // ✅ 代币化证券总交易大赛：取全部代币化证券的 K 线，按小时分桶时自动求和
+      const allKlines = row.aggregateSec
+        ? await Promise.all((rows||[]).filter(x=>x.isTokenizedSecurity).map(sr=>qvKlinesAuto(sr, startTs, rangeEnd)))
+        : [await qvKlinesAuto(row, startTs, rangeEnd)];
       progressEl.textContent='100%';
 
       const hourlyData=[];
