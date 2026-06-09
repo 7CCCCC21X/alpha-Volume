@@ -129,6 +129,9 @@
     .up{color:var(--green)}.down{color:var(--red)}
     .subl{display:block;font-size:.72rem;color:var(--sub)}
 
+    /* ✅ 当天逐小时成交额迷你走势图 */
+    .spark{display:block;margin-top:2px}
+
     /* ✅ 30天内上新标记 */
     .tag-new{
       display:inline-block;margin-left:6px;padding:0 6px;border-radius:10px;
@@ -543,7 +546,7 @@
         onlyFutures: '仅看有合约',
         onlySec: '仅看代币化证券',
         hideSec: '不显示代币化证券',
-        tokenPh: '输入代币名称',
+        tokenPh: '输入代币名称（多个用逗号分隔可对比）',
         rangeQuery: '区间查询',
         adBadge: '广告',
         joinTg: '加入Alpha交流群',
@@ -613,7 +616,11 @@
         dataStale: '刷新失败，显示上次数据',
         noMatch: '无匹配结果',
         exportCsv: '导出CSV',
-        csvDone: '已导出'
+        csvDone: '已导出',
+        cmpTitle: (s,e) => `<strong>${s} ~ ${e}</strong> 限价单成交额对比：`,
+        cmpMissing: (list) => `未找到：${list}`,
+        cmpLimit: (n) => `最多对比 ${n} 个，已取前 ${n} 个`,
+        sparkTip: '当天逐小时成交额走势'
       },
       en: {
         title: 'Binance\u00a0Alpha\u00a0\u2014\u00a024H\u00a0Volume\u00a0Board',
@@ -623,7 +630,7 @@
         onlyFutures: 'Futures only',
         onlySec: 'Tokenized Securities only',
         hideSec: 'Hide Tokenized Securities',
-        tokenPh: 'Token name',
+        tokenPh: 'Token name(s), comma-separated to compare',
         rangeQuery: 'Range Query',
         adBadge: 'Ad',
         joinTg: 'Join Alpha Group',
@@ -693,7 +700,11 @@
         dataStale: 'Refresh failed, showing last data',
         noMatch: 'No matching tokens',
         exportCsv: 'Export CSV',
-        csvDone: 'Exported'
+        csvDone: 'Exported',
+        cmpTitle: (s,e) => `Limit order volume comparison <strong>${s} ~ ${e}</strong>:`,
+        cmpMissing: (list) => `Not found: ${list}`,
+        cmpLimit: (n) => `Max ${n} tokens, using first ${n}`,
+        sparkTip: 'Today hourly volume trend'
       }
     };
     let curLang = localStorage.getItem('lang') || 'zh';
@@ -947,7 +958,9 @@
         if(!Array.isArray(data)) return { vol:0, trades:0, failed:true };
         const vol=data.reduce((s,k)=>s+parseFloat(k?.[7]||0),0);
         const trades=data.reduce((s,k)=>s+parseInt(k?.[8]||0),0);
-        return { vol, trades };
+        // ✅ 顺带返回逐根成交额序列（sparkline 复用，零额外请求）
+        const series=data.map(k=>[+k[0],parseFloat(k?.[7]||0)]);
+        return { vol, trades, series };
       }catch{
         return { vol:0, trades:0, failed:true };
       }
@@ -986,7 +999,9 @@
 
         const vol=data.reduce((s,k)=>s+parseFloat(k?.[7]||0),0);
         const trades=data.reduce((s,k)=>s+parseInt(k?.[8]||0),0);
-        return { ok:true, vol, trades };
+        // ✅ 顺带返回逐根成交额序列（sparkline 复用，零额外请求）
+        const series=data.map(k=>[+k[0],parseFloat(k?.[7]||0)]);
+        return { ok:true, vol, trades, series };
       }catch{
         return { ok:false, vol:0, trades:0 };
       }
@@ -1021,11 +1036,11 @@
       // ✅ Aster 合成行（合约交易赛）
       if(row.useAsterApi){
         const res = await asterQv(row.asterBase||ASTER_BASE, row.asterSymbol||row.sym, start, end, interval);
-        return { vol:res.vol, trades:res.trades };
+        return { vol:res.vol, trades:res.trades, failed:res.failed, series:res.series };
       }
       const primary = row.qSym || row.sym; // row.sym 默认是 `${alphaId}USDT`
       let res = await qvOk(primary, start, end, interval);
-      if(res.ok) return { vol:res.vol, trades:res.trades };
+      if(res.ok) return { vol:res.vol, trades:res.trades, series:res.series };
 
       const alt = row.symUSDC || (row.sym && row.sym.endsWith('USDT') ? row.sym.replace(/USDT$/,'USDC') : '');
       if(!alt || alt===primary) return { vol:0, trades:0, failed:true };
@@ -1033,7 +1048,7 @@
       res = await qvOk(alt, start, end, interval);
       if(res.ok){
         row.qSym = alt; // 缓存实际可用交易对
-        return { vol:res.vol, trades:res.trades };
+        return { vol:res.vol, trades:res.trades, series:res.series };
       }
       // ✅ 失败 ≠ 0：带 failed 标记，由调用方决定显示 ⚠ 或沿用旧值
       return { vol:0, trades:0, failed:true };
@@ -1141,6 +1156,7 @@
             cachedPrev!==undefined ? Promise.resolve(cachedPrev) : qvAggSec(yest8, today8-1, '1h', secRows)
           ]);
           applyQVResult(r,'todayQV',todayRes);
+          r.todaySeries=null; // 聚合行不画 sparkline
           if(applyQVResult(r,'prevQV',prevRes) && cachedPrev===undefined) setCachedPrev(today8,prevKey,{vol:prevRes.vol,trades:prevRes.trades});
           const now=Date.now(), cStart=r.comp.start, cEnd=r.comp.end;
           if(now>cStart){
@@ -1169,6 +1185,8 @@
           if(!isNaN(tickerRes.chg)) r.chg=tickerRes.chg;
         }
         applyQVResult(r,'todayQV',todayRes);
+        // ✅ sparkline 数据：复用当天请求的逐小时序列；失败时沿用旧序列
+        r.todaySeries = !todayRes.failed ? (todayRes.series||null) : (r._old ? r._old.todaySeries||null : null);
         if(applyQVResult(r,'prevQV',prevRes) && cachedPrev===undefined) setCachedPrev(today8,prevKey,{vol:prevRes.vol,trades:prevRes.trades});
         // ✅ 交易赛累计成交额：合成行通过 useAsterApi 自动走 Aster，其它走 Binance Alpha
         if(r.comp){
@@ -1377,6 +1395,17 @@
       return nf0.format(v)+(stale?` <span title="${esc(t('dataStale'))}">⚠</span>`:'');
     }
 
+    /* ✅ 迷你走势图：复用当天 K 线请求返回的逐小时序列，零额外请求 */
+    function sparkSVG(series,w=64,h=14){
+      if(!series||series.length<2) return '';
+      const vols=series.map(p=>p[1]);
+      const max=Math.max(...vols),min=Math.min(...vols);
+      const range=max-min||1;
+      const step=w/(vols.length-1);
+      const pts=vols.map((v,i)=>`${(i*step).toFixed(1)},${(h-1-(v-min)/range*(h-2)).toFixed(1)}`).join(' ');
+      return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><title>${esc(t('sparkTip'))}</title><polyline points="${pts}" fill="none" stroke="var(--primary)" stroke-width="1.2" opacity=".75"/></svg>`;
+    }
+
     /* ✅ 当前展示行（搜索+筛选+排序+收藏置顶后的顺序）：render 与 CSV 导出共用 */
     function getDisplayRows(){
       const favSet=new Set(favs());
@@ -1471,7 +1500,7 @@
           <td data-col="vol24h">${nf0.format(r.vol24h)}</td>
           <td data-col="chg"><span class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</span></td>
           <td data-col="fdv">${fmtFdv(r.fdv)}</td>
-          <td data-col="todayQV">${qvCell(r.todayQV,r.todayQVFail,r.todayQVStale)}</td>
+          <td data-col="todayQV">${qvCell(r.todayQV,r.todayQVFail,r.todayQVStale)}${sparkSVG(r.todaySeries)}</td>
           <td data-col="prevQV">${qvCell(r.prevQV,r.prevQVFail,r.prevQVStale)}</td>
           ${showCompOnly?`<td data-col="compVol">${compCell}</td>`:''}
         </tr>
@@ -1504,7 +1533,7 @@
           newRows.forEach(r=>{
             if(!visibleSet.has(r.symbol)&&r._old){
               const o=r._old;
-              r.todayQV=o.todayQV; r.prevQV=o.prevQV; r.qSym=o.qSym;
+              r.todayQV=o.todayQV; r.prevQV=o.prevQV; r.qSym=o.qSym; r.todaySeries=o.todaySeries||null;
               if(o.compVol!=null){r.compVol=o.compVol; r.compTrades=o.compTrades;}
               // ✅ 合成代币条目（Aster 数据）没有现成行情，复用旧值
               if(r.useAsterApi){
@@ -1542,14 +1571,59 @@
       endEl.value =toLocal(now);
     })();
 
+    /* ✅ 多代币对比结果渲染（语言切换时复用） */
+    function renderCompare(info){
+      const {st,et,items,missing}=info;
+      const lines=items.map((it,i)=>{
+        const volTxt=it.failed
+          ? `<span title="${esc(t('dataFail'))}">⚠</span>`
+          : `<strong>${nf0.format(it.vol)}</strong>`;
+        const statsTxt=it.failed
+          ? ''
+          : ` <span style="color:var(--sub)">(${t('tradeStats')(nf0.format(it.trades), nf0.format(it.trades>0?Math.round(it.vol/it.trades):0))})</span>`;
+        return `${i+1}. <strong>${esc(it.sym)}</strong>：${volTxt}${statsTxt}`;
+      });
+      const missTxt=missing&&missing.length
+        ? `<br><span style="color:var(--red)">${t('cmpMissing')(esc(missing.join(', ')))}</span>`
+        : '';
+      customVolEl.innerHTML=`${t('cmpTitle')(fmtFull(st),fmtFull(et))}<br>${lines.join('<br>')}${missTxt}`;
+    }
+
+    const MAX_COMPARE=10;
     rangeBtn.addEventListener('click',async()=>{
-      const sym=tokenEl.value.trim();
-      if(!sym){showToast(t('enterSym'));return;}
-      const row=findRow(sym);
-      if(!row){showToast(t('notFound'));return;}
+      const input=tokenEl.value.trim();
+      if(!input){showToast(t('enterSym'));return;}
 
       const st=new Date(startEl.value).getTime(),et=new Date(endEl.value).getTime();
       if(!st||!et||st>=et){showToast(t('badRange'));return;}
+
+      // ✅ 多代币对比：逗号/空格分隔（去重），>1 个时走对比模式
+      let symsArr=[...new Set(input.split(/[,，\s]+/).filter(Boolean))];
+      if(symsArr.length>1){
+        if(symsArr.length>MAX_COMPARE){symsArr=symsArr.slice(0,MAX_COMPARE);showToast(t('cmpLimit')(MAX_COMPARE));}
+        const found=[],missing=[];
+        symsArr.forEach(s=>{const r0=findRow(s); r0?found.push({input:s,row:r0}):missing.push(s);});
+        if(!found.length){showToast(t('notFound'));return;}
+
+        rangeBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
+        const interval=pickKlineInterval(st,et);
+        const results=await Promise.all(found.map(f=>
+          limit(()=>qvAuto(f.row,st,et-1,interval))
+            .then(res=>({sym:f.row.symbol||f.input,vol:res.vol,trades:res.trades,failed:!!res.failed}))
+        ));
+        rangeBtn.disabled=false;progressEl.style.display='none';
+
+        // 失败的排末尾，其余按成交额降序
+        results.sort((a,b)=>(a.failed?-1:a.vol)<(b.failed?-1:b.vol)?1:-1);
+        window._lastCompare={st,et,items:results,missing};
+        delete customVolEl.dataset.sym; // 避免语言切换时误走单币渲染分支
+        renderCompare(window._lastCompare);
+        return;
+      }
+
+      const sym=symsArr[0];
+      const row=findRow(sym);
+      if(!row){showToast(t('notFound'));return;}
 
       rangeBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
       const res=await qvAuto(row,st,et-1,pickKlineInterval(st,et));
@@ -1559,6 +1633,7 @@
       const avgPerTrade=res.trades>0?(res.vol/res.trades):0;
       const displayLabel = row.symbol||sym;
       // store for lang-switch re-render
+      window._lastCompare=null;
       customVolEl.dataset.sym=displayLabel; customVolEl.dataset.st=st; customVolEl.dataset.et=et;
       customVolEl.dataset.vol=res.vol; customVolEl.dataset.trades=res.trades;
       customVolEl.innerHTML=t('rangeTpl')(displayLabel, fmtFull(st), fmtFull(et), nf0.format(res.vol))
@@ -1751,7 +1826,7 @@
     document.getElementById('search').addEventListener('input',e=>{
       clearTimeout(searchTimer);
       searchTimer=setTimeout(()=>{
-        filter=e.target.value.trim().toLowerCase();render();
+        filter=e.target.value.trim().toLowerCase();syncUrlState();render();
       },150);
     });
 
@@ -1795,14 +1870,40 @@
       btn.title = label;
     });
 
-    /* ---------- ✅ 筛选/排序状态持久化 ---------- */
+    /* ---------- ✅ 筛选/排序状态持久化 + URL 分享 ---------- */
     const UI_STATE_KEY='alphaUiState';
+    const SORT_KEYS=['vol24h','fdv','todayQV','prevQV','compVol'];
+    function syncFilterUI(){
+      onlyNewEl.checked=showNewOnly;
+      onlyFuturesEl.checked=showFuturesOnly;
+      onlySecEl.checked=showSecOnly;
+      hideSecEl.checked=hideSecOnly;
+      onlyCompEl.checked=showCompOnly;
+      thCompVol.style.display=showCompOnly?'':'none';
+    }
+    /* ✅ 状态同步进 URL hash：复制链接即可分享当前筛选/排序/搜索视图 */
+    function syncUrlState(){
+      try{
+        const p=new URLSearchParams();
+        if(showNewOnly)p.set('new','1');
+        if(showFuturesOnly)p.set('fut','1');
+        if(showSecOnly)p.set('sec','1');
+        if(hideSecOnly)p.set('hsec','1');
+        if(showCompOnly)p.set('comp','1');
+        if(sortKey!=='todayQV')p.set('sort',sortKey);
+        if(sortDir!=='desc')p.set('dir',sortDir);
+        if(filter)p.set('q',filter);
+        const s=p.toString();
+        history.replaceState(null,'',location.pathname+location.search+(s?'#'+s:''));
+      }catch{}
+    }
     function saveUiState(){
       try{
         localStorage.setItem(UI_STATE_KEY,JSON.stringify({
           showNewOnly,showFuturesOnly,showSecOnly,hideSecOnly,showCompOnly,sortKey,sortDir
         }));
       }catch{}
+      syncUrlState();
     }
     (function restoreUiState(){
       try{
@@ -1813,15 +1914,29 @@
         showSecOnly=!!s.showSecOnly;
         hideSecOnly=!!s.hideSecOnly && !showSecOnly; // 互斥兜底
         showCompOnly=!!s.showCompOnly;
-        const validKeys=['vol24h','fdv','todayQV','prevQV','compVol'];
-        if(validKeys.includes(s.sortKey)) sortKey=s.sortKey;
+        if(SORT_KEYS.includes(s.sortKey)) sortKey=s.sortKey;
         if(s.sortDir==='asc'||s.sortDir==='desc') sortDir=s.sortDir;
-        onlyNewEl.checked=showNewOnly;
-        onlyFuturesEl.checked=showFuturesOnly;
-        onlySecEl.checked=showSecOnly;
-        hideSecEl.checked=hideSecOnly;
-        onlyCompEl.checked=showCompOnly;
-        thCompVol.style.display=showCompOnly?'':'none';
+        syncFilterUI();
+      }catch{}
+    })();
+    /* ✅ URL hash 优先级高于本地保存：打开分享链接时完整还原对方的视图（未带的参数视为关闭/默认） */
+    (function restoreFromUrl(){
+      if(!location.hash || location.hash.length<2) return;
+      try{
+        const p=new URLSearchParams(location.hash.slice(1));
+        const known=['new','fut','sec','hsec','comp','sort','dir','q'];
+        if(!known.some(k=>p.has(k))) return;
+        showNewOnly=p.get('new')==='1';
+        showFuturesOnly=p.get('fut')==='1';
+        showSecOnly=p.get('sec')==='1';
+        hideSecOnly=p.get('hsec')==='1' && !showSecOnly;
+        showCompOnly=p.get('comp')==='1';
+        sortKey=SORT_KEYS.includes(p.get('sort'))?p.get('sort'):'todayQV';
+        sortDir=p.get('dir')==='asc'?'asc':'desc';
+        const q=p.get('q')||'';
+        filter=q.toLowerCase();
+        document.getElementById('search').value=q;
+        syncFilterUI();
       }catch{}
     })();
 
@@ -2013,8 +2128,10 @@ document.querySelectorAll('th.sortable').forEach(th=>{
       const cacheOpen=cacheListEl.style.display==='block';
       cacheToggleBtn.textContent=cacheOpen?t('cacheHide'):t('cacheTitle');
       cacheClearAllBtn.textContent=t('cacheClearAll');
-      // 刷新区间查询结果（如果有内容）
-      if(customVolEl.dataset.sym){
+      // 刷新区间查询/多代币对比结果（如果有内容）
+      if(window._lastCompare){
+        renderCompare(window._lastCompare);
+      }else if(customVolEl.dataset.sym){
         const d=customVolEl.dataset;
         customVolEl.innerHTML=t('rangeTpl')(d.sym, fmtFull(+d.st), fmtFull(+d.et), nf0.format(+d.vol))
           + (d.trades>0 ? `<br>${t('tradeStats')(nf0.format(+d.trades), nf0.format(Math.round(+d.vol/+d.trades)))}` : '');
