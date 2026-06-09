@@ -1,0 +1,26 @@
+{
+  "_comment": "交易赛/加成活动配置。改这个文件即可上/下活动，无需改 index.html。时间用 ISO 字符串（带 +08:00 时区）。字段说明见 README.md",
+  "competitions": [
+    { "symbol": "ZEST", "start": "2026-06-02T21:00:00+08:00", "end": "2026-06-09T21:00:00+08:00", "topN": 2540, "pool": "588,000 ZEST", "perWinner": "240 ZEST" },
+    { "symbol": "NEX", "start": "2026-06-04T21:00:00+08:00", "end": "2026-06-11T21:00:00+08:00", "topN": 2000, "pool": "28,089,880,000 NEX", "perWinner": "14,044,940 NEX" },
+    { "symbol": "SLX", "start": "2026-06-08T12:30:00+08:00", "end": "2026-06-15T12:30:00+08:00", "topN": 2550, "pool": "357,000 SLX", "perWinner": "140 SLX" },
+    { "symbol": "IRYS", "start": "2026-06-04T21:00:00+08:00", "end": "2026-06-11T21:00:00+08:00", "topN": 2000, "pool": "4,760,000 IRYS", "perWinner": "2380 IRYS" },
+    { "symbol": "QAIT", "start": "2026-06-05T15:00:00+08:00", "end": "2026-06-12T15:00:00+08:00", "topN": 2490, "pool": "5,253,900 QAIT", "perWinner": "2,110 QAIT" },
+    { "symbol": "CTR", "start": "2026-06-09T21:00:00+08:00", "end": "2026-06-16T21:00:00+08:00", "topN": 2000, "pool": "6,660,000 CTR", "perWinner": "3,330 CTR" },
+    {
+      "symbol": "代币化证券总交易大赛",
+      "start": "2026-06-03T18:00:00+08:00",
+      "end": "2026-06-10T18:00:00+08:00",
+      "topN": 6000,
+      "pool": "300 MUon",
+      "perWinner": "0.05 MUon",
+      "syntheticToken": true,
+      "aggregateSec": true,
+      "rewardSymbol": "MUon",
+      "icon": "https://pbs.twimg.com/profile_images/1614113185652670466/YeihoVJk_400x400.jpg"
+    }
+  ],
+  "volumeBoosts": {
+    "0x783c3f003f172c6ac5ac700218a357d2d66ee2a2": "2026-06-12T21:00:00+08:00"
+  }
+}
