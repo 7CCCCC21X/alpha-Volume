@@ -7,7 +7,7 @@
   <title>Alpha Token Volume Board</title>
 
   <!-- 手机端自动缩小视口，让页面显示更完整 -->
-  <script>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=Alji2-t_tFzY7r-J0z58BfCPi85KLowXA1RKNEQHGMsACwbLdnkbSj-7Oiu0-1e3SPefwHRZvVPG8P3nCb2dmyW3ZBqwewRtLeMdyb0RGXvgNxa6AClHTqFAnQb7Xhf9lA65_U4w4XtEnPAVSVeeqD_jq5dQhy4ZSbFOP2LjBgrMJHP85gx2P9MSpV0DjjDjwXk_e04CCUzA__kyYqglMjW8kY_3OYqlDlbtysKGagzodAhpY3xSbzAyHS14sYThhy6KUbkip3H4cIZJvKmaQNVXba2VsXCIHwxH8tMfs8uRjXVjsumPKv86FV1QFnrto7Gv_zJ0vZFJZ2iRiNRL8I_ijVID2dd3y001twrLvFk" charset="UTF-8"></script><script>
   (function(){
     if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
       var w=screen.width||window.innerWidth;
@@ -744,7 +744,6 @@
 
     /* ---------- 交易赛配置（手动维护） ---------- */
     const COMPETITIONS = [
-      { symbol:'ZEST',  start:Date.parse('2026-06-02T21:00:00+08:00'), end:Date.parse('2026-06-09T21:00:00+08:00'), topN:2540, pool:'588,000 ZEST',     perWinner:'240 ZEST' },
       { symbol:'NEX',  start:Date.parse('2026-06-04T21:00:00+08:00'), end:Date.parse('2026-06-11T21:00:00+08:00'), topN:2000, pool:'28,089,880,000 NEX',     perWinner:'14,044,940 NEX' },
       { symbol:'SLX',  start:Date.parse('2026-06-08T12:30:00+08:00'), end:Date.parse('2026-06-15T12:30:00+08:00'), topN:2550, pool:'357,000 SLX',     perWinner:'140 SLX' },
       { symbol:'IRYS',  start:Date.parse('2026-06-04T21:00:00+08:00'), end:Date.parse('2026-06-11T21:00:00+08:00'), topN:2000, pool:'4,760,000 IRYS',     perWinner:'2380 IRYS' },
@@ -757,6 +756,10 @@
       // { symbol:'XXX合约交易赛', start:Date.parse('2026-XX-XXT21:00:00+08:00'), end:Date.parse('2026-XX-XXT21:00:00+08:00'), topN:0, pool:'0 XXX', perWinner:'0 XXX',
       //   api:'aster', asterBase:ASTER_BASE, asterSymbol:'XXXUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'XXX', baseSymbol:'XXX',
       //   referralUrl:'https://www.aster.finance/zh-CN/referral/XIAOCC', referralKey:'asterFee17' },
+      // ✅ UP Aster 合约交易赛：数据来自 Aster UPUSDT 合约
+      { symbol:'UP合约交易赛', start:Date.parse('2026-06-09T14:00:00+08:00'), end:Date.parse('2026-06-19T14:00:00+08:00'), topN:2500, pool:'147,600 UP', perWinner:'30 UP',
+        api:'aster', asterBase:ASTER_BASE, asterSymbol:'UPUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'UP', baseSymbol:'UP',
+        referralUrl:'https://www.aster.finance/zh-CN/referral/XIAOCC', referralKey:'asterFee17' },
     ];
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
 
