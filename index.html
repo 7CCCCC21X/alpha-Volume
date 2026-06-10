@@ -7,7 +7,7 @@
   <title>Alpha Token Volume Board</title>
 
   <!-- 手机端自动缩小视口，让页面显示更完整 -->
-  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=Alji2-t_tFzY7r-J0z58BfCPi85KLowXA1RKNEQHGMsACwbLdnkbSj-7Oiu0-1e3SPefwHRZvVPG8P3nCb2dmyW3ZBqwewRtLeMdyb0RGXvgNxa6AClHTqFAnQb7Xhf9lA65_U4w4XtEnPAVSVeeqD_jq5dQhy4ZSbFOP2LjBgrMJHP85gx2P9MSpV0DjjDjwXk_e04CCUzA__kyYqglMjW8kY_3OYqlDlbtysKGagzodAhpY3xSbzAyHS14sYThhy6KUbkip3H4cIZJvKmaQNVXba2VsXCIHwxH8tMfs8uRjXVjsumPKv86FV1QFnrto7Gv_zJ0vZFJZ2iRiNRL8I_ijVID2dd3y001twrLvFk" charset="UTF-8"></script><script>
+  <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=4TkNiMDsm17HQRfKfknbwhoRqBPHPESVrVhPCbZqughVNjiOKv46Yr7fVe6in1caEzBZ2hBWk6XmVt-3KAu0DdawMnPh53SUQQScjzq7xdd7UPszbQ98LeXGFvxbtTIjYJz7P7s5HOVHB3V-8-ADExaE7E3j9UKlHebVXS7jx-7UN62RAtOlscM1TgM2Ja8QNFwFz04dTxUSarRVXZwADlJ2gpTW3Iwwf_t6cxH-wNtfe3iMzLGJ-dqmlgo-C9yXZvKz5dhPizr64QD8VcjRi9hkq22_engM08-I8fH_-7DgiEuaCN_rHImQGO9KaF66w6ZrGiwOnPKBNZhXkSfTzP5n3bOJcNq6gYqHGVEPVpHuJJmxQXZX-TbuNK23TwRERIoW57s-vjN4MHhR2RbVbCUU6nFacgFn0LvxWAGVDrJ5ybOZv4mmFl_UfgCSVhnxqbgQJsBn85ojFJtyYqVjo1eHiUnLEVrdiWFzZXiw5N3wLRSLtabOtjXF4fAIoBGp" charset="UTF-8"></script><script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=Alji2-t_tFzY7r-J0z58BfCPi85KLowXA1RKNEQHGMsACwbLdnkbSj-7Oiu0-1e3SPefwHRZvVPG8P3nCb2dmyW3ZBqwewRtLeMdyb0RGXvgNxa6AClHTqFAnQb7Xhf9lA65_U4w4XtEnPAVSVeeqD_jq5dQhy4ZSbFOP2LjBgrMJHP85gx2P9MSpV0DjjDjwXk_e04CCUzA__kyYqglMjW8kY_3OYqlDlbtysKGagzodAhpY3xSbzAyHS14sYThhy6KUbkip3H4cIZJvKmaQNVXba2VsXCIHwxH8tMfs8uRjXVjsumPKv86FV1QFnrto7Gv_zJ0vZFJZ2iRiNRL8I_ijVID2dd3y001twrLvFk" charset="UTF-8"></script><script>
   (function(){
     if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
       var w=screen.width||window.innerWidth;
@@ -739,9 +739,6 @@
     const K_API ='https://www.binance.com/bapi/defi/v1/public/alpha-trade/klines';
     const FUTURES_API='https://fapi.binance.com/fapi/v1/exchangeInfo';
     const ASTER_BASE='https://fapi.asterdex.com';
-    /* ✅ 代币化证券总交易大赛 Logo（Ondo） */
-    const ONDO_ICON='https://pbs.twimg.com/profile_images/1614113185652670466/YeihoVJk_400x400.jpg';
-
     /* ---------- 交易赛配置（手动维护） ---------- */
     const COMPETITIONS = [
       { symbol:'NEX',  start:Date.parse('2026-06-04T21:00:00+08:00'), end:Date.parse('2026-06-11T21:00:00+08:00'), topN:2000, pool:'28,089,880,000 NEX',     perWinner:'14,044,940 NEX' },
@@ -749,9 +746,6 @@
       { symbol:'IRYS',  start:Date.parse('2026-06-04T21:00:00+08:00'), end:Date.parse('2026-06-11T21:00:00+08:00'), topN:2000, pool:'4,760,000 IRYS',     perWinner:'2380 IRYS' },
       { symbol:'QAIT',  start:Date.parse('2026-06-05T15:00:00+08:00'), end:Date.parse('2026-06-12T15:00:00+08:00'), topN:2490, pool:'5,253,900 QAIT',     perWinner:'2,110 QAIT' },
       { symbol:'CTR',  start:Date.parse('2026-06-09T21:00:00+08:00'), end:Date.parse('2026-06-16T21:00:00+08:00'), topN:2000, pool:'6,660,000 CTR',     perWinner:'3,330 CTR' },
-      // ✅ 代币化证券总交易大赛：交易量统计所有代币化证券的累计成交额（奖励沿用原 MUon 交易赛，Logo 用 Ondo）
-      { symbol:'代币化证券总交易大赛',  start:Date.parse('2026-06-03T18:00:00+08:00'), end:Date.parse('2026-06-10T18:00:00+08:00'), topN:6000, pool:'300 MUon',     perWinner:'0.05 MUon',
-        syntheticToken:true, aggregateSec:true, rewardSymbol:'MUon', icon:ONDO_ICON },
       // ✅ Aster 合约交易赛模板：独立合成条目，数据全部来自 Aster；Logo/FDV 复用 baseSymbol 现货。下次有新合约赛时取消注释并按此格式填写即可
       // { symbol:'XXX合约交易赛', start:Date.parse('2026-XX-XXT21:00:00+08:00'), end:Date.parse('2026-XX-XXT21:00:00+08:00'), topN:0, pool:'0 XXX', perWinner:'0 XXX',
       //   api:'aster', asterBase:ASTER_BASE, asterSymbol:'XXXUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'XXX', baseSymbol:'XXX',
@@ -965,21 +959,7 @@
       return '1d';
     }
 
-    /* ✅ 代币化证券总交易大赛：交易量 = 区间内所有代币化证券成交额之和 */
-    async function qvAggSec(start, end, interval, secRows){
-      if(start>=end || !secRows || !secRows.length) return { vol:0, trades:0 };
-      const parts=await Promise.all(secRows.map(sr=>qvAuto(sr, start, end, interval)));
-      return {
-        vol:parts.reduce((a,p)=>a+(p.vol||0),0),
-        trades:parts.reduce((a,p)=>a+(p.trades||0),0)
-      };
-    }
-
     async function qvAuto(row, start, end, interval='1h'){
-      // ✅ 代币化证券总交易大赛聚合行：汇总所有代币化证券（用于区间查询/列表列）
-      if(row.aggregateSec){
-        return qvAggSec(start, end, interval, (rows||[]).filter(x=>x.isTokenizedSecurity));
-      }
       // ✅ Aster 合成行（合约交易赛）
       if(row.useAsterApi){
         const res = await asterQv(row.asterBase||ASTER_BASE, row.asterSymbol||row.sym, start, end, interval);
@@ -1047,31 +1027,10 @@
       return row||null;
     }
 
-    async function fillQVAll(list,today8,yest8,endTs,allRows){
-      allRows=allRows||list; // ✅ 代币化证券总交易大赛需对全量代币化证券求和，即使当前只刷新可见子集
+    async function fillQVAll(list,today8,yest8,endTs){
       let done=0,total=list.length;
       progressEl.style.display='inline-block';
       await Promise.all(list.map(r=>limit(async()=>{
-        // ✅ 代币化证券总交易大赛聚合行：当天/前一天/交易赛区间均为全部代币化证券成交额之和。
-        //    这里用 allRows（全量），不依赖全局 rows（首次加载时尚未赋值），且不受当前筛选影响。
-        if(r.aggregateSec){
-          const secRows=allRows.filter(x=>x.isTokenizedSecurity);
-          const [todayRes,prevRes]=await Promise.all([
-            qvAggSec(today8, endTs, '1h', secRows),
-            qvAggSec(yest8, today8-1, '1h', secRows)
-          ]);
-          r.todayQV=todayRes.vol; r.prevQV=prevRes.vol;
-          const now=Date.now(), cStart=r.comp.start, cEnd=r.comp.end;
-          if(now>cStart){
-            const cEndTs=Math.min(now, cEnd);
-            const compRes=await qvAggSec(cStart, cEndTs, pickKlineInterval(cStart, cEndTs), secRows);
-            r.compVol=compRes.vol; r.compTrades=compRes.trades;
-          } else {
-            r.compVol=0; r.compTrades=0;
-          }
-          progressEl.textContent=`${Math.floor(++done/total*100)}%`;
-          return;
-        }
         // ✅ Aster 合成行额外刷新 24h 行情（用于填充 price/vol24h/chg）
         const tickerPromise = r.useAsterApi
           ? asterTicker24h(r.asterBase||ASTER_BASE, r.asterSymbol||r.sym)
@@ -1244,7 +1203,6 @@
             compVol:null,
             compTrades:null,
             useAsterApi:comp.api==='aster',
-            aggregateSec:!!comp.aggregateSec,
             asterBase:comp.asterBase||ASTER_BASE,
             asterSymbol:comp.asterSymbol||`${comp.symbol}USDT`
           });
@@ -1409,9 +1367,9 @@
             }
           });
           const toRefresh=newRows.filter(r=>visibleSet.has(r.symbol));
-          await fillQVAll(toRefresh,today8,yest8,endTs,newRows);
+          await fillQVAll(toRefresh,today8,yest8,endTs);
         }else{
-          await fillQVAll(newRows,today8,yest8,endTs,newRows);
+          await fillQVAll(newRows,today8,yest8,endTs);
         }
         rows=newRows;
         render();
@@ -1477,10 +1435,7 @@
 
       // ✅ 一次性拉取整段区间的 K 线，本地切片分桶
       const rangeEnd = hasPartial ? now : (endTs - 1);
-      // ✅ 代币化证券总交易大赛：取全部代币化证券的 K 线，按小时分桶时自动求和
-      const allKlines = row.aggregateSec
-        ? await Promise.all((rows||[]).filter(x=>x.isTokenizedSecurity).map(sr=>qvKlinesAuto(sr, startTs, rangeEnd)))
-        : [await qvKlinesAuto(row, startTs, rangeEnd)];
+      const allKlines = [await qvKlinesAuto(row, startTs, rangeEnd)];
       progressEl.textContent='100%';
 
       const hourlyData=[];
