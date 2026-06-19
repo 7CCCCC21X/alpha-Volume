@@ -740,7 +740,6 @@
     const ASTER_BASE='https://fapi.asterdex.com';
     /* ---------- 交易赛配置（手动维护） ---------- */
     const COMPETITIONS = [
-      { symbol:'QAIT',  start:Date.parse('2026-06-12T15:00:00+08:00'), end:Date.parse('2026-06-19T15:00:00+08:00'), topN:2490, pool:'5,253,900 QAIT',     perWinner:'2,110 QAIT' },
       { symbol:'BILL',  start:Date.parse('2026-06-18T21:00:00+08:00'), end:Date.parse('2026-06-25T21:00:00+08:00'), topN:2000, pool:'1,560,000 BILL',     perWinner:'780 BILL' },
       { symbol:'PRL',  start:Date.parse('2026-06-12T21:00:00+08:00'), end:Date.parse('2026-06-19T21:00:00+08:00'), topN:2020, pool:'525,200 PRL',     perWinner:'260 PRL' },
       { symbol:'GWEI',  start:Date.parse('2026-06-16T21:00:00+08:00'), end:Date.parse('2026-06-23T21:00:00+08:00'), topN:2000, pool:'680,000 GWEI',     perWinner:'340 GWEI' },
@@ -749,10 +748,6 @@
       // { symbol:'XXX合约交易赛', start:Date.parse('2026-XX-XXT21:00:00+08:00'), end:Date.parse('2026-XX-XXT21:00:00+08:00'), topN:0, pool:'0 XXX', perWinner:'0 XXX',
       //   api:'aster', asterBase:ASTER_BASE, asterSymbol:'XXXUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'XXX', baseSymbol:'XXX',
       //   referralUrl:'https://www.aster.finance/zh-CN/referral/XIAOCC', referralKey:'asterFee17' },
-      // ✅ UP Aster 合约交易赛：数据来自 Aster UPUSDT 合约
-      { symbol:'UP合约交易赛', start:Date.parse('2026-06-09T14:00:00+08:00'), end:Date.parse('2026-06-19T14:00:00+08:00'), topN:2500, pool:'147,600 UP', perWinner:'30 UP',
-        api:'aster', asterBase:ASTER_BASE, asterSymbol:'UPUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'UP', baseSymbol:'UP',
-        referralUrl:'https://www.aster.finance/zh-CN/referral/XIAOCC', referralKey:'asterFee17' },
     ];
     const COMP_MAP = Object.fromEntries(COMPETITIONS.map(c=>[c.symbol.toUpperCase(), c]));
 
