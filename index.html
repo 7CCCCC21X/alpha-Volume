@@ -745,7 +745,7 @@
       { symbol:'PRL',  start:Date.parse('2026-07-29T21:00:00+08:00'), end:Date.parse('2026-08-05T21:00:00+08:00'), topN:3000, pool:'590,000 PRL',     perWinner:'295 PRL' },
       { symbol:'QAIT',  start:Date.parse('2026-07-28T21:00:00+08:00'), end:Date.parse('2026-08-04T21:00:00+08:00'), topN:2000, pool:'16,660,000 QAIT',     perWinner:'8,330 QAIT' },
       { symbol:'O',  start:Date.parse('2026-07-30T21:00:00+08:00'), end:Date.parse('2026-08-06T21:00:00+08:00'), topN:2160, pool:'162,000 O',     perWinner:'75 O' },
-      { symbol:'CAP',  start:Date.parse('2026-07-30T21:00:00+08:00'), end:Date.parse('2026-08-06T21:00:00+08:00'), topN:2160, pool:'100,000 USDC',     perWinner:'50 USDC' },
+      { symbol:'CAP',  start:Date.parse('2026-07-30T21:00:00+08:00'), end:Date.parse('2026-08-06T21:00:00+08:00'), topN:2160, pool:'100,000 USDC',     perWinner:'50 USDC', rewardSymbol:'USDC' },
       // ✅ Aster 合约交易赛模板：独立合成条目，数据全部来自 Aster；Logo/FDV 复用 baseSymbol 现货。下次有新合约赛时取消注释并按此格式填写即可
       // { symbol:'XXX合约交易赛', start:Date.parse('2026-XX-XXT21:00:00+08:00'), end:Date.parse('2026-XX-XXT21:00:00+08:00'), topN:0, pool:'0 XXX', perWinner:'0 XXX',
       //   api:'aster', asterBase:ASTER_BASE, asterSymbol:'XXXUSDT', syntheticToken:true, isFutures:true, rewardSymbol:'XXX', baseSymbol:'XXX',
@@ -1291,9 +1291,11 @@
           if(r.compVol==null) compCell='…';
           else {
             const rewardAmt=parseFloat(r.comp.perWinner.replace(/,/g,''))||0;
-            const rewardPrice = r.comp.rewardSymbol
-              ? (priceBySym[r.comp.rewardSymbol.toUpperCase()]||0)
-              : r.price;
+            const rewardSym = (r.comp.rewardSymbol||'').toUpperCase();
+            // ✅ 稳定币奖励（如 USDC）不在 Alpha 价格表里，按 $1 计
+            const rewardPrice = ['USDC','USDT','FDUSD','DAI'].includes(rewardSym)
+              ? 1
+              : (rewardSym ? (priceBySym[rewardSym]||0) : r.price);
             const rewardUsd=rewardAmt*rewardPrice;
             compCell=`<span class="comp-vol-main" data-vol="${Math.round(r.compVol)}" title="点击复制">${nf0.format(r.compVol)}</span><span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
               +`<span class="subl">🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardUsd)}</span>`;
