@@ -743,7 +743,7 @@
       { symbol:'DEBIT',  start:Date.parse('2026-09-10T21:00:00+08:00'), end:Date.parse('2026-09-17T21:00:00+08:00'), topN:2000, pool:'58,000 DEBIT',     perWinner:'29 DEBIT' },
       { symbol:'PIEVERSE',  start:Date.parse('2026-09-15T21:00:00+08:00'), end:Date.parse('2026-09-22T21:00:00+08:00'), topN:2030, pool:'88,000 PIEVERSE',     perWinner:'44 PIEVERSE' },
       { symbol:'CP',  start:Date.parse('2026-09-15T21:00:00+08:00'), end:Date.parse('2026-09-22T21:00:00+08:00'), topN:2030, pool:'4,000,000 CP',     perWinner:'2,000 CP' },
-      { symbol:'CAP',  start:Date.parse('2026-09-17T21:00:00+08:00'), end:Date.parse('2026-09-24T21:00:00+08:00'), topN:2030, pool:'100,000 USDC',     perWinner:'50 USDC' },
+      { symbol:'CAP',  start:Date.parse('2026-09-17T21:00:00+08:00'), end:Date.parse('2026-09-24T21:00:00+08:00'), topN:2030, pool:'100,000 USDC',     perWinner:'50 USDC', rewardSymbol:'USDC' },
       { symbol:'XPIN',  start:Date.parse('2026-09-11T21:00:00+08:00'), end:Date.parse('2026-09-18T21:00:00+08:00'), topN:2000, pool:'111,112,000 XPIN',     perWinner:'55,556 XPIN' },
       // ✅ Aster 合约交易赛模板：独立合成条目，数据全部来自 Aster；Logo/FDV 复用 baseSymbol 现货。下次有新合约赛时取消注释并按此格式填写即可
       // { symbol:'XXX合约交易赛', start:Date.parse('2026-XX-XXT21:00:00+08:00'), end:Date.parse('2026-XX-XXT21:00:00+08:00'), topN:0, pool:'0 XXX', perWinner:'0 XXX',
@@ -1286,11 +1286,15 @@
           if(r.compVol==null) compCell='…';
           else {
             const rewardAmt=parseFloat(r.comp.perWinner.replace(/,/g,''))||0;
-            const rewardSym = (r.comp.rewardSymbol||'').toUpperCase();
+            // ✅ 奖励币种：优先 rewardSymbol，其次从 perWinner 文本解析（如 '50 USDC' → USDC），
+            //    都没有才回退到本代币价格。否则 USDC 等稳定币奖励会被误按本币价格换算
+            const perWinnerSym = (r.comp.perWinner.match(/[A-Za-z][A-Za-z0-9]*\s*$/)||[''])[0].trim().toUpperCase();
+            const rewardSym = (r.comp.rewardSymbol||perWinnerSym).toUpperCase();
+            const isOwnToken = !rewardSym || rewardSym===r.symbol.toUpperCase();
             // ✅ 稳定币奖励（如 USDC）不在 Alpha 价格表里，按 $1 计
-            const rewardPrice = ['USDC','USDT','FDUSD','DAI'].includes(rewardSym)
+            const rewardPrice = ['USDC','USDT','FDUSD','DAI','USD1'].includes(rewardSym)
               ? 1
-              : (rewardSym ? (priceBySym[rewardSym]||0) : r.price);
+              : (isOwnToken ? r.price : (priceBySym[rewardSym]||0));
             const rewardUsd=rewardAmt*rewardPrice;
             compCell=`<span class="comp-vol-main" data-vol="${Math.round(r.compVol)}" title="点击复制">${nf0.format(r.compVol)}</span><span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
               +`<span class="subl">🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardUsd)}</span>`;
