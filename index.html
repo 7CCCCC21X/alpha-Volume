@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=0.25,maximum-scale=5,user-scalable=yes">
   <title>Alpha Token Volume Board</title>
 
-  <!-- 手机端自动缩小视口，让页面显示更完整 --><script>
+  <!-- 手机端自动缩小视口，让页面显示更完整；同时尽早应用已保存的主题，避免首屏闪一下 --><script>
   (function(){
     if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
       var w=screen.width||window.innerWidth;
@@ -15,6 +15,10 @@
           .setAttribute('content','width=860,initial-scale='+(w/860).toFixed(3)+',minimum-scale=0.25,maximum-scale=5,user-scalable=yes');
       }
     }
+    try{
+      var theme=localStorage.getItem('theme');
+      if(theme==='dark'||theme==='light') document.documentElement.classList.add(theme);
+    }catch(e){}
   })();
   </script>
 
@@ -81,8 +85,7 @@
     .ad-badge{
       font-size:.68rem;padding:0 6px;border-radius:8px;color:#fff;background:#6b7280
     }
-    .ad-note{font-size:.82rem;color:var(--primary)}
-    .ad-links{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+    .ad-links{margin-left:auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center;position:relative;padding-bottom:18px}
     .ad .btn{padding:6px 10px}
 
     /* ✅ Telegram 徽章 */
@@ -103,12 +106,10 @@
     }
     tbody tr:hover{background:rgba(0,0,0,.04);cursor:pointer}
 
-    /* 窄屏固定前3列（星标 + 序号 + 代币名）—— 仅在未启用宽视口时生效 */
+    /* 窄屏下前两列（星标 + 序号）保持最小宽度（原 sticky 固定列方案已移除，只保留其列宽效果） */
     @media(max-width:760px){
-      th:nth-child(-n+3),td:nth-child(-n+3){position:sticky;background:var(--bg);z-index:1}
-      th:nth-child(1),td:nth-child(1){left:0;min-width:26px}
-      th:nth-child(2),td:nth-child(2){left:26px;min-width:28px}
-      th:nth-child(3),td:nth-child(3){left:54px;box-shadow:2px 0 4px rgba(0,0,0,.06)}
+      th:nth-child(1),td:nth-child(1){min-width:26px}
+      th:nth-child(2),td:nth-child(2){min-width:28px}
     }
 
     th.sortable{cursor:pointer;user-select:none;position:relative}
@@ -127,6 +128,7 @@
     .logo{width:18px;height:18px;margin-right:4px;vertical-align:middle;border-radius:50%}
     .up{color:var(--green)}.down{color:var(--red)}
     .subl{display:block;font-size:.72rem;color:var(--sub)}
+    .qv-fail{color:var(--red);cursor:help}
 
     /* ✅ 30天内上新标记 */
     .tag-new{
@@ -252,7 +254,6 @@
     #cacheToggle:hover{text-decoration:underline}
     #cacheClearAll{font-size:.76rem;color:var(--red);cursor:pointer;background:none;border:1px solid var(--red);border-radius:4px;padding:1px 8px;display:none}
     #cacheClearAll:hover{background:rgba(220,38,38,.08)}
-    /* hourly-total styles moved to #hourlyWrap section */
     #cacheList{margin-top:4px;display:none;border:1px solid var(--border);border-radius:6px;overflow:hidden;max-height:260px;overflow-y:auto}
     #cacheList .cache-item{
       display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:.82rem;
@@ -279,16 +280,9 @@
     }
     #backTop:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
 
-    @media(max-width:860px){
-      #bar-row2 input[type="datetime-local"]{flex:1;min-width:140px}
-      .ad-links{width:100%;justify-content:flex-start;margin-left:0}
-    }
-
     /* =========================================================
        ✅ 仅优化广告位 ad-links 里的注册链接按钮 + 引导提示（不影响顶部按钮）
        ========================================================= */
-    .ad-links{gap:10px;align-items:center; position:relative; padding-bottom:18px;}
-
     /* 覆盖广告区按钮尺寸与圆角 */
     .ad-links .btn{
       padding:9px 14px;
@@ -348,59 +342,6 @@
       animation:hintNudge 1.4s ease-in-out 6;
     }
 
-    /* 手机端：提示改为正常占位，避免绝对定位挤压布局 */
-    @media(max-width:860px){
-      .ad-links{ padding-bottom:0; }
-      .ad-links::after{
-        position:static;
-        display:block;
-        transform:none;
-        animation:none;
-        margin-top:6px;
-        text-align:left;
-      }
-    }
-
-    /* ========== 手机端全局优化（视口已被 JS 拉宽到 860px） ========== */
-    @media(max-width:860px){
-      h1{font-size:1.1rem;padding:10px 8px 6px}
-      .last-up{font-size:.72rem;margin-bottom:6px}
-      #bar{gap:5px;padding:0 6px;margin-bottom:8px}
-      #bar-row1{gap:5px}
-      #bar-row1 input[type="search"]{min-width:120px;font-size:.8rem;padding:5px 6px}
-      .btn{padding:5px 10px;font-size:.8rem}
-      .chk{font-size:.78rem;gap:3px}
-      #bar-right{gap:5px}
-      #author{font-size:.74rem}
-      #bar-row2{gap:5px}
-      #bar-row2 input[type="text"]{width:90px;font-size:.8rem;padding:5px 6px}
-      #bar-row2 input[type="datetime-local"]{font-size:.75rem;padding:4px 5px}
-      #bar-row2 input[type="number"]{font-size:.8rem;padding:4px}
-      /* 广告区紧凑 */
-      .ad{padding:6px 8px;gap:6px;margin-bottom:6px}
-      .ad-badge{font-size:.64rem}
-      .tg-badge{font-size:.7rem;padding:1px 6px}
-      .ad-links .btn{padding:6px 10px;font-size:.74rem;border-radius:8px}
-      .ad-links{gap:8px}
-      /* 表格 —— 不再需要水平滚动 */
-      table{min-width:auto;width:100%}
-      th,td{padding:8px 4px;font-size:.78rem}
-      .tag-new,.tag-futures,.tag-comp,.tag-mul{font-size:.62rem;padding:0 4px;margin-left:2px}
-      .logo{width:16px;height:16px;margin-right:2px}
-      .subl{font-size:.66rem}
-      /* 手机端不再需要 sticky 列（整个表格已可见） */
-      th:nth-child(-n+3),td:nth-child(-n+3){position:static;box-shadow:none}
-      /* 小时图紧凑 */
-      #hourlyWrap{margin-top:6px}
-      .hourly-header{padding:6px 8px}
-      .hourly-header .hourly-title{font-size:.8rem}
-      .hourly-header .hourly-total{font-size:.74rem}
-      /* 缓存区紧凑 */
-      #cacheWrap{margin-top:4px}
-      #cacheToggle{font-size:.76rem}
-      #cacheList .cache-item{padding:4px 8px;font-size:.76rem}
-    }
-
     /* ✅ 数字右对齐：可自定义列 */
     .ra-wrap{position:relative;display:inline-flex;align-items:center;gap:4px}
     .ra-wrap .btn-mini{
@@ -427,15 +368,54 @@
     .ra-panel .ra-title button:hover{color:var(--primary);border-color:var(--primary)}
     .ra-panel label{display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;color:var(--text);user-select:none}
     .ra-panel label input{margin:0}
+
+    /* ========== 手机端 / 窄屏全局优化（手机视口已被 JS 拉宽到 860px；三处同条件媒体查询已合并） ========== */
+    @media(max-width:860px){
+      h1{font-size:1.1rem;padding:10px 8px 6px}
+      .last-up{font-size:.72rem;margin-bottom:6px}
+      #bar{gap:5px;padding:0 6px;margin-bottom:8px}
+      #bar-row1{gap:5px}
+      #bar-row1 input[type="search"]{min-width:120px;font-size:.8rem;padding:5px 6px}
+      .btn{padding:5px 10px;font-size:.8rem}
+      .chk{font-size:.78rem;gap:3px}
+      #bar-right{gap:5px}
+      #author{font-size:.74rem}
+      #bar-row2{gap:5px}
+      #bar-row2 input[type="text"]{width:90px;font-size:.8rem;padding:5px 6px}
+      #bar-row2 input[type="datetime-local"]{flex:1;min-width:140px;font-size:.75rem;padding:4px 5px}
+      #bar-row2 input[type="number"]{font-size:.8rem;padding:4px}
+      /* 广告区紧凑；引导提示改为正常占位，避免绝对定位挤压布局 */
+      .ad{padding:6px 8px;gap:6px;margin-bottom:6px}
+      .ad-badge{font-size:.64rem}
+      .tg-badge{font-size:.7rem;padding:1px 6px}
+      .ad-links{width:100%;justify-content:flex-start;margin-left:0;gap:8px;padding-bottom:0}
+      .ad-links .btn{padding:6px 10px;font-size:.74rem;border-radius:8px}
+      .ad-links::after{position:static;display:block;transform:none;animation:none;margin-top:6px;text-align:left}
+      /* 表格 —— 不再需要水平滚动 */
+      table{min-width:auto;width:100%}
+      th,td{padding:8px 4px;font-size:.78rem}
+      .tag-new,.tag-futures,.tag-comp,.tag-mul{font-size:.62rem;padding:0 4px;margin-left:2px}
+      .logo{width:16px;height:16px;margin-right:2px}
+      .subl{font-size:.66rem}
+      /* 小时图紧凑 */
+      #hourlyWrap{margin-top:6px}
+      .hourly-header{padding:6px 8px}
+      .hourly-header .hourly-title{font-size:.8rem}
+      .hourly-header .hourly-total{font-size:.74rem}
+      /* 缓存区紧凑 */
+      #cacheWrap{margin-top:4px}
+      #cacheToggle{font-size:.76rem}
+      #cacheList .cache-item{padding:4px 8px;font-size:.76rem}
+    }
   </style>
 </head>
 <body>
-  <h1 id="title">Binance&nbsp;Alpha&nbsp;&mdash;&nbsp;24H&nbsp;交易量排行榜</h1>
+  <h1 id="title" data-i18n="title">Binance&nbsp;Alpha&nbsp;&mdash;&nbsp;24H&nbsp;交易量排行榜</h1>
   <p id="lastUp" class="last-up"></p>
 
   <div id="bar">
     <div id="bar-row1">
-      <input id="search" type="search" placeholder="🔍 按代币名称 / 符号过滤…">
+      <input id="search" type="search" data-i18n-ph="searchPh" placeholder="🔍 按代币名称 / 符号过滤…">
       <button id="refreshBtn" class="btn"> ⟳ <span data-i18n="refresh">刷新数据</span> <span id="progress" class="badge">0%</span> </button>
       <label class="chk"><input id="onlyNew" type="checkbox"> <span data-i18n="onlyNew">仅看30天内上新</span></label>
       <label class="chk"><input id="onlyFutures" type="checkbox"> <span data-i18n="onlyFutures">仅看有合约</span></label>
@@ -444,7 +424,7 @@
       <label class="chk"><input id="onlyComp" type="checkbox"> <span data-i18n="onlyComp">仅看交易赛</span></label>
       <div class="ra-wrap">
         <label class="chk"><input id="rightAlign" type="checkbox"> <span data-i18n="rightAlign">数字右对齐</span></label>
-        <button id="raCustomBtn" class="btn-mini" type="button" title="自定义对齐列">⚙</button>
+        <button id="raCustomBtn" class="btn-mini" type="button" data-i18n-title="raCustom" title="自定义对齐列">⚙</button>
         <div id="raPanel" class="ra-panel">
           <div class="ra-title">
             <span data-i18n="raTitle">自定义右对齐列</span>
@@ -453,28 +433,28 @@
               <button id="raNoneBtn" type="button" data-i18n="raNone">清空</button>
             </span>
           </div>
-          <label><input type="checkbox" data-col="price"> <span class="ra-lbl" data-key="thPrice">价格</span></label>
-          <label><input type="checkbox" data-col="vol24h"> <span class="ra-lbl" data-key="thVol24h">24H 交易量</span></label>
-          <label><input type="checkbox" data-col="chg"> <span class="ra-lbl" data-key="thChg">24H 变化</span></label>
-          <label><input type="checkbox" data-col="fdv"> <span class="ra-lbl" data-key="thFdv">FDV</span></label>
-          <label><input type="checkbox" data-col="todayQV"> <span class="ra-lbl" data-key="thTodayLabel">当天限价单成交额</span></label>
-          <label><input type="checkbox" data-col="prevQV"> <span class="ra-lbl" data-key="thPrevLabel">前一天限价单成交额</span></label>
-          <label><input type="checkbox" data-col="compVol"> <span class="ra-lbl" data-key="thCompVol">交易赛总交易量</span></label>
+          <label><input type="checkbox" data-col="price"> <span class="ra-lbl" data-i18n="thPrice">价格</span></label>
+          <label><input type="checkbox" data-col="vol24h"> <span class="ra-lbl" data-i18n="thVol24h">24H 交易量</span></label>
+          <label><input type="checkbox" data-col="chg"> <span class="ra-lbl" data-i18n="thChg">24H 变化</span></label>
+          <label><input type="checkbox" data-col="fdv"> <span class="ra-lbl" data-i18n="thFdv">FDV</span></label>
+          <label><input type="checkbox" data-col="todayQV"> <span class="ra-lbl" data-i18n="thTodayLabel">当天限价单成交额</span></label>
+          <label><input type="checkbox" data-col="prevQV"> <span class="ra-lbl" data-i18n="thPrevLabel">前一天限价单成交额</span></label>
+          <label><input type="checkbox" data-col="compVol"> <span class="ra-lbl" data-i18n="thCompVol">交易赛总交易量</span></label>
         </div>
       </div>
       <div id="bar-right">
-        <button id="langBtn" title="Switch Language">EN</button>
-        <button id="themeBtn" title="切换深色/浅色模式">🌓</button>
-        <div id="author"> 作者&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank">@0xXIAOc</a> </div>
+        <button id="langBtn" data-i18n="langBtn" title="Switch Language">EN</button>
+        <button id="themeBtn" data-i18n-title="themeBtn" title="切换深色/浅色模式">🌓</button>
+        <div id="author"><span data-i18n="author">作者</span>&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank" rel="noopener noreferrer">@0xXIAOc</a></div>
       </div>
     </div>
     <div id="bar-row2">
-      <input id="tokenInput" type="text" placeholder="输入代币名称">
+      <input id="tokenInput" type="text" data-i18n-ph="tokenPh" placeholder="输入代币名称">
       <input id="startTime" type="datetime-local">
       <input id="endTime" type="datetime-local">
       <button id="rangeBtn" class="btn" data-i18n="rangeQuery">区间查询</button>
       <span style="margin-left:8px;color:var(--sub);font-size:.82rem">|</span>
-      <input id="hourlyHours" type="number" min="1" max="72" value="6" style="width:52px" title="小时数">
+      <input id="hourlyHours" type="number" min="1" max="72" value="6" style="width:52px" data-i18n-title="hourlyHoursPh" title="小时数">
       <button id="hourlyBtn" class="btn" data-i18n="hourlyQuery">小时交易量</button>
     </div>
   </div>
@@ -482,13 +462,11 @@
   <!-- 广告位 -->
   <div class="ad">
     <span class="ad-badge" data-i18n="adBadge">广告</span>
-    <span class="ad-note"></span>
-
     <a class="tg-badge" href="https://t.me/xiaoc236" target="_blank" rel="noopener noreferrer" aria-label="加入Alpha交流群" title="加入 Telegram 频道">
       <span class="icon">✈️</span> <span data-i18n="joinTg">加入Alpha交流群</span>
     </a>
 
-    <div class="ad-links" data-hint="👆 点击上方按钮绑定邀请码" data-badge-text="推荐">
+    <div class="ad-links" data-hint="👆 点击上方按钮绑定邀请码">
       <a class="btn btn-main" data-badge="推荐" href="https://web3.binance.com/referral?ref=XIAOCC" target="_blank" rel="noopener noreferrer" data-i18n="bnbReg">
         币安钱包注册｜手续费减免30%
       </a>
@@ -512,21 +490,21 @@
   <table id="tokenTable">
     <thead>
       <tr>
-        <th style="width:26px"></th><th>#</th><th id="thName">代币名字</th>
-        <th id="thPrice" data-col="price">价格</th>
-        <th id="thVol24h" class="sortable" data-key="vol24h" data-col="vol24h">24H 交易量</th>
-        <th id="thChg" data-col="chg">24H 变化</th>
-        <th id="thFdv" class="sortable" data-key="fdv" data-col="fdv">FDV</th>
+        <th style="width:26px"></th><th>#</th><th id="thName" data-i18n="thName">代币名字</th>
+        <th id="thPrice" data-i18n="thPrice" data-col="price">价格</th>
+        <th id="thVol24h" class="sortable" data-i18n="thVol24h" data-key="vol24h" data-col="vol24h">24H 交易量</th>
+        <th id="thChg" data-i18n="thChg" data-col="chg">24H 变化</th>
+        <th id="thFdv" class="sortable" data-i18n="thFdv" data-key="fdv" data-col="fdv">FDV</th>
         <th id="thToday" class="sortable" data-key="todayQV" data-col="todayQV">当天限价单成交额</th>
         <th id="thPrev" class="sortable" data-key="prevQV" data-col="prevQV">前一天限价单成交额</th>
-        <th id="thCompVol" class="sortable" data-key="compVol" data-col="compVol" style="display:none">交易赛总交易量</th>
+        <th id="thCompVol" class="sortable" data-i18n="thCompVol" data-key="compVol" data-col="compVol" style="display:none">交易赛总交易量</th>
       </tr>
     </thead>
-    <tbody><tr><td colspan="9" id="initLoading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
+    <tbody><tr><td colspan="9" id="initLoading" data-i18n="loading" style="text-align:center;padding:24px">加载中…</td></tr></tbody>
   </table>
   </div>
 
-  <button id="backTop" title="回到顶部">↑</button>
+  <button id="backTop" data-i18n-title="backTop" title="回到顶部">↑</button>
   <div id="toast"></div>
   <footer></footer>
 
@@ -583,17 +561,17 @@
         cacheHide: '📋 收起记录',
         cacheEmpty: '暂无查询记录',
         cacheDel: '删除',
-        cacheLoad: '加载',
         cacheClearAll: '清空全部',
         cacheTime: '查询于',
         hourlyTotal: (vol) => `合计：${vol}`,
         tradeStats: (trades, avg) => `共 ${trades} 笔 | 约 ${avg} USD/笔`,
         avgPerTrade: (avg) => `约$${avg}/笔`,
-        hourlyType: 'hourly',
         onlyComp: '仅看交易赛',
         thCompVol: '交易赛总交易量',
         copied: '已复制',
         copyFail: '复制失败',
+        copyTip: '点击复制',
+        qvFail: '加载失败，请刷新重试',
         hourlyMinimize: '收起',
         hourlyExpand: '展开',
         compTag: '交易赛',
@@ -602,6 +580,7 @@
         compUpcoming: '🏆 未开始',
         compTip: (topN, pool, perWinner, start, end) => `参与资格：前${topN}名\n奖池：${pool}\n每人：${perWinner}\n${start} ~ ${end}`,
         asterFee17: '🎁 手续费减免17% · 立即绑定',
+        referralDefault: '🎁 手续费减免 · 立即绑定',
         rightAlign: '数字右对齐',
         raTitle: '自定义右对齐列',
         raCustom: '自定义对齐列',
@@ -658,17 +637,17 @@
         cacheHide: '📋 Hide History',
         cacheEmpty: 'No query history',
         cacheDel: 'Del',
-        cacheLoad: 'Load',
         cacheClearAll: 'Clear All',
         cacheTime: 'Queried at',
         hourlyTotal: (vol) => `Total: ${vol}`,
         tradeStats: (trades, avg) => `${trades} trades | ~${avg} USD/trade`,
         avgPerTrade: (avg) => `~$${avg}/trade`,
-        hourlyType: 'hourly',
         onlyComp: 'Competition only',
         thCompVol: 'Total Competition Volume',
         copied: 'Copied',
         copyFail: 'Copy failed',
+        copyTip: 'Click to copy',
+        qvFail: 'Load failed, refresh to retry',
         hourlyMinimize: 'Minimize',
         hourlyExpand: 'Expand',
         compTag: 'Comp',
@@ -677,6 +656,7 @@
         compUpcoming: '🏆 Upcoming',
         compTip: (topN, pool, perWinner, start, end) => `Eligibility: Top ${topN}\nPrize: ${pool}\nPer winner: ${perWinner}\n${start} ~ ${end}`,
         asterFee17: '🎁 17% Fee Off · Bind now',
+        referralDefault: '🎁 Fee discount · Bind now',
         rightAlign: 'Right-align',
         raTitle: 'Customize Right-align',
         raCustom: 'Customize columns',
@@ -684,53 +664,27 @@
         raNone: 'None'
       }
     };
-    let curLang = localStorage.getItem('lang') || 'zh';
+    /* localStorage 读写统一包一层：隐私模式 / 配额不足时不抛错 */
+    const storeGet=k=>{ try{ return localStorage.getItem(k); }catch{ return null; } };
+    const storeSet=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){ console.warn('localStorage write failed:', e); } };
+    const storeRemove=k=>{ try{ localStorage.removeItem(k); }catch{} };
+    let curLang = storeGet('lang')==='en' ? 'en' : 'zh';
     function t(key){ return I18N[curLang][key] || I18N.zh[key] || key; }
 
     function applyI18n(){
       document.title = curLang==='zh' ? 'Alpha 代币交易量看板' : 'Alpha Token Volume Board';
-      document.documentElement.lang = curLang==='zh' ? 'zh' : 'en';
-      document.getElementById('title').innerHTML = t('title');
-      document.getElementById('search').placeholder = t('searchPh');
-      document.querySelector('[data-i18n="refresh"]').textContent = t('refresh');
-      document.querySelector('[data-i18n="onlyNew"]').textContent = t('onlyNew');
-      document.querySelector('[data-i18n="onlyFutures"]').textContent = t('onlyFutures');
-      document.querySelector('[data-i18n="onlySec"]').textContent = t('onlySec');
-      document.querySelector('[data-i18n="hideSec"]').textContent = t('hideSec');
-      document.querySelector('[data-i18n="onlyComp"]').textContent = t('onlyComp');
-      document.getElementById('tokenInput').placeholder = t('tokenPh');
-      document.getElementById('rangeBtn').textContent = t('rangeQuery');
-      document.getElementById('hourlyBtn').textContent = t('hourlyQuery');
-      document.getElementById('hourlyHours').title = t('hourlyHoursPh');
-      document.querySelector('[data-i18n="adBadge"]').textContent = t('adBadge');
-      document.querySelector('[data-i18n="joinTg"]').textContent = t('joinTg');
-      document.querySelector('[data-i18n="bnbReg"]').textContent = t('bnbReg');
-      document.querySelector('[data-i18n="okxReg"]').textContent = t('okxReg');
+      document.documentElement.lang = curLang;
+      // ✅ 通用翻译：data-i18n → 文本，data-i18n-ph → placeholder，data-i18n-title → title。新增元素只需加属性，不会再漏掉
+      document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+      document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
+      document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title = t(el.dataset.i18nTitle); });
+      // CSS attr() 读取的属性
       document.querySelectorAll('.ad-links .btn-main, .ad-links .btn-ghost').forEach(el=>{
         el.setAttribute('data-badge', t('badge'));
       });
       document.querySelector('.ad-links').setAttribute('data-hint', t('adHint'));
-      document.getElementById('thName').textContent = t('thName');
-      document.getElementById('thPrice').textContent = t('thPrice');
-      document.getElementById('thFdv').childNodes[0].textContent = t('thFdv');
-      document.getElementById('thVol24h').childNodes[0].textContent = t('thVol24h');
-      document.getElementById('thChg').textContent = t('thChg');
-      document.getElementById('langBtn').textContent = t('langBtn');
-      document.getElementById('themeBtn').title = t('themeBtn');
-      document.getElementById('backTop').title = t('backTop');
-      document.querySelector('[data-i18n="rightAlign"]').textContent = t('rightAlign');
-      document.querySelector('[data-i18n="raTitle"]').textContent = t('raTitle');
-      document.querySelector('[data-i18n="raAll"]').textContent = t('raAll');
-      document.querySelector('[data-i18n="raNone"]').textContent = t('raNone');
-      document.getElementById('raCustomBtn').title = t('raCustom');
-      document.querySelectorAll('#raPanel .ra-lbl').forEach(el=>{
-        el.textContent = t(el.dataset.key);
-      });
-      const authorEl = document.getElementById('author');
-      authorEl.innerHTML = `${t('author')}&nbsp;<a href="https://x.com/intent/follow?screen_name=0xXIAOc" target="_blank">@0xXIAOc</a>`;
-      // update initial loading text if still present
-      const initEl = document.getElementById('initLoading');
-      if(initEl) initEl.textContent = t('loading');
+      // 带日期区间的两个表头单独渲染
+      renderHeaders();
     }
 
     /* ---------- 常量 & 工具 ---------- */
@@ -757,18 +711,20 @@
        说明：仅对这里登记了截止时间的代币显示倒计时标记（🔥 剩X天，原理同"30天内上新"，
        到期自动消失），不显示具体倍数。以后有新的加成活动，在此加一行"合约地址: 截止时间"即可。 */
     const MUL_END = {
-      '0x783c3f003f172c6ac5ac700218a357d2d66ee2a2': Date.parse('2026-06-12T21:00:00+08:00'), // B2 交易量加成活动
+      // '0x合约地址（小写）': Date.parse('2026-MM-DDT21:00:00+08:00'), // 示例；B2 活动已于 2026-06-12 结束，条目已移除
     };
     const nf0=new Intl.NumberFormat('en-US',{maximumFractionDigits:0});
     const nf2=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    /* ✅ Intl 格式化器缓存：构造一次约 0.3ms，之前每行每次调用都新建 */
+    const fmtCache={};
+    const cachedFmt=(key,make)=>fmtCache[key]||(fmtCache[key]=make());
     /* 智能价格格式化：小于 0.01 的价格自动显示更多有效位 */
     function fmtPrice(p){
       if(!p||p<=0) return '-';
       if(p>=1) return nf2.format(p);
-      if(p>=0.01) return new Intl.NumberFormat('en-US',{minimumFractionDigits:4,maximumFractionDigits:4}).format(p);
-      const s=p.toFixed(20);const m=s.match(/^0\.(0+)/);
-      const zeros=m?m[1].length:0;
-      return new Intl.NumberFormat('en-US',{minimumFractionDigits:zeros+3,maximumFractionDigits:zeros+3}).format(p);
+      let digits=4;
+      if(p<0.01){ const m=p.toFixed(20).match(/^0\.(0+)/); digits=(m?m[1].length:0)+3; }
+      return cachedFmt('price:'+digits,()=>new Intl.NumberFormat('en-US',{minimumFractionDigits:digits,maximumFractionDigits:digits})).format(p);
     }
     /* ✅ FDV 紧凑格式化 */
     function fmtFdv(n){
@@ -780,29 +736,29 @@
     }
     const FAV_KEY='alphaFavs',CONCURRENCY=15;
 
-    /* ✅ 严格 30 天（毫秒） */
-    const THIRTY_DAYS = 29*24*60*60*1000;
+    /* ✅ "30天内上新"的判定窗口：按 29 个整天计算，第 30 天标记自动消失 */
+    const NEW_WINDOW_MS = 29*24*60*60*1000;
 
     function dateLoc(){ return curLang==='zh'?'zh-CN':'en-GB'; }
-    const fmtShort=ts=>new Intl.DateTimeFormat(dateLoc(), {
+    const fmtShort=ts=>cachedFmt('short:'+curLang,()=>new Intl.DateTimeFormat(dateLoc(), {
       timeZone:'Asia/Shanghai',hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'
-    }).format(new Date(ts)).replace(/\//g,'-');
+    })).format(new Date(ts)).replace(/\//g,'-');
 
-    const fmtFull=ts=>new Intl.DateTimeFormat(dateLoc(), {
+    const fmtFull=ts=>cachedFmt('full:'+curLang,()=>new Intl.DateTimeFormat(dateLoc(), {
       timeZone:'Asia/Shanghai',hour12:false,year:'numeric',month:'2-digit',day:'2-digit',
       hour:'2-digit',minute:'2-digit',second:'2-digit'
-    }).format(new Date(ts)).replace(/\//g,'-');
+    })).format(new Date(ts)).replace(/\//g,'-');
 
+    /* ✅ 当天起点 = 北京时间 08:00 = UTC 00:00。按 UTC 计算，与浏览器所在时区无关（之前用本机 8 点，非东八区用户区间错位） */
     const nearest8UTC=()=>{
-      const n=new Date(),b=new Date();
-      b.setHours(8,0,0,0);
-      if(n<b)b.setDate(b.getDate()-1);
+      const b=new Date();
+      b.setUTCHours(0,0,0,0);
       return b.getTime();
     };
 
     const daysLeft = (listingMs)=>{
       if(!listingMs) return 0;
-      const delta = THIRTY_DAYS - (Date.now() - listingMs);
+      const delta = NEW_WINDOW_MS - (Date.now() - listingMs);
       return Math.max(0, Math.ceil(delta / 86400000));
     };
 
@@ -813,22 +769,36 @@
       return fetch(url,{signal:ctrl.signal}).finally(()=>clearTimeout(tid));
     }
 
-    /* ---------- 币安合约列表 ---------- */
-    let futuresSet = new Set();
-    async function fetchFutures(){
-      try{
-        const resp = await fetchWithTimeout(FUTURES_API);
-        if(!resp.ok) return;
-        const json = await resp.json();
-        const syms = json.symbols || [];
-        syms.forEach(s=>{
-          if(s.contractType==='PERPETUAL' && s.status==='TRADING'){
-            futuresSet.add(s.baseAsset.toUpperCase());
+    /* ---------- 币安合约列表 ----------
+       与主列表并行拉取且不阻塞主列表（之前串行，fapi 慢或不可达时首屏要白等到超时）；
+       到达后给已有行补上合约标记并重绘；失败过则下次刷新时重试。 */
+    let futuresSet=new Set(), futuresOk=false, futuresPending=null;
+    function applyFutures(){
+      if(!futuresOk) return;
+      for(const r of rows){ if(!r.synthetic) r.hasFutures=futuresSet.has(r.symbol.toUpperCase()); }
+    }
+    function ensureFutures(){
+      if(futuresOk) return Promise.resolve();
+      if(futuresPending) return futuresPending;
+      futuresPending=(async()=>{
+        try{
+          const resp=await fetchWithTimeout(FUTURES_API);
+          if(!resp.ok) return;
+          const json=await resp.json();
+          const set=new Set();
+          for(const sym of (json.symbols||[])){
+            if(sym.contractType==='PERPETUAL' && sym.status==='TRADING') set.add(sym.baseAsset.toUpperCase());
           }
-        });
-      }catch(e){
-        console.warn('Futures API failed:', e);
-      }
+          futuresSet=set; futuresOk=true;
+          applyFutures();
+          if(rows.length) scheduleRender();
+        }catch(e){
+          console.warn('Futures API failed:', e);
+        }finally{
+          futuresPending=null;
+        }
+      })();
+      return futuresPending;
     }
 
     /* ---------- DOM ---------- */
@@ -858,9 +828,23 @@
     const onlyCompEl=document.getElementById('onlyComp');
     const thCompVol=document.getElementById('thCompVol');
 
+    let toastTimer=null;
     function showToast(msg){
       toast.textContent=msg;toast.style.opacity='1';
-      setTimeout(()=>toast.style.opacity='0',3000);
+      clearTimeout(toastTimer);   // ✅ 连续提示时不会被上一条的定时器提前关掉
+      toastTimer=setTimeout(()=>toast.style.opacity='0',3000);
+    }
+
+    /* 两个带日期区间的表头：用最近一次刷新的区间渲染（切换语言时也用它，不再改成当前时间） */
+    function renderHeaders(){
+      const today8=lastRange?lastRange.today8:nearest8UTC();
+      const endTs=lastRange?lastRange.endTs:Date.now();
+      const yest8=today8-864e5;
+      thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
+      thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
+    }
+    function renderLastUp(){
+      lastUpEl.textContent=lastUpdateTs ? `${t('lastUp')} ${fmtFull(lastUpdateTs)}` : '';
     }
 
     /* ✅ 复制到剪贴板（带 execCommand 回退） */
@@ -881,31 +865,29 @@
     }
 
     let rows=[],filter='',sortKey='todayQV',sortDir='desc',showNewOnly=false,showFuturesOnly=false,showSecOnly=false,hideSecOnly=false,showCompOnly=false;
-    window._boundary=nearest8UTC();
+    let lastRange=null;       // 最近一次刷新的区间 {today8,yest8,endTs}
+    let lastUpdateTs=0;       // 最近一次成功刷新的时间戳
+    let lastRangeResult=null; // 最近一次区间查询结果（切换语言时重绘）
+    let lastHourlyData=null;  // 最近一次小时查询结果（切换语言时重绘）
+
+    /* HTML 转义：接口返回的 symbol / iconUrl 和用户输入都经过它再拼进 innerHTML */
+    const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    /* datetime-local 输入框的值（本地时间） */
+    const pad2=n=>String(n).padStart(2,'0');
+    const toLocalInput=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 
     function pLimit(n){
       const q=[];let run=0;
       const next=()=>{if(run>=n||!q.length)return;run++;q.shift()().finally(()=>{run--;next();});};
-      return fn=>new Promise(res=>{q.push(()=>fn().then(res));next();});
+      // ✅ 同步抛错和 reject 都传给调用方，不再让 Promise.all 永远挂起
+      return fn=>new Promise((res,rej)=>{q.push(()=>Promise.resolve().then(fn).then(res,rej));next();});
     }
     const limit=pLimit(CONCURRENCY);
 
     // ------------------------------
-    // ✅ Aster 合约 API（用于 Aster 合约交易赛合成行）
+    // ✅ Aster 24h 行情（用于 Aster 合约交易赛合成行）
     // ------------------------------
-    async function asterQv(base, sym, start, end, interval='1h'){
-      if(start>=end) return { vol:0, trades:0 };
-      const url=`${base}/fapi/v3/klines?symbol=${encodeURIComponent(sym)}&interval=${interval}&startTime=${start}&endTime=${end}&limit=1500`;
-      try{
-        const data=await fetchWithTimeout(url).then(r=>r.json());
-        if(!Array.isArray(data)) return { vol:0, trades:0 };
-        const vol=data.reduce((s,k)=>s+parseFloat(k?.[7]||0),0);
-        const trades=data.reduce((s,k)=>s+parseInt(k?.[8]||0),0);
-        return { vol, trades };
-      }catch{
-        return { vol:0, trades:0 };
-      }
-    }
     async function asterTicker24h(base, sym){
       try{
         const url=`${base}/fapi/v3/ticker/24hr?symbol=${encodeURIComponent(sym)}`;
@@ -921,29 +903,29 @@
     }
 
     // ------------------------------
-    // ✅ K线成交额：优先 USDT，失败自动 fallback 到 USDC
+    // ✅ K 线拉取统一入口：返回 {ok, data}。ok=false 表示请求失败（网络 / 接口报错），区别于"成功但没有数据"
+    //    之前 qvOk / qvAuto / qvKlinesAuto 三处各写一遍成功判断和 USDT→USDC 回退，这里合并成一份
     // ------------------------------
-    async function qvOk(sym, start, end, interval='1h'){
-      if(start>=end) return { ok:true, vol:0, trades:0 };
-      const url=`${K_API}?symbol=${encodeURIComponent(sym)}&interval=${interval}&startTime=${start}&endTime=${end}&limit=1500`;
+    const klineUrl=(endpoint, sym, start, end, interval)=>
+      `${endpoint}?symbol=${encodeURIComponent(sym)}&interval=${interval}&startTime=${start}&endTime=${end}&limit=1500`;
+    const parseAlpha=json=>{
+      const ok=(json?.success!==false) && (json?.code==null || ['000000','0'].includes(String(json.code)));
+      return ok ? json?.data : null;
+    };
+    const parseAster=json=>json;
+    async function fetchKlines(url, parse){
       try{
-        const json=await fetchWithTimeout(url).then(r=>r.json());
-
-        const ok =
-          (json?.success !== false) &&
-          (json?.code == null || ['000000','0'].includes(String(json.code)));
-
-        if(!ok) return { ok:false, vol:0, trades:0 };
-
-        const data=json?.data;
-        if(!Array.isArray(data)) return { ok:false, vol:0, trades:0 };
-
-        const vol=data.reduce((s,k)=>s+parseFloat(k?.[7]||0),0);
-        const trades=data.reduce((s,k)=>s+parseInt(k?.[8]||0),0);
-        return { ok:true, vol, trades };
-      }catch{
-        return { ok:false, vol:0, trades:0 };
+        const data=parse(await fetchWithTimeout(url).then(r=>r.json()));
+        return Array.isArray(data) ? {ok:true, data} : {ok:false, data:[]};
+      }catch(e){
+        return {ok:false, data:[], timeout:e?.name==='AbortError'};
       }
+    }
+    /* 汇总成交额 / 笔数（K 线第 8 列 quoteVolume，第 9 列 trades） */
+    function sumKlines(data){
+      let vol=0,trades=0;
+      for(const k of data){ vol+=parseFloat(k?.[7]||0); trades+=parseInt(k?.[8]||0); }
+      return {vol,trades};
     }
 
     /* ✅ 根据区间长度自动选最细的 K 线粒度，保证单次请求内 K 线数 ≤ 1500（避免被截断）。
@@ -955,56 +937,26 @@
       return '1d';
     }
 
-    async function qvAuto(row, start, end, interval='1h'){
-      // ✅ Aster 合成行（合约交易赛）
+    /* 按代币行拉 K 线：Aster 合成行走 Aster；其它优先 USDT，接口报错时回退 USDC 并缓存可用交易对
+       （请求超时不回退：USDC 大概率同样超时，免得再白等一次） */
+    async function klinesAuto(row, start, end, interval='1h'){
+      if(start>=end) return {ok:true, data:[]};
       if(row.useAsterApi){
-        const res = await asterQv(row.asterBase||ASTER_BASE, row.asterSymbol||row.sym, start, end, interval);
-        return { vol:res.vol, trades:res.trades };
+        return fetchKlines(klineUrl(`${row.asterBase||ASTER_BASE}/fapi/v3/klines`, row.asterSymbol||row.sym, start, end, interval), parseAster);
       }
-      const primary = row.qSym || row.sym; // row.sym 默认是 `${alphaId}USDT`
-      let res = await qvOk(primary, start, end, interval);
-      if(res.ok) return { vol:res.vol, trades:res.trades };
-
-      const alt = row.symUSDC || (row.sym && row.sym.endsWith('USDT') ? row.sym.replace(/USDT$/,'USDC') : '');
-      if(!alt || alt===primary) return { vol:0, trades:0 };
-
-      res = await qvOk(alt, start, end, interval);
-      if(res.ok){
-        row.qSym = alt; // 缓存实际可用交易对
-        return { vol:res.vol, trades:res.trades };
-      }
-      return { vol:0, trades:0 };
+      const primary=row.qSym||row.sym; // row.sym 默认是 `${alphaId}USDT`
+      let res=await fetchKlines(klineUrl(K_API, primary, start, end, interval), parseAlpha);
+      if(res.ok||res.timeout) return res;
+      const alt=row.symUSDC||(row.sym&&row.sym.endsWith('USDT') ? row.sym.replace(/USDT$/,'USDC') : '');
+      if(!alt||alt===primary) return res;
+      res=await fetchKlines(klineUrl(K_API, alt, start, end, interval), parseAlpha);
+      if(res.ok) row.qSym=alt; // 缓存实际可用交易对
+      return res;
     }
-
-    /* 一次性拉取区间内所有 1h K 线（USDT→USDC fallback），本地切片避免多次请求 */
-    async function qvKlinesAuto(row, start, end){
-      if(start>=end) return [];
-      // ✅ Aster 合成行（合约交易赛）
-      if(row.useAsterApi){
-        const url=`${row.asterBase||ASTER_BASE}/fapi/v3/klines?symbol=${encodeURIComponent(row.asterSymbol||row.sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
-        try{
-          const json=await fetchWithTimeout(url).then(r=>r.json());
-          return Array.isArray(json) ? json : [];
-        }catch{ return []; }
-      }
-      const fetchSym = async (sym) => {
-        const url=`${K_API}?symbol=${encodeURIComponent(sym)}&interval=1h&startTime=${start}&endTime=${end}&limit=1500`;
-        try{
-          const json=await fetchWithTimeout(url).then(r=>r.json());
-          const ok = (json?.success !== false) && (json?.code == null || ['000000','0'].includes(String(json.code)));
-          if(!ok) return null;
-          const data=json?.data;
-          return Array.isArray(data) ? data : null;
-        }catch{ return null; }
-      };
-      const primary = row.qSym || row.sym;
-      let data = await fetchSym(primary);
-      if(data) return data;
-      const alt = row.symUSDC || (row.sym && row.sym.endsWith('USDT') ? row.sym.replace(/USDT$/,'USDC') : '');
-      if(!alt || alt===primary) return [];
-      data = await fetchSym(alt);
-      if(data){ row.qSym = alt; return data; }
-      return [];
+    /* 区间成交额：{ok, vol, trades}；ok=false 时调用方显示"失败"而不是 0 */
+    async function qvAuto(row, start, end, interval='1h'){
+      const res=await klinesAuto(row, start, end, interval);
+      return {ok:res.ok, ...sumKlines(res.data)};
     }
 
     /* 公共：按名称/交易对查找代币行 */
@@ -1023,17 +975,26 @@
       return row||null;
     }
 
+    /* 渲染节流：填充过程中最多每 800ms 重绘一次表格 */
+    let renderTimer=null;
+    function scheduleRender(delay=800){
+      if(renderTimer) return;
+      renderTimer=setTimeout(()=>{ renderTimer=null; render(); }, delay);
+    }
+    function cancelScheduledRender(){ clearTimeout(renderTimer); renderTimer=null; }
+
     async function fillQVAll(list,today8,yest8,endTs){
       let done=0,total=list.length;
+      if(!total) return;
       progressEl.style.display='inline-block';
       await Promise.all(list.map(r=>limit(async()=>{
         // ✅ Aster 合成行额外刷新 24h 行情（用于填充 price/vol24h/chg）
         const tickerPromise = r.useAsterApi
           ? asterTicker24h(r.asterBase||ASTER_BASE, r.asterSymbol||r.sym)
           : Promise.resolve(null);
-        const [todayRes,prevRes,tickerRes]=await Promise.all([
-          qvAuto(r,today8,endTs),
-          qvAuto(r,yest8,today8-1),
+        // ✅ "前一天 + 当天"一次拉完（昨天 08:00 ~ 现在，≤48 根 1h K 线），本地按 openTime 切分，请求数减半
+        const [dayRes,tickerRes]=await Promise.all([
+          klinesAuto(r,yest8,endTs,'1h'),
           tickerPromise
         ]);
         if(tickerRes){
@@ -1041,7 +1002,13 @@
           if(tickerRes.vol24h) r.vol24h=tickerRes.vol24h;
           if(!isNaN(tickerRes.chg)) r.chg=tickerRes.chg;
         }
-        r.todayQV=todayRes.vol; r.prevQV=prevRes.vol;
+        if(dayRes.ok){
+          const prev=[],today=[];
+          for(const k of dayRes.data) (+k[0]<today8 ? prev : today).push(k);
+          r.prevQV=sumKlines(prev).vol; r.todayQV=sumKlines(today).vol; r.qvFail=false;
+        }else{
+          r.qvFail=true; // ✅ 请求失败：保留旧值（首次加载为 null）并标记，不再显示成 0
+        }
         // ✅ 交易赛累计成交额：合成行通过 useAsterApi 自动走 Aster，其它走 Binance Alpha
         if(r.comp){
           const now=Date.now();
@@ -1051,80 +1018,83 @@
             //    用 1h 会因首根整点 K 线 openTime 早于开始时间而被漏掉导致显示 0。
             const cEndTs=Math.min(now, cEnd);
             const compRes=await qvAuto(r, cStart, cEndTs, pickKlineInterval(cStart, cEndTs));
-            r.compVol=compRes.vol; r.compTrades=compRes.trades;
+            if(compRes.ok){ r.compVol=compRes.vol; r.compTrades=compRes.trades; r.compFail=false; }
+            else r.compFail=true;
           } else {
-            r.compVol=0; r.compTrades=0;
+            r.compVol=0; r.compTrades=0; r.compFail=false;
           }
         }
         progressEl.textContent=`${Math.floor(++done/total*100)}%`;
+        scheduleRender();
       })));
       progressEl.style.display='none';
     }
 
-    const favs=()=>{try{return JSON.parse(localStorage.getItem(FAV_KEY)||'[]');}catch{return [];}};
+    const favs=()=>{try{return JSON.parse(storeGet(FAV_KEY)||'[]');}catch{return [];}};
     function toggleFav(sym){
       const f=favs();const i=f.indexOf(sym);
       i>-1?f.splice(i,1):f.push(sym);
-      localStorage.setItem(FAV_KEY,JSON.stringify(f));
+      storeSet(FAV_KEY,JSON.stringify(f));
       showToast(i>-1 ? t('favDel') : t('favAdd'));
       render();
     }
 
     async function fetchList(){
+      ensureFutures();   // ✅ 合约列表并行拉取、不阻塞主列表；到达后由 applyFutures 补标记
       const resp=await fetchWithTimeout(LIST_API);
       if(!resp.ok)throw new Error('LIST_API Error');
       const {data=[]}=await resp.json();
 
       const rawList = data
-        .filter(t => {
+        .filter(tk => {
           // ✅ 过滤：仅当 listingCex=true 且已 cexOffDisplay=true 才视为现货下架；单独 listingCex=true 不能用来过滤
-          if (t.listingCex === true && t.cexOffDisplay === true) return false;
-          if (t.offline === true) return false;
-          return +t.volume24h > 0 || (t.stockState === true && t.rwaInfo != null);
+          if (tk.listingCex === true && tk.cexOffDisplay === true) return false;
+          if (tk.offline === true) return false;
+          return +tk.volume24h > 0 || (tk.stockState === true && tk.rwaInfo != null);
         })
-        .map(t=>{
-          const raw = Number(t.listingTime || 0);
+        .map(tk=>{
+          const raw = Number(tk.listingTime || 0);
           const ltMs = raw ? (raw < 1e12 ? raw*1000 : raw) : 0;
-          const isTokenizedSecurity = t.stockState === true && t.rwaInfo != null;
+          const isTokenizedSecurity = tk.stockState === true && tk.rwaInfo != null;
           // ✅ 代币化证券不计入"30天内上新"
-          const isNew = !isTokenizedSecurity && ltMs ? (Date.now() - ltMs) < THIRTY_DAYS : false;
+          const isNew = !isTokenizedSecurity && ltMs ? (Date.now() - ltMs) < NEW_WINDOW_MS : false;
 
           // ✅ FDV：优先使用 API 返回字段，否则用 price × totalSupply
-          const priceN = +t.price || 0;
-          const totalSupplyN = +t.totalSupply || +t.circulatingSupply || 0;
+          const priceN = +tk.price || 0;
+          const totalSupplyN = +tk.totalSupply || +tk.circulatingSupply || 0;
 
           // ✅ 交易量加成活动截止时间（按合约地址查 MUL_END，未登记则为 0）
-          const mulEnd = MUL_END[(t.contractAddress || '').toLowerCase()] || 0;
+          const mulEnd = MUL_END[(tk.contractAddress || '').toLowerCase()] || 0;
           const fdv =
-            +t.fdv ||
-            +t.fullyDilutedMarketCap ||
-            +t.fullyDilutedValuation ||
-            +t.marketCap ||
+            +tk.fdv ||
+            +tk.fullyDilutedMarketCap ||
+            +tk.fullyDilutedValuation ||
+            +tk.marketCap ||
             (priceN && totalSupplyN ? priceN * totalSupplyN : 0);
 
           return {
             price:priceN,
-            vol24h:+t.volume24h,
-            chg:+t.percentChange24h,
-            symbol:t.symbol,
-            icon:t.iconUrl,
+            vol24h:+tk.volume24h||0,
+            chg:+tk.percentChange24h||0,
+            symbol:tk.symbol,
+            icon:tk.iconUrl,
 
             // ✅ 唯一标识（同 ticker 撞名时用它区分不同代币）
-            alphaId:t.alphaId,
+            alphaId:tk.alphaId,
 
             // ✅ 默认仍用 USDT 作为"身份 key"（收藏等不受影响）
-            sym:`${t.alphaId}USDT`,
+            sym:`${tk.alphaId}USDT`,
             // ✅ USDC 备选交易对
-            symUSDC:`${t.alphaId}USDC`,
+            symUSDC:`${tk.alphaId}USDC`,
             // ✅ 缓存：实际能用的交易对（USDT/USDC）
             qSym:null,
 
-            // ✅ null 表示"还在加载"；0 才是真正的 0
+            // ✅ null 表示"还在加载"；0 才是真正的 0；qvFail=true 表示本轮请求失败
             todayQV:null,
             prevQV:null,
+            qvFail:false,
 
             listingTime: ltMs,
-            listingTimeFmt: ltMs ? fmtFull(ltMs) : '',
             isNew,
 
             // ✅ FDV
@@ -1134,15 +1104,16 @@
             isTokenizedSecurity,
 
             // ✅ 是否上了币安合约
-            hasFutures: futuresSet.has(t.symbol.toUpperCase()),
+            hasFutures: futuresSet.has(tk.symbol.toUpperCase()),
 
             // ✅ 交易量加成活动截止时间
             mulEnd,
 
             // ✅ 交易赛
-            comp: COMP_MAP[t.symbol.toUpperCase()] || null,
+            comp: COMP_MAP[tk.symbol.toUpperCase()] || null,
             compVol: null,
-            compTrades: null
+            compTrades: null,
+            compFail: false
           };
         });
 
@@ -1183,13 +1154,15 @@
             chg:0,
             symbol:comp.symbol,
             icon: comp.icon || (baseRow ? baseRow.icon : ''),
+            alphaId:comp.symbol,
+            synthetic:true,
             sym:comp.symbol,
             symUSDC:'',
             qSym:null,
             todayQV:null,
             prevQV:null,
+            qvFail:false,
             listingTime:0,
-            listingTimeFmt:'',
             isNew:false,
             fdv: baseRow ? baseRow.fdv : 0,
             isTokenizedSecurity:false,
@@ -1198,6 +1171,7 @@
             comp,
             compVol:null,
             compTrades:null,
+            compFail:false,
             useAsterApi:comp.api==='aster',
             asterBase:comp.asterBase||ASTER_BASE,
             asterSymbol:comp.asterSymbol||`${comp.symbol}USDT`
@@ -1223,6 +1197,14 @@
         return sortDir==='desc' ? vb-va : va-vb;
       });
     }
+    /* 复选框筛选条件（render 与刷新时"只刷新可见币种"共用同一份逻辑） */
+    function passesFilters(r){
+      return (!showNewOnly || r.isNew) &&
+             (!showFuturesOnly || r.hasFutures) &&
+             (!showSecOnly || r.isTokenizedSecurity) &&
+             (!hideSecOnly || !r.isTokenizedSecurity) &&
+             (!showCompOnly || !!r.comp);
+    }
     function updateSortIcons(){
       document.querySelectorAll('th.sortable').forEach(th=>{
         th.classList.remove('asc','desc');
@@ -1234,34 +1216,35 @@
       const favSet=new Set(favs());
       const priceBySym = {};
       rows.forEach(r=>{ if(r.symbol) priceBySym[r.symbol.toUpperCase()] = r.price; });
+      const f = filter;
       const filtered=rows.filter(r=>{
-        const f = filter;
-        const matched =
+        const matched = !f ||
           r.symbol.toLowerCase().includes(f) ||
           (r.sym||'').toLowerCase().includes(f) ||
           (r.symUSDC||'').toLowerCase().includes(f) ||
           (r.qSym||'').toLowerCase().includes(f);
-
-        const newOk = !showNewOnly || r.isNew;
-        const futuresOk = !showFuturesOnly || r.hasFutures;
-        const secOk = !showSecOnly || r.isTokenizedSecurity;
-        const hideSecOk = !hideSecOnly || !r.isTokenizedSecurity;
-        const compOk = !showCompOnly || r.comp;
-        return matched && newOk && futuresOk && secOk && hideSecOk && compOk;
+        return matched && passesFilters(r);
       });
 
       const sorted=sortRows(filtered);
       const display=[...sorted.filter(x=>favSet.has(x.sym)),...sorted.filter(x=>!favSet.has(x.sym))];
 
+      // ✅ null = 还在加载（…）；请求失败显示 —（有旧值时显示旧值 + ⚠），不再把失败显示成 0
+      const failMark=`<span class="qv-fail" title="${esc(t('qvFail'))}">—</span>`;
+      const warnMark=` <span class="qv-fail" title="${esc(t('qvFail'))}">⚠</span>`;
+      const fmtQV=(v,fail)=> v==null ? (fail?failMark:'…') : nf0.format(v)+(fail?warnMark:'');
+      const tipPrefix = t('listingTip');
+      const copyTip = esc(t('copyTip'));
+
       tbody.innerHTML=display.map((r,i)=>{
         const left = r.isNew && r.listingTime ? daysLeft(r.listingTime) : 0;
-        const tipPrefix = t('listingTip');
+        const listingTip = r.listingTime ? esc(tipPrefix+fmtFull(r.listingTime)) : '';
 
         // ✅ 交易赛标记
         let compTag='';
         if(r.comp){
           const now=Date.now(), c=r.comp;
-          const compTip=t('compTip')(c.topN, c.pool, c.perWinner, fmtFull(c.start), fmtFull(c.end));
+          const compTip=esc(t('compTip')(c.topN, c.pool, c.perWinner, fmtFull(c.start), fmtFull(c.end)));
           if(now<c.start){
             compTag=`<span class="tag-comp comp-upcoming" title="${compTip}">${t('compUpcoming')}</span>`;
           } else if(now<=c.end){
@@ -1278,13 +1261,13 @@
         let mulTag='';
         if(r.mulEnd && Date.now() <= r.mulEnd){
           const d = Math.max(0, Math.ceil((r.mulEnd - Date.now()) / 86400000));
-          mulTag = `<span class="tag-mul" title="${t('mulTip')(fmtFull(r.mulEnd))}">${t('mulTag')(d)}</span>`;
+          mulTag = `<span class="tag-mul" title="${esc(t('mulTip')(fmtFull(r.mulEnd)))}">${t('mulTag')(d)}</span>`;
         }
 
         // ✅ 交易赛交易量列
         let compCell='-';
         if(r.comp){
-          if(r.compVol==null) compCell='…';
+          if(r.compVol==null) compCell = r.compFail ? failMark : '…';
           else {
             const rewardAmt=parseFloat(r.comp.perWinner.replace(/,/g,''))||0;
             // ✅ 奖励币种：优先 rewardSymbol，其次从 perWinner 文本解析（如 '50 USDC' → USDC），
@@ -1297,34 +1280,37 @@
               ? 1
               : (isOwnToken ? r.price : (priceBySym[rewardSym]||0));
             const rewardUsd=rewardAmt*rewardPrice;
-            compCell=`<span class="comp-vol-main" data-vol="${Math.round(r.compVol)}" title="点击复制">${nf0.format(r.compVol)}</span><span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
-              +`<span class="subl">🎁 ${r.comp.perWinner} ≈ $${nf2.format(rewardUsd)}</span>`;
+            compCell=`<span class="comp-vol-main" data-vol="${Math.round(r.compVol)}" title="${copyTip}">${nf0.format(r.compVol)}</span>${r.compFail?warnMark:''}<span class="subl">${fmtShort(r.comp.start)}~${fmtShort(Math.min(Date.now(),r.comp.end))}</span>`
+              +`<span class="subl">🎁 ${esc(r.comp.perWinner)} ≈ $${nf2.format(rewardUsd)}</span>`;
           }
         }
 
         const iconHtml = r.icon
-          ? `<img class="logo" loading="lazy" src="${r.icon}" referrerpolicy="no-referrer" onerror="this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">`
+          ? `<img class="logo" loading="lazy" src="${esc(r.icon)}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='https://bin.bnbstatic.com/static/images/common/base-token-default.png'">`
+          : '';
+        const referral = r.comp && r.comp.referralUrl
+          ? `<a class="referral-link" href="${esc(r.comp.referralUrl)}" target="_blank" rel="noopener noreferrer">${r.comp.referralKey ? t(r.comp.referralKey) : t('referralDefault')}</a>`
           : '';
 
         return `
-        <tr data-sym="${r.sym}">
+        <tr data-sym="${esc(r.sym)}">
           <td class="star ${favSet.has(r.sym)?'fav':''}">${favSet.has(r.sym)?'★':'☆'}</td>
           <td>${i+1}</td>
-          <td title="${r.listingTimeFmt ? (tipPrefix+r.listingTimeFmt) : ''}">
+          <td title="${listingTip}">
             ${iconHtml}
-            ${r.symbol}
+            ${esc(r.symbol)}
             ${r.hasFutures ? `<span class="tag-futures">${t('futuresTag')}</span>` : ''}
-            ${r.isNew ? `<span class="tag-new" title="${tipPrefix}${r.listingTimeFmt}">${t('newTag')(left)}</span>` : ''}
+            ${r.isNew ? `<span class="tag-new" title="${listingTip}">${t('newTag')(left)}</span>` : ''}
             ${mulTag}
             ${compTag}
-            ${r.comp && r.comp.referralUrl ? `<a class="referral-link" href="${r.comp.referralUrl}" target="_blank" rel="noopener noreferrer">${t(r.comp.referralKey||'')||'🎁 手续费减免 · 立即绑定'}</a>` : ''}
+            ${referral}
           </td>
           <td data-col="price">${fmtPrice(r.price)}</td>
           <td data-col="vol24h">${nf0.format(r.vol24h)}</td>
           <td data-col="chg"><span class="${r.chg>=0?'up':'down'}">${r.chg.toFixed(2)}%</span></td>
           <td data-col="fdv">${fmtFdv(r.fdv)}</td>
-          <td data-col="todayQV">${r.todayQV==null ? '…' : nf0.format(r.todayQV)}</td>
-          <td data-col="prevQV">${r.prevQV==null  ? '…' : nf0.format(r.prevQV)}</td>
+          <td data-col="todayQV">${fmtQV(r.todayQV, r.qvFail)}</td>
+          <td data-col="prevQV">${fmtQV(r.prevQV, r.qvFail)}</td>
           ${showCompOnly?`<td data-col="compVol">${compCell}</td>`:''}
         </tr>
       `;
@@ -1332,67 +1318,62 @@
       updateSortIcons();
     }
 
+    let reloading=false;
     async function reloadAll(){
+      if(reloading) return;   // ✅ 防重入：定时器 / 页面可见 / 手动点击不会叠加两轮请求
+      reloading=true;
       refreshBtn.disabled=true;progressEl.textContent='0%';
-      const isFirstLoad=!rows||rows.length===0;
+      const isFirstLoad=rows.length===0;
       if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:24px">${t('loading')}</td></tr>`;
       const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
-
-      thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
-      thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
+      const boundaryChanged=!!lastRange&&lastRange.today8!==today8;
+      lastRange={today8,yest8,endTs};
+      renderHeaders();
 
       try{
         const newRows=await fetchList();
-        const hasFilter=showCompOnly||showNewOnly||showFuturesOnly||showSecOnly||hideSecOnly;
-        if(hasFilter && rows.length>0){
-          // 有筛选时只刷新符合条件的币种，其余复用旧数据
-          const visibleSet=new Set(newRows.filter(r=>{
-            const newOk=!showNewOnly||r.isNew;
-            const futuresOk=!showFuturesOnly||r.hasFutures;
-            const secOk=!showSecOnly||r.isTokenizedSecurity;
-            const hideSecOk=!hideSecOnly||!r.isTokenizedSecurity;
-            const compOk=!showCompOnly||r.comp;
-            return newOk&&futuresOk&&secOk&&hideSecOk&&compOk;
-          }).map(r=>r.symbol));
-          const oldMap=Object.fromEntries(rows.map(r=>[r.symbol,r]));
-          newRows.forEach(r=>{
-            if(!visibleSet.has(r.symbol)&&oldMap[r.symbol]){
-              const o=oldMap[r.symbol];
-              r.todayQV=o.todayQV; r.prevQV=o.prevQV; r.qSym=o.qSym;
-              if(o.compVol!=null){r.compVol=o.compVol; r.compTrades=o.compTrades;}
-              // ✅ 合成代币条目（Aster 数据）没有现成行情，复用旧值
-              if(r.useAsterApi){
-                if(o.price) r.price=o.price;
-                if(o.vol24h) r.vol24h=o.vol24h;
-                if(o.chg!=null) r.chg=o.chg;
-              }
+        // ✅ 先沿用旧数据再逐步覆盖（按 sym 即 alphaId 匹配，同名代币不会串数据）；跨过日界线后"当天 / 前一天"的旧值作废
+        if(rows.length){
+          const oldMap=new Map(rows.map(r=>[r.sym,r]));
+          for(const r of newRows){
+            const o=oldMap.get(r.sym);
+            if(!o) continue;
+            r.qSym=o.qSym;
+            if(!boundaryChanged){ r.todayQV=o.todayQV; r.prevQV=o.prevQV; }
+            if(o.compVol!=null){ r.compVol=o.compVol; r.compTrades=o.compTrades; }
+            // 合成代币条目（Aster 数据）没有现成行情，复用旧值
+            if(r.useAsterApi){
+              if(o.price) r.price=o.price;
+              if(o.vol24h) r.vol24h=o.vol24h;
+              if(o.chg!=null) r.chg=o.chg;
             }
-          });
-          const toRefresh=newRows.filter(r=>visibleSet.has(r.symbol));
-          await fillQVAll(toRefresh,today8,yest8,endTs);
-        }else{
-          await fillQVAll(newRows,today8,yest8,endTs);
+          }
         }
         rows=newRows;
-        render();
-        lastUpEl.textContent=`${t('lastUp')} ${fmtFull(Date.now())}`;
-        window._boundary=today8;
+        applyFutures();
+        render();   // ✅ 列表先显示，成交额用 … 占位，随后逐步填充（不再等全部请求完成才出表格）
+        // 有筛选时只刷新符合条件的币种，其余沿用旧数据（首次加载仍全量拉取）
+        const hasFilter=showCompOnly||showNewOnly||showFuturesOnly||showSecOnly||hideSecOnly;
+        const toRefresh=(hasFilter&&!isFirstLoad) ? newRows.filter(passesFilters) : newRows;
+        await fillQVAll(toRefresh,today8,yest8,endTs);
+        lastUpdateTs=Date.now();
+        renderLastUp();
       }catch(e){
         console.error(e);
         const msg=e.message||t('unknownErr');
-        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9">${t('failLoad')}${msg}</td></tr>`;
+        if(isFirstLoad) tbody.innerHTML=`<tr><td colspan="9">${t('failLoad')}${esc(msg)}</td></tr>`;
         showToast(`${t('failLoad')}${msg}`);
       }finally{
+        cancelScheduledRender();
+        if(rows.length) render();
         refreshBtn.disabled=false;
+        reloading=false;
       }
     }
 
     (function initDateInputs(){
-      const now=new Date();
-      const pad=n=>String(n).padStart(2,'0');
-      const toLocal=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      startEl.value=toLocal(new Date(nearest8UTC()));
-      endEl.value =toLocal(now);
+      startEl.value=toLocalInput(new Date(nearest8UTC()));
+      endEl.value =toLocalInput(new Date());
     })();
 
     rangeBtn.addEventListener('click',async()=>{
@@ -1405,16 +1386,13 @@
       if(!st||!et||st>=et){showToast(t('badRange'));return;}
 
       rangeBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
-      const res=await qvAuto(row,st,et-1,pickKlineInterval(st,et));
-      rangeBtn.disabled=false;progressEl.style.display='none';
-      const avgPerTrade=res.trades>0?(res.vol/res.trades):0;
-      const displayLabel = row.symbol||sym;
-      // store for lang-switch re-render
-      customVolEl.dataset.sym=displayLabel; customVolEl.dataset.st=st; customVolEl.dataset.et=et;
-      customVolEl.dataset.vol=res.vol; customVolEl.dataset.trades=res.trades;
-      customVolEl.innerHTML=t('rangeTpl')(displayLabel, fmtFull(st), fmtFull(et), nf0.format(res.vol))
-        + `<br>${t('tradeStats')(nf0.format(res.trades), nf0.format(Math.round(avgPerTrade)))}`;
+      let res;
+      try{ res=await qvAuto(row,st,et-1,pickKlineInterval(st,et)); }
+      finally{ rangeBtn.disabled=false;progressEl.style.display='none'; }
+      if(!res.ok){ showToast(t('qvFail')); return; }   // ✅ 请求失败不显示 0，也不写入记录
 
+      const displayLabel = row.symbol||sym;
+      showRangeResult({symbol:displayLabel, start:st, end:et, vol:res.vol, trades:res.trades});
       // 保存到缓存
       saveCache({symbol:displayLabel, start:st, end:et, vol:res.vol, trades:res.trades, time:Date.now()});
     });
@@ -1434,50 +1412,26 @@
       const hasPartial=now-endTs>60000; // 超过1分钟才显示当前不完整小时
 
       hourlyBtn.disabled=true;progressEl.textContent=t('querying');progressEl.style.display='inline-block';
+      let res;
+      try{ res=await klinesAuto(row, startTs, hasPartial ? now : (endTs-1), '1h'); }   // ✅ 一次拉取整段区间的 K 线
+      finally{ hourlyBtn.disabled=false;progressEl.style.display='none'; }
+      if(!res.ok){ showToast(t('qvFail')); return; }
 
-      // ✅ 一次性拉取整段区间的 K 线，本地切片分桶
-      const rangeEnd = hasPartial ? now : (endTs - 1);
-      const allKlines = [await qvKlinesAuto(row, startTs, rangeEnd)];
-      progressEl.textContent='100%';
-
+      // ✅ 按 openTime 一次遍历落到对应小时桶（最后一个桶是当前不完整小时）
       const hourlyData=[];
-      for(let i=0;i<hours;i++){
-        const hStart=startTs+i*3600000;
-        const hEnd=hStart+3600000-1;
-        let vol=0, trades=0;
-        for(const klines of allKlines){
-          for(const k of klines){
-            const ot=+k[0];
-            if(ot>=hStart && ot<=hEnd){
-              vol += parseFloat(k?.[7]||0);
-              trades += parseInt(k?.[8]||0);
-            }
-          }
-        }
-        hourlyData[i]={start:hStart,end:hEnd,vol,trades};
+      for(let i=0;i<hours;i++) hourlyData.push({start:startTs+i*3600000,end:startTs+(i+1)*3600000-1,vol:0,trades:0});
+      if(hasPartial) hourlyData.push({start:endTs,end:now,vol:0,trades:0,partial:true});
+      for(const k of res.data){
+        const b=hourlyData[Math.floor((+k[0]-startTs)/3600000)];
+        if(!b) continue;
+        b.vol+=parseFloat(k?.[7]||0); b.trades+=parseInt(k?.[8]||0);
       }
-      if(hasPartial){
-        let vol=0, trades=0;
-        for(const klines of allKlines){
-          for(const k of klines){
-            const ot=+k[0];
-            if(ot>=endTs){
-              vol += parseFloat(k?.[7]||0);
-              trades += parseInt(k?.[8]||0);
-            }
-          }
-        }
-        hourlyData[hours]={start:endTs,end:now,vol,trades,partial:true};
-      }
-
-      hourlyBtn.disabled=false;progressEl.style.display='none';
 
       const totalVol=hourlyData.reduce((s,d)=>s+d.vol,0);
       const totalTrades=hourlyData.reduce((s,d)=>s+d.trades,0);
       const displayLabel = row.symbol||sym;
-      // store for lang-switch re-render
-      window._lastHourlyData={symbol:displayLabel, hours, data:hourlyData};
-      renderHourly(window._lastHourlyData);
+      lastHourlyData={symbol:displayLabel, hours, data:hourlyData};
+      renderHourly(lastHourlyData);
 
       // 保存小时查询到缓存
       saveCache({symbol:displayLabel, start:startTs, end:endTs, vol:totalVol, trades:totalTrades, time:Date.now(), type:'hourly', hours});
@@ -1506,13 +1460,13 @@
       const collapsed = hourlyWrap.classList.contains('collapsed');
       const minLabel = collapsed ? t('hourlyExpand') : t('hourlyMinimize');
       const minIcon = collapsed ? '▼' : '▲';
-      hourlyWrap.innerHTML=`<div class="hourly-header"><span class="hourly-title">${t('hourlyTpl')(symbol,hours)}</span><span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}<br><small style="font-weight:normal;color:#888">${t('tradeStats')(nf0.format(totalTrades), nf0.format(totalAvg))}</small></span><span class="hourly-actions"><button type="button" class="hourly-min" id="hourlyMinBtn" title="${minLabel}">${minIcon} ${minLabel}</button></span></div>
+      hourlyWrap.innerHTML=`<div class="hourly-header"><span class="hourly-title">${t('hourlyTpl')(esc(symbol),hours)}</span><span class="hourly-total">${t('hourlyTotal')(nf0.format(totalVol))}<br><small style="font-weight:normal;color:var(--sub)">${t('tradeStats')(nf0.format(totalTrades), nf0.format(totalAvg))}</small></span><span class="hourly-actions"><button type="button" class="hourly-min" id="hourlyMinBtn" title="${minLabel}">${minIcon} ${minLabel}</button></span></div>
         <div class="hourly-scroll"><div class="hourly-bar">${hourlyData.map((d,i)=>{
           const h=Math.max(4,Math.round(d.vol/maxVol*maxBarH));
           const cls=hours>1&&d.vol===maxVol?'h-col h-max':hours>1&&d.vol===minVol?'h-col h-min':'h-col';
           const avg=d.trades>0?Math.round(d.vol/d.trades):0;
           return `<div class="${cls}">
-            <div class="h-val">${nf0.format(d.vol)}<br><small style="color:#888;font-size:11px">${t('avgPerTrade')(nf0.format(avg))}</small></div>
+            <div class="h-val">${nf0.format(d.vol)}<br><small style="color:var(--sub);font-size:11px">${t('avgPerTrade')(nf0.format(avg))}</small></div>
             <div class="h-bar" style="height:${h}px;animation-delay:${i*30}ms"></div>
             <div class="h-lbl">${fmtHour(d.start,false)}-${d.partial?fmtHour(d.end,true):fmtHourEnd(d.end)}${d.partial?'*':''}</div>
           </div>`;
@@ -1520,8 +1474,9 @@
     }
 
     /* ---------- 区间查询缓存记录 ---------- */
-    function getCache(){try{return JSON.parse(localStorage.getItem(CACHE_KEY)||'[]');}catch{return [];}}
-    function setCache(arr){localStorage.setItem(CACHE_KEY,JSON.stringify(arr));renderCache();}
+    let cacheOpen=false;
+    function getCache(){try{return JSON.parse(storeGet(CACHE_KEY)||'[]');}catch{return [];}}
+    function setCache(arr){storeSet(CACHE_KEY,JSON.stringify(arr));renderCache();}
     function saveCache(entry){
       const cache=getCache();
       cache.unshift(entry);
@@ -1532,70 +1487,57 @@
       const cache=getCache();cache.splice(idx,1);setCache(cache);
     }
     function clearAllCache(){
-      localStorage.removeItem(CACHE_KEY);renderCache();
+      storeRemove(CACHE_KEY);cacheOpen=false;renderCache();
+    }
+    /* 区间查询结果展示（查询 / 加载记录 / 切换语言共用） */
+    function showRangeResult(item){
+      lastRangeResult=item;
+      const trades=+item.trades||0;
+      customVolEl.innerHTML=t('rangeTpl')(esc(item.symbol), fmtFull(item.start), fmtFull(item.end), nf0.format(item.vol))
+        + (trades>0 ? `<br>${t('tradeStats')(nf0.format(trades), nf0.format(Math.round(item.vol/trades)))}` : '');
     }
     function loadCache(idx){
-      const cache=getCache();
-      const item=cache[idx];
+      const item=getCache()[idx];
       if(!item)return;
-      customVolEl.dataset.sym=item.symbol; customVolEl.dataset.st=item.start; customVolEl.dataset.et=item.end;
-      customVolEl.dataset.vol=item.vol; customVolEl.dataset.trades=item.trades||0;
-      customVolEl.innerHTML=t('rangeTpl')(item.symbol, fmtFull(item.start), fmtFull(item.end), nf0.format(item.vol))
-        + (item.trades ? `<br>${t('tradeStats')(nf0.format(item.trades), nf0.format(Math.round(item.vol/item.trades)))}` : '');
+      showRangeResult(item);
       // 回填输入框，方便微调再查
       tokenEl.value=item.symbol;
-      const pad=n=>String(n).padStart(2,'0');
-      const toLocal=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      startEl.value=toLocal(new Date(item.start));
-      endEl.value=toLocal(new Date(item.end));
+      startEl.value=toLocalInput(new Date(item.start));
+      endEl.value=toLocalInput(new Date(item.end));
     }
+    /* ✅ 记录区按钮的文字 / 显隐统一在这里维护（之前首次查询后按钮没有文字、宽度为 0） */
     function renderCache(){
       const cache=getCache();
       const hasData=cache.length>0;
+      if(!hasData) cacheOpen=false;
       cacheToggleBtn.style.display=hasData?'inline-block':'none';
-      cacheClearAllBtn.style.display=(hasData&&cacheListEl.style.display==='block')?'inline-block':'none';
+      cacheToggleBtn.textContent=cacheOpen?t('cacheHide'):t('cacheTitle');
+      cacheClearAllBtn.style.display=(hasData&&cacheOpen)?'inline-block':'none';
       cacheClearAllBtn.textContent=t('cacheClearAll');
-      if(!hasData){cacheListEl.style.display='none';return;}
-      const open=cacheListEl.style.display==='block';
-      if(!open)return;
+      cacheListEl.style.display=cacheOpen?'block':'none';
+      if(!cacheOpen)return;
       cacheListEl.innerHTML=cache.map((c,i)=>{
-        const typeBadge=c.type==='hourly'?`<span style="font-size:.68rem;padding:0 4px;border-radius:4px;background:rgba(37,99,235,.1);color:var(--primary);margin-right:4px">${c.hours||6}h</span>`:'';
+        const typeBadge=c.type==='hourly'?`<span style="font-size:.68rem;padding:0 4px;border-radius:4px;background:rgba(37,99,235,.1);color:var(--primary);margin-right:4px">${+c.hours||6}h</span>`:'';
         const timeStr=c.time?`<span style="color:var(--sub);font-size:.72rem;margin-left:6px">${t('cacheTime')} ${fmtFull(c.time)}</span>`:'';
         return `<div class="cache-item">
-          <span class="ci-info" data-idx="${i}">${typeBadge}<strong>${c.symbol}</strong>&nbsp; ${fmtFull(c.start)} ~ ${fmtFull(c.end)}&nbsp; → ${nf0.format(c.vol)}${timeStr}</span>
+          <span class="ci-info" data-idx="${i}">${typeBadge}<strong>${esc(c.symbol)}</strong>&nbsp; ${fmtFull(c.start)} ~ ${fmtFull(c.end)}&nbsp; → ${nf0.format(c.vol)}${timeStr}</span>
           <span class="ci-del" data-delidx="${i}">${t('cacheDel')}</span>
         </div>`;
       }).join('');
     }
-    cacheToggleBtn.addEventListener('click',()=>{
-      const open=cacheListEl.style.display==='block';
-      cacheListEl.style.display=open?'none':'block';
-      cacheToggleBtn.textContent=open?t('cacheTitle'):t('cacheHide');
-      cacheClearAllBtn.style.display=(!open&&getCache().length)?'inline-block':'none';
-      if(!open)renderCache();
-    });
-    cacheClearAllBtn.addEventListener('click',()=>{
-      clearAllCache();
-      cacheListEl.style.display='none';
-      cacheToggleBtn.textContent=t('cacheTitle');
-      cacheClearAllBtn.style.display='none';
-    });
+    cacheToggleBtn.addEventListener('click',()=>{ cacheOpen=!cacheOpen; renderCache(); });
+    cacheClearAllBtn.addEventListener('click',clearAllCache);
     cacheListEl.addEventListener('click',e=>{
       const delBtn=e.target.closest('[data-delidx]');
       if(delBtn){e.stopPropagation();deleteCache(+delBtn.dataset.delidx);return;}
       const item=e.target.closest('[data-idx]');
       if(item)loadCache(+item.dataset.idx);
     });
-    (function initCache(){
-      const cache=getCache();
-      if(cache.length){
-        cacheToggleBtn.style.display='inline-block';
-        cacheToggleBtn.textContent=t('cacheTitle');
-      }
-    })();
 
+    let searchTimer=null;
     document.getElementById('search').addEventListener('input',e=>{
-      filter=e.target.value.trim().toLowerCase();render();
+      clearTimeout(searchTimer);   // ✅ 输入节流：连续敲键只重绘一次
+      searchTimer=setTimeout(()=>{ filter=e.target.value.trim().toLowerCase(); render(); },120);
     });
 
     tbody.addEventListener('click',e=>{
@@ -1688,10 +1630,10 @@ document.querySelectorAll('th.sortable').forEach(th=>{
     const raPanel = document.getElementById('raPanel');
     const raAllBtn = document.getElementById('raAllBtn');
     const raNoneBtn = document.getElementById('raNoneBtn');
-    let raEnabled = localStorage.getItem(RA_KEY)==='1';
+    let raEnabled = storeGet(RA_KEY)==='1';
     let raCols = (()=>{
       try{
-        const v = JSON.parse(localStorage.getItem(RA_COLS_KEY)||'null');
+        const v = JSON.parse(storeGet(RA_COLS_KEY)||'null');
         if(Array.isArray(v)) return new Set(v.filter(c=>RA_NUM_COLS.includes(c)));
       }catch{}
       return new Set(RA_NUM_COLS);
@@ -1708,8 +1650,8 @@ document.querySelectorAll('th.sortable').forEach(th=>{
       raStyleEl.textContent = `${sels}{text-align:right}`;
     }
     function saveRA(){
-      localStorage.setItem(RA_KEY, raEnabled?'1':'0');
-      localStorage.setItem(RA_COLS_KEY, JSON.stringify([...raCols]));
+      storeSet(RA_KEY, raEnabled?'1':'0');
+      storeSet(RA_COLS_KEY, JSON.stringify([...raCols]));
     }
     function syncRAUI(){
       rightAlignEl.checked = raEnabled;
@@ -1753,18 +1695,15 @@ document.querySelectorAll('th.sortable').forEach(th=>{
       applyRA();
     });
 
-    refreshBtn.addEventListener('click', reloadAll);
+    refreshBtn.addEventListener('click', ()=>reloadAll());
 
+    // 页面重新可见且已跨过日界线 → 立即刷新；其余每 5 分钟刷新一次（reloadAll 自带防重入）
     document.addEventListener('visibilitychange',()=>{
-      if(document.visibilityState==='visible'&&nearest8UTC()!==window._boundary)reloadAll();
+      if(document.visibilityState==='visible'&&lastRange&&lastRange.today8!==nearest8UTC())reloadAll();
     });
     setInterval(()=>{if(document.visibilityState==='visible')reloadAll();},300000);
 
-    /* ---------- 深色模式切换 ---------- */
-    (function initTheme(){
-      const saved=localStorage.getItem('theme');
-      if(saved)document.documentElement.classList.add(saved);
-    })();
+    /* ---------- 深色模式切换（已保存的主题在 <head> 的内联脚本里提前应用，避免首屏闪烁） ---------- */
     document.getElementById('themeBtn').addEventListener('click',()=>{
       const root=document.documentElement;
       const isDark=root.classList.contains('dark')||(
@@ -1772,36 +1711,18 @@ document.querySelectorAll('th.sortable').forEach(th=>{
       );
       root.classList.remove('dark','light');
       root.classList.add(isDark?'light':'dark');
-      localStorage.setItem('theme',isDark?'light':'dark');
+      storeSet('theme',isDark?'light':'dark');
     });
 
     /* ---------- 语言切换 ---------- */
     document.getElementById('langBtn').addEventListener('click',()=>{
       curLang = curLang==='zh' ? 'en' : 'zh';
-      localStorage.setItem('lang', curLang);
-      applyI18n();
-      // 刷新表头时间 & 表格内容
-      const today8=nearest8UTC(),yest8=today8-864e5,endTs=Date.now();
-      thToday.innerHTML=`${t('thTodayLabel')}<span class="subl">(${fmtShort(today8)}&nbsp;~&nbsp;${fmtShort(endTs)})</span>`;
-      thPrev.innerHTML =`${t('thPrevLabel')}<span class="subl">(${fmtShort(yest8)}&nbsp;~&nbsp;${fmtShort(today8-1)})</span>`;
-      thCompVol.textContent=t('thCompVol');
-      // 刷新 lastUp 时间文案
-      if(lastUpEl.textContent) lastUpEl.textContent=`${t('lastUp')} ${fmtFull(Date.now())}`;
-      // 刷新缓存区文案
+      storeSet('lang', curLang);
+      applyI18n();                 // 含两个带区间的表头（用上次刷新的区间）
+      renderLastUp();              // ✅ 用保存的刷新时间重新格式化，不再被改成当前时间
       renderCache();
-      const cacheOpen=cacheListEl.style.display==='block';
-      cacheToggleBtn.textContent=cacheOpen?t('cacheHide'):t('cacheTitle');
-      cacheClearAllBtn.textContent=t('cacheClearAll');
-      // 刷新区间查询结果（如果有内容）
-      if(customVolEl.dataset.sym){
-        const d=customVolEl.dataset;
-        customVolEl.innerHTML=t('rangeTpl')(d.sym, fmtFull(+d.st), fmtFull(+d.et), nf0.format(+d.vol))
-          + (d.trades>0 ? `<br>${t('tradeStats')(nf0.format(+d.trades), nf0.format(Math.round(+d.vol/+d.trades)))}` : '');
-      }
-      // 刷新小时图（如果有内容）
-      if(window._lastHourlyData){
-        renderHourly(window._lastHourlyData);
-      }
+      if(lastRangeResult) showRangeResult(lastRangeResult);
+      if(lastHourlyData) renderHourly(lastHourlyData);
       render();
     });
 
@@ -1816,8 +1737,8 @@ document.querySelectorAll('th.sortable').forEach(th=>{
 
     /* ---------- 初始化 ---------- */
     applyI18n();
-    // 先拉合约列表，再加载主数据
-    fetchFutures().then(()=>reloadAll());
+    renderCache();
+    reloadAll();   // 合约列表在 fetchList 内与主列表并行拉取
   </script>
 </body>
 </html>
